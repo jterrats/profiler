@@ -1,0 +1,80 @@
+# .npmignore - Files to exclude from npm package
+
+# Source files (only publish compiled JS)
+src/
+*.ts
+!*.d.ts
+
+# Tests
+test/
+*.test.js
+*.nut.js
+coverage/
+.nyc_output/
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+.wireit/
+.eslintcache
+*.tsbuildinfo
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# GitHub
+.github/
+CODEOWNERS
+
+# CI/CD
+.travis.yml
+.circleci/
+azure-pipelines.yml
+
+# Documentation (keep only essential)
+docs/
+CONTRIBUTING.md
+PULL_REQUEST_TEMPLATE.md
+ISSUE_TEMPLATE/
+
+# Examples and scripts
+examples/
+scripts/
+
+# Temporary files
+temp/
+temp-compare/
+profile-docs/
+*.log
+*.tmp
+
+# Node modules
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Development dependencies
+.husky/
+.prettierrc
+.prettierignore
+
+# Keep these files in the package:
+# - README.md
+# - LICENSE.txt
+# - CHANGELOG.md
+# - CODE_OF_CONDUCT.md
+# - SECURITY.md
+# - package.json
+# - lib/ (compiled code)
+# - messages/ (i18n files)
+# - oclif.manifest.json
+
