@@ -13,7 +13,7 @@ docs/
 ├── 📄 NAVIGATION.md          ← This file - Quick navigation
 │
 ├── 📁 user-guide/            👥 For plugin users
-│   ├── quick-start.md        🚀 Get started in 5 minutes  
+│   ├── quick-start.md        🚀 Get started in 5 minutes
 │   ├── usage.md              📖 Complete usage guide
 │   └── compare-command.md    🔍 Compare command deep-dive
 │
@@ -78,7 +78,7 @@ docs/
 
 **Key Docs**:
 - Commands and flags
-- Usage examples  
+- Usage examples
 - Troubleshooting
 - Best practices
 

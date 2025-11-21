@@ -120,6 +120,7 @@ sf plugins
 
 - [`sf profiler retrieve`](#sf-profiler-retrieve)
 - [`sf profiler compare`](#sf-profiler-compare)
+- [`sf profiler docs`](#sf-profiler-docs)
 
 ## `sf profiler retrieve`
 
@@ -189,6 +190,60 @@ EXAMPLES
   Compare with specific API version:
 
     $ sf profiler compare --target-org myOrg --name "Sales" --api-version 60.0
+```
+
+## `sf profiler docs`
+
+Generate comprehensive documentation for Profile metadata in Markdown format.
+
+```
+USAGE
+  $ sf profiler docs [--json] [-n <value>] [-d <value>]
+
+FLAGS
+  -n, --name=<value>         Name of the profile to generate documentation for.
+  -d, --output-dir=<value>   [default: profile-docs] Directory where the documentation files will be created.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  The profiler docs command generates detailed documentation for Salesforce Profile metadata files in Markdown format.
+  It creates tables/matrices for all permission types including user permissions, object permissions, field-level
+  security, application visibilities, and more.
+
+  Use the --name flag to generate documentation for a specific profile, or omit it to generate documentation for
+  all profiles in the project.
+
+  The generated documentation includes:
+  - Profile description and metadata
+  - User permissions matrix
+  - Object permissions (CRUD + View/Modify All)
+  - Field-level security (FLS) permissions
+  - Application visibilities
+  - Apex class accesses
+  - Visualforce page accesses
+  - Tab visibilities
+  - Record type visibilities
+  - Layout assignments
+  - Summary statistics
+
+EXAMPLES
+  Generate documentation for all profiles in the project:
+
+    $ sf profiler docs
+
+  Generate documentation for a specific profile:
+
+    $ sf profiler docs --name Admin
+
+  Generate documentation with a custom output directory:
+
+    $ sf profiler docs --output-dir docs/profiles
+
+  Generate documentation for a specific profile in a custom directory:
+
+    $ sf profiler docs --name "Sales User" --output-dir salesforce-docs
 ```
 
 <!-- commandsstop -->

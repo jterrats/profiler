@@ -2,6 +2,7 @@
 tmp/
 temp/
 temp-compare/
+profile-docs/
 # use yarn by default, so ignore npm
 package-lock.json
 
