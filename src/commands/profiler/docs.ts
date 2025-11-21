@@ -69,84 +69,8 @@ export default class ProfilerDocs extends SfCommand<void> {
     }),
   };
 
-  private projectPath!: string;
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(ProfilerDocs);
-
-    this.projectPath = process.cwd();
-    const profilesPath = path.join(this.projectPath, 'force-app', 'main', 'default', 'profiles');
-
-    // Verify profiles directory exists
-    try {
-      await fs.access(profilesPath);
-    } catch {
-      this.error(`Profiles directory not found at: ${profilesPath}`);
-    }
-
-    // Get list of profiles to document
-    const profilesToDocument = await this.getProfilesToDocument(profilesPath, flags.name);
-
-    if (profilesToDocument.length === 0) {
-      this.warn(flags.name ? `Profile "${flags.name}" not found.` : 'No profiles found to document.');
-      return;
-    }
-
-    // Create output directory
-    const outputDir = path.join(this.projectPath, flags['output-dir']);
-    await fs.mkdir(outputDir, { recursive: true });
-
-    this.log(`Generating documentation for ${profilesToDocument.length} profile(s)...\n`);
-
-    // Generate documentation for each profile
-    await Promise.all(
-      profilesToDocument.map((profileFile) =>
-        this.generateProfileDocumentation(profilesPath, profileFile, outputDir)
-      )
-    );
-
-    this.log(`\n✅ Documentation generated successfully in: ${outputDir}`);
-  }
-
-  private async getProfilesToDocument(profilesPath: string, profileName?: string): Promise<string[]> {
-    const allFiles = await fs.readdir(profilesPath);
-    const profileFiles = allFiles.filter((file) => file.endsWith('.profile-meta.xml'));
-
-    if (profileName) {
-      const targetFile = `${profileName}.profile-meta.xml`;
-      return profileFiles.includes(targetFile) ? [targetFile] : [];
-    }
-
-    this.log(`Found ${profileFiles.length} profile(s) to document`);
-    return profileFiles;
-  }
-
-  private async generateProfileDocumentation(
-    profilesPath: string,
-    profileFile: string,
-    outputDir: string
-  ): Promise<void> {
-    const profilePath = path.join(profilesPath, profileFile);
-    const profileName = profileFile.replace('.profile-meta.xml', '');
-
-    this.log(`📄 Generating documentation for: ${profileName}`);
-
-    // Read and parse profile XML
-    const xmlContent = await fs.readFile(profilePath, 'utf-8');
-    const parsedProfile = (await parseStringPromise(xmlContent)) as ProfileMetadata;
-    const profile = parsedProfile.Profile;
-
-    // Generate markdown documentation
-    const markdown = this.buildMarkdownDocumentation(profileName, profileFile, profile);
-
-    // Write documentation file
-    const outputFile = path.join(outputDir, `${profileName}.md`);
-    await fs.writeFile(outputFile, markdown, 'utf-8');
-
-    this.log(`   ✓ Created: ${outputFile}`);
-  }
-
-  private buildMarkdownDocumentation(profileName: string, fileName: string, profile: ProfileMetadata['Profile']): string {
+  // Static methods - must come before instance methods
+  private static buildMarkdownDocumentation(profileName: string, fileName: string, profile: ProfileMetadata['Profile']): string {
     let markdown = `# Profile Documentation: ${profileName}\n\n`;
     markdown += `**File Name:** \`${fileName}\`\n\n`;
 
@@ -407,5 +331,84 @@ export default class ProfilerDocs extends SfCommand<void> {
   private static getIcon(value: string): string {
     return value === 'true' ? '✅' : '❌';
   }
-}
 
+  // Instance properties
+  private projectPath!: string;
+
+  // Public instance methods
+  public async run(): Promise<void> {
+    const { flags } = await this.parse(ProfilerDocs);
+
+    this.projectPath = process.cwd();
+    const profilesPath = path.join(this.projectPath, 'force-app', 'main', 'default', 'profiles');
+
+    // Verify profiles directory exists
+    try {
+      await fs.access(profilesPath);
+    } catch {
+      this.error(`Profiles directory not found at: ${profilesPath}`);
+    }
+
+    // Get list of profiles to document
+    const profilesToDocument = await this.getProfilesToDocument(profilesPath, flags.name);
+
+    if (profilesToDocument.length === 0) {
+      this.warn(flags.name ? `Profile "${flags.name}" not found.` : 'No profiles found to document.');
+      return;
+    }
+
+    // Create output directory
+    const outputDir = path.join(this.projectPath, flags['output-dir']);
+    await fs.mkdir(outputDir, { recursive: true });
+
+    this.log(`Generating documentation for ${profilesToDocument.length} profile(s)...\n`);
+
+    // Generate documentation for each profile
+    await Promise.all(
+      profilesToDocument.map((profileFile) =>
+        this.generateProfileDocumentation(profilesPath, profileFile, outputDir)
+      )
+    );
+
+    this.log(`\n✅ Documentation generated successfully in: ${outputDir}`);
+  }
+
+  // Private instance methods
+  private async getProfilesToDocument(profilesPath: string, profileName?: string): Promise<string[]> {
+    const allFiles = await fs.readdir(profilesPath);
+    const profileFiles = allFiles.filter((file) => file.endsWith('.profile-meta.xml'));
+
+    if (profileName) {
+      const targetFile = `${profileName}.profile-meta.xml`;
+      return profileFiles.includes(targetFile) ? [targetFile] : [];
+    }
+
+    this.log(`Found ${profileFiles.length} profile(s) to document`);
+    return profileFiles;
+  }
+
+  private async generateProfileDocumentation(
+    profilesPath: string,
+    profileFile: string,
+    outputDir: string
+  ): Promise<void> {
+    const profilePath = path.join(profilesPath, profileFile);
+    const profileName = profileFile.replace('.profile-meta.xml', '');
+
+    this.log(`📄 Generating documentation for: ${profileName}`);
+
+    // Read and parse profile XML
+    const xmlContent = await fs.readFile(profilePath, 'utf-8');
+    const parsedProfile = (await parseStringPromise(xmlContent)) as ProfileMetadata;
+    const profile = parsedProfile.Profile;
+
+    // Generate markdown documentation
+    const markdown = ProfilerDocs.buildMarkdownDocumentation(profileName, profileFile, profile);
+
+    // Write documentation file
+    const outputFile = path.join(outputDir, `${profileName}.md`);
+    await fs.writeFile(outputFile, markdown, 'utf-8');
+
+    this.log(`   ✓ Created: ${outputFile}`);
+  }
+}
