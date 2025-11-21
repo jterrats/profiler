@@ -69,7 +69,10 @@ export default class ProfilerDocs extends SfCommand<void> {
     }),
   };
 
-  // Static methods - must come before instance methods
+  // Instance properties - must come before static methods
+  private projectPath!: string;
+
+  // Static methods
   private static buildMarkdownDocumentation(profileName: string, fileName: string, profile: ProfileMetadata['Profile']): string {
     let markdown = `# Profile Documentation: ${profileName}\n\n`;
     markdown += `**File Name:** \`${fileName}\`\n\n`;
@@ -331,9 +334,6 @@ export default class ProfilerDocs extends SfCommand<void> {
   private static getIcon(value: string): string {
     return value === 'true' ? '✅' : '❌';
   }
-
-  // Instance properties
-  private projectPath!: string;
 
   // Public instance methods
   public async run(): Promise<void> {
