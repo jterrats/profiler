@@ -9,7 +9,6 @@ describe('profiler docs NUTs', () => {
       project: {
         name: 'profilerDocsNUT',
       },
-      setupCommands: [],
     });
   });
 
