@@ -127,17 +127,17 @@ read -p "Publish to npm? (y/N): " PUBLISH
 if [ "$PUBLISH" = "y" ]; then
     echo ""
     echo "📦 Publishing to npm..."
-    
+
     # Check if logged in
     if ! npm whoami &> /dev/null; then
         echo ""
         echo "Please login to npm:"
         npm login
     fi
-    
+
     # Publish
     npm publish --access public
-    
+
     echo ""
     echo -e "${GREEN}✅ Published successfully!${NC}"
     echo ""
@@ -148,7 +148,7 @@ if [ "$PUBLISH" = "y" ]; then
     echo "Users can now install with:"
     echo "  sf plugins install $(node -p "require('./package.json').name")@${NEW_VERSION}"
     echo ""
-    
+
     # Ask to push
     read -p "Push to git now? (y/N): " PUSH
     if [ "$PUSH" = "y" ]; then

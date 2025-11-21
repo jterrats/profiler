@@ -1,6 +1,8 @@
 # Profiler - Salesforce CLI Plugin
 
-[![NPM](https://img.shields.io/npm/v/profiler.svg?label=profiler)](https://www.npmjs.com/package/profiler) [![Downloads/week](https://img.shields.io/npm/dw/profiler.svg)](https://npmjs.org/package/profiler) [![License](https://img.shields.io/badge/License-BSD%203--Clause-brightgreen.svg)](https://raw.githubusercontent.com/salesforcecli/profiler/main/LICENSE.txt)
+[![Test Status](https://github.com/jterrats/profiler/workflows/Test%20Plugin%20on%20Push/badge.svg)](https://github.com/jterrats/profiler/actions)
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-brightgreen.svg)](https://raw.githubusercontent.com/jterrats/profiler/main/LICENSE.txt)
+[![Node.js Version](https://img.shields.io/node/v/profiler)](https://nodejs.org)
 
 ## About
 

@@ -28,11 +28,11 @@ case "$COMMAND" in
     link)
         echo "📦 Building plugin..."
         yarn build
-        
+
         echo ""
         echo "🔗 Linking plugin to Salesforce CLI..."
         sf plugins link .
-        
+
         echo ""
         echo -e "${GREEN}✅ Plugin linked successfully!${NC}"
         echo ""
@@ -45,22 +45,22 @@ case "$COMMAND" in
         echo "  sf profiler compare --target-org yourOrg --name 'Admin'"
         echo ""
         ;;
-    
+
     unlink)
         echo "🔓 Unlinking plugin..."
         sf plugins unlink profiler
-        
+
         echo ""
         echo -e "${GREEN}✅ Plugin unlinked successfully!${NC}"
         echo ""
         ;;
-    
+
     rebuild)
         echo "🔨 Rebuilding plugin..."
         yarn clean-all
         yarn install
         yarn build
-        
+
         echo ""
         echo -e "${GREEN}✅ Plugin rebuilt!${NC}"
         echo ""
@@ -68,11 +68,11 @@ case "$COMMAND" in
         echo "Test your changes now!"
         echo ""
         ;;
-    
+
     status)
         echo "📊 Checking plugin status..."
         echo ""
-        
+
         if sf plugins | grep -q "profiler"; then
             echo -e "${GREEN}✅ Plugin is linked${NC}"
             echo ""
@@ -84,16 +84,16 @@ case "$COMMAND" in
         fi
         echo ""
         ;;
-    
+
     test)
         echo "🧪 Running tests..."
         yarn test
-        
+
         echo ""
         echo -e "${GREEN}✅ Tests completed!${NC}"
         echo ""
         ;;
-    
+
     *)
         echo "Usage: $0 {link|unlink|rebuild|status|test}"
         echo ""
