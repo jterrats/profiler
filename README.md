@@ -60,7 +60,7 @@ Complete documentation is available in the [`docs/`](docs/) directory:
 ## Install
 
 ```bash
-sf plugins install profiler@x.y.z
+sf plugins install @jterrats/profiler@x.y.z
 ```
 
 ## Issues
