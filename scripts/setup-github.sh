@@ -43,7 +43,7 @@ if git remote | grep -q "origin"; then
     echo "   Current: $EXISTING_REMOTE"
     echo ""
     read -p "Replace it? (y/N): " REPLACE
-    
+
     if [ "$REPLACE" = "y" ]; then
         git remote remove origin
         echo -e "${GREEN}✓ Removed old remote${NC}"

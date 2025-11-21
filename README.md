@@ -30,35 +30,22 @@ The Profiler plugin is an essential Salesforce CLI extension engineered to guara
 - Parallel metadata processing
 - Comprehensive error handling
 
-## Learn about `sf` plugins
+## 📚 Documentation
 
-Salesforce CLI plugins are based on the [oclif plugin framework](<(https://oclif.io/docs/introduction.html)>). Read the [plugin developer guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_plugins.meta/sfdx_cli_plugins/cli_plugins_architecture_sf_cli.htm) to learn about Salesforce CLI plugin development.
+Complete documentation is available in the [`docs/`](docs/) directory:
 
-This repository contains a lot of additional scripts and tools to help with general Salesforce node development and enforce coding standards. You should familiarize yourself with some of the [node developer packages](#tooling) used by Salesforce.
+- **[Quick Start Guide](docs/user-guide/quick-start.md)** - Get started in 5 minutes
+- **[Usage Guide](docs/user-guide/usage.md)** - Complete command documentation
+- **[Developer Guide](docs/development/testing-and-publishing.md)** - Local testing and publishing
+- **[Contributing](CONTRIBUTING.md)** - How to contribute
+- **[Full Documentation Index](docs/README.md)** - Complete documentation map
 
-Additionally, there are some additional tests that the Salesforce CLI will enforce if this plugin is ever bundled with the CLI. These test are included by default under the `posttest` script and it is required to keep these tests active in your plugin if you plan to have it bundled.
+### Quick Links
 
-### Tooling
-
-- [@salesforce/core](https://github.com/forcedotcom/sfdx-core)
-- [@salesforce/kit](https://github.com/forcedotcom/kit)
-- [@salesforce/sf-plugins-core](https://github.com/salesforcecli/sf-plugins-core)
-- [@salesforce/ts-types](https://github.com/forcedotcom/ts-types)
-- [@salesforce/ts-sinon](https://github.com/forcedotcom/ts-sinon)
-- [@salesforce/dev-config](https://github.com/forcedotcom/dev-config)
-- [@salesforce/dev-scripts](https://github.com/forcedotcom/dev-scripts)
-
-### Hooks
-
-For cross clouds commands, e.g. `sf env list`, we utilize [oclif hooks](https://oclif.io/docs/hooks) to get the relevant information from installed plugins.
-
-This plugin includes sample hooks in the [src/hooks directory](src/hooks). You'll just need to add the appropriate logic. You can also delete any of the hooks if they aren't required for your plugin.
-
-# Everything past here is only a suggestion as to what should be in your specific plugin's description
-
-This plugin is bundled with the [Salesforce CLI](https://developer.salesforce.com/tools/sfdxcli). For more information on the CLI, read the [getting started guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm).
-
-We always recommend using the latest version of these commands bundled with the CLI, however, you can install a specific version or tag if needed.
+- [Installation Guide](docs/user-guide/quick-start.md#1-build--link-the-plugin)
+- [Command Examples](docs/user-guide/usage.md#examples)
+- [Testing Locally](docs/development/testing-and-publishing.md#-local-testing-before-publishing)
+- [Publishing to npm](docs/development/testing-and-publishing.md#-publishing-to-npm)
 
 ## Install
 
