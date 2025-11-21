@@ -18,8 +18,8 @@ on:
 
 jobs:
   release:
-    # Check if the required token exists before running
-    if: ${{ secrets.SVC_CLI_BOT_GITHUB_TOKEN != '' }}
+    # Only run in official Salesforce repos
+    if: github.repository_owner == 'salesforcecli'
     uses: salesforcecli/github-workflows/.github/workflows/create-github-release.yml@main
     secrets:
       SVC_CLI_BOT_GITHUB_TOKEN: ${{ secrets.SVC_CLI_BOT_GITHUB_TOKEN }}
