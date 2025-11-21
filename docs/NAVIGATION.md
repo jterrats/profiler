@@ -56,6 +56,7 @@ docs/
 | 🚀 **Get started quickly** | [Quick Start](user-guide/quick-start.md) |
 | 📖 **Learn all commands** | [Usage Guide](user-guide/usage.md) |
 | 🔍 **Compare profiles** | [Compare Command](user-guide/compare-command.md) |
+| 📄 **Generate profile docs** | [Docs Command](user-guide/docs-command.md) |
 | 🧪 **Test locally** | [Testing Guide](development/testing-and-publishing.md#-local-testing-before-publishing) |
 | 🤝 **Contribute code** | [Contributing](development/contributing.md) |
 | 📦 **Publish to npm** | [Publishing Guide](development/testing-and-publishing.md#-publishing-to-npm) |
