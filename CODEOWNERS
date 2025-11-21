@@ -1,3 +1,24 @@
 # Comment line immediately above ownership line is reserved for related other information. Please be careful while editing.
 #ECCN:Open Source
 #GUSINFO:Open Source,Open Source Workflow
+
+# Default owner for everything in the repository
+# This will be requested for review when someone opens a PR
+# Unless a later match takes precedence
+* @jterrats
+
+# Specific owners for documentation
+/docs/ @jterrats
+
+# Specific owners for source code
+/src/ @jterrats
+
+# Specific owners for tests
+/test/ @jterrats
+
+# GitHub Actions and CI/CD configurations
+/.github/ @jterrats
+
+# Package management
+/package.json @jterrats
+/yarn.lock @jterrats

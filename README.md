@@ -30,6 +30,16 @@ The Profiler plugin is an essential Salesforce CLI extension engineered to guara
 - Parallel metadata processing
 - Comprehensive error handling
 
+## ⚠️ Important Context: Profiles vs Permission Sets
+
+Yes, I'm fully aware of the current Salesforce best practice that recommends migrating away from using Profiles to manage Field-Level Security (FLS) and other permissions, favoring Permission Sets (PS) and Permission Set Groups (PSG) instead.
+
+However, this tool has been developed specifically for environments with significant **Technical Debt** and strong legacy dependencies on Profiles.
+
+For many enterprise organizations, Profiles remain the cornerstone of security configuration. While teams are actively working on reducing their reliance on them—treating Profiles as read-only or touching them as little as possible—the need for robust tooling to manage and accurately retrieve these legacy assets remains critical.
+
+**`sf profiler` is the necessary bridge** to stabilize existing profile configurations in high-debt orgs while long-term migration strategies are executed.
+
 ## 📚 Documentation
 
 Complete documentation is available in the [`docs/`](docs/) directory:
