@@ -1,0 +1,118 @@
+# Jekyll Configuration for Profiler Plugin Documentation
+
+# Site settings
+title: Profiler - Salesforce CLI Plugin
+description: >-
+  Essential Salesforce CLI plugin for complete Profile metadata retrieval and management.
+  Includes commands for retrieve, compare, and documentation generation.
+baseurl: "/profiler"
+url: "https://jterrats.github.io"
+
+# Theme
+theme: jekyll-theme-cayman
+# Alternative themes you can try:
+# theme: jekyll-theme-slate
+# theme: jekyll-theme-minimal
+# theme: jekyll-theme-architect
+
+# Build settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    default_lang: bash
+
+# Exclude files from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - package.json
+  - package-lock.json
+  - yarn.lock
+  - tsconfig.json
+  - .eslintrc.json
+  - .gitignore
+  - .husky
+  - .vscode
+  - lib
+  - src
+  - test
+  - scripts
+  - examples
+  - temp
+  - temp-compare
+  - profile-docs
+  - .github/workflows/test-on-push.yml
+  - CODEOWNERS
+  - LICENSE.txt
+  - CODE_OF_CONDUCT.md
+
+# Include files that start with underscore
+include:
+  - _config.yml
+
+# Collections
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:path/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  - scope:
+      path: "docs"
+      type: "pages"
+    values:
+      layout: "default"
+
+# Navigation
+navigation:
+  - title: Home
+    url: /
+  - title: Quick Start
+    url: /docs/user-guide/quick-start
+  - title: Usage Guide
+    url: /docs/user-guide/usage
+  - title: Commands
+    subitems:
+      - title: Retrieve
+        url: /docs/user-guide/usage#sf-profiler-retrieve
+      - title: Compare
+        url: /docs/user-guide/compare-command
+      - title: Docs
+        url: /docs/user-guide/docs-command
+  - title: Contributing
+    url: /CONTRIBUTING
+  - title: GitHub
+    url: https://github.com/jterrats/profiler
+
+# SEO
+author: jterrats
+twitter:
+  username: jterrats
+  card: summary
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-github-metadata
+
+# GitHub metadata
+repository: jterrats/profiler
+
+# Google Analytics (optional - add your tracking ID)
+# google_analytics: UA-XXXXXXXX-X
+
+# Show downloads button
+show_downloads: true
+
