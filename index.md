@@ -64,7 +64,7 @@ Complete documentation is available in the navigation menu above or in the [`doc
 ## Install
 
 ```bash
-sf plugins install profiler@x.y.z
+sf plugins install @jterrats/profiler@x.y.z
 ```
 
 ## Commands
