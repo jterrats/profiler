@@ -2,6 +2,12 @@
 
 Complete documentation for the Salesforce CLI Profiler Plugin.
 
+## 🌐 Online Documentation
+
+**Live Site**: [https://jterrats.github.io/profiler](https://jterrats.github.io/profiler)
+
+The complete documentation is also available online with a modern, searchable interface powered by Jekyll and GitHub Pages. The site is automatically updated whenever changes are pushed to this repository.
+
 ## 📚 Documentation Structure
 
 ### 🎯 User Guide
