@@ -1,0 +1,113 @@
+# summary
+
+Compare local Profile metadata with the version in Salesforce org.
+
+# description
+
+The profiler compare command compares a local profile file with its version in the target org, showing the differences line by line. This is useful for identifying what has changed between your local version and the org version before committing or deploying changes.
+
+# flags.target-org.summary
+
+The target org to compare profiles against.
+
+# flags.name.summary
+
+The name of the profile to compare.
+
+# flags.name.description
+
+Specify the profile name without the .profile-meta.xml extension. If not provided, all profiles in the local project will be compared.
+
+# flags.api-version.summary
+
+Override the API version used for metadata operations.
+
+# flags.api-version.description
+
+Specify the API version to use for the comparison. Defaults to the org's API version.
+
+# examples
+
+- Compare a specific profile:
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg --name "Admin"
+
+- Compare all profiles:
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg
+
+- Compare with specific API version:
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg --name "Sales" --api-version 60.0
+
+# info.starting
+
+Starting profile comparison for org: %s
+
+# info.comparing-profile
+
+Comparing profile: %s
+
+# info.retrieving-org-version
+
+Retrieving profile from org...
+
+# info.no-differences
+
+✓ No differences found for profile: %s
+
+# info.differences-found
+
+✗ Differences found for profile: %s
+
+# info.total-profiles-compared
+
+Total profiles compared: %s
+
+# info.profiles-with-differences
+
+Profiles with differences: %s
+
+# info.line-added
+
++ Added (in org, not in local):
+
+# info.line-removed
+
+- Removed (in local, not in org):
+
+# info.line-changed
+
+~ Changed:
+
+# success.comparison-complete
+
+Profile comparison completed successfully!
+
+# error.profile-not-found-locally
+
+Profile not found locally: %s
+Check that the profile exists in force-app/main/default/profiles/
+
+# error.profile-not-found-org
+
+Profile not found in org: %s
+
+# error.retrieve-failed
+
+Failed to retrieve profile from org: %s
+
+# error.comparison-failed
+
+Comparison failed: %s
+
+# error.no-profiles-found
+
+No profiles found in the project.
+Make sure you have profiles in force-app/main/default/profiles/
+
+# warning.temp-dir-cleanup
+
+Could not clean up temporary comparison directory
+
+

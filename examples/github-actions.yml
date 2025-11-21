@@ -1,0 +1,127 @@
+name: Retrieve Salesforce Profiles
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      target_org:
+        description: 'Target org alias'
+        required: true
+        default: 'dev-sandbox'
+      include_fls:
+        description: 'Include Field Level Security'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  retrieve-profiles:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Full history for git operations
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install -g @salesforce/cli
+          sf --version
+
+      - name: Install Profiler Plugin
+        run: |
+          # Option 1: Install from npm (when published)
+          # sf plugins install profiler
+
+          # Option 2: Install from local directory
+          # sf plugins link .
+
+          # Option 3: Install from GitHub
+          sf plugins install profiler
+
+      - name: Authenticate to Salesforce
+        env:
+          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+        run: |
+          echo "$SFDX_AUTH_URL" > authfile.txt
+          sf org login sfdx-url --sfdx-url-file authfile.txt --alias target-org
+          rm authfile.txt
+
+      - name: Retrieve Profiles
+        id: retrieve
+        run: |
+          TARGET_ORG="${{ github.event.inputs.target_org || 'dev-sandbox' }}"
+          INCLUDE_FLS="${{ github.event.inputs.include_fls || 'false' }}"
+
+          RETRIEVE_CMD="sf profiler retrieve --target-org target-org --json"
+
+          if [ "$INCLUDE_FLS" = "true" ]; then
+            RETRIEVE_CMD="$RETRIEVE_CMD --all-fields"
+          fi
+
+          echo "Executing: $RETRIEVE_CMD"
+          $RETRIEVE_CMD | tee retrieve-result.json
+
+          # Parse results
+          SUCCESS=$(jq -r '.result.success' retrieve-result.json)
+          PROFILES=$(jq -r '.result.profilesRetrieved' retrieve-result.json)
+
+          echo "success=$SUCCESS" >> $GITHUB_OUTPUT
+          echo "profiles_retrieved=$PROFILES" >> $GITHUB_OUTPUT
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet force-app/main/default/profiles/; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update profiles from Salesforce'
+          title: 'Update Salesforce Profiles'
+          body: |
+            ## Profile Update
+
+            This PR contains profile updates retrieved from Salesforce.
+
+            **Profiles Retrieved**: ${{ steps.retrieve.outputs.profiles_retrieved }}
+            **Include FLS**: ${{ github.event.inputs.include_fls || 'false' }}
+
+            Please review the changes carefully before merging.
+          branch: profile-update-${{ github.run_number }}
+          delete-branch: true
+
+      - name: Generate Summary
+        if: always()
+        run: |
+          echo "## Profile Retrieval Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Success**: ${{ steps.retrieve.outputs.success }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Profiles Retrieved**: ${{ steps.retrieve.outputs.profiles_retrieved }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Changes Detected**: ${{ steps.changes.outputs.has_changes }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: retrieve-results
+          path: |
+            retrieve-result.json
+            force-app/main/default/profiles/
+          retention-days: 30
+
