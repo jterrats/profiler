@@ -28,6 +28,14 @@ test_session*
 # generated docs (auto-generated API docs, not our markdown docs)
 # docs/ - Now contains our markdown documentation, not ignored
 
+# Jekyll
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+Gemfile.lock
+vendor/
+
 # ignore sfdx-trust files
 *.tgz
 *.sig
