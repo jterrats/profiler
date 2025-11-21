@@ -15,7 +15,8 @@ docs/
 ├── 📁 user-guide/            👥 For plugin users
 │   ├── quick-start.md        🚀 Get started in 5 minutes
 │   ├── usage.md              📖 Complete usage guide
-│   └── compare-command.md    🔍 Compare command deep-dive
+│   ├── compare-command.md    🔍 Compare command deep-dive
+│   └── docs-command.md       📄 Generate profile documentation
 │
 ├── 📁 development/           💻 For developers
 │   ├── contributing.md       🤝 How to contribute
@@ -75,6 +76,7 @@ docs/
 1. [Quick Start](user-guide/quick-start.md) - 5 minutes
 2. [Usage Guide](user-guide/usage.md) - 15 minutes
 3. [Compare Command](user-guide/compare-command.md) - Deep dive
+4. [Docs Command](user-guide/docs-command.md) - Generate profile docs
 
 **Key Docs**:
 - Commands and flags
@@ -120,7 +122,7 @@ docs/
 
 ## 📚 Documentation by Category
 
-### 👥 User Guide (3 docs)
+### 👥 User Guide (4 docs)
 
 Perfect for: Learning to use the plugin
 
@@ -129,6 +131,7 @@ Perfect for: Learning to use the plugin
 | [Quick Start](user-guide/quick-start.md) | 5 min | Beginner |
 | [Usage Guide](user-guide/usage.md) | 15 min | Intermediate |
 | [Compare Command](user-guide/compare-command.md) | 10 min | Advanced |
+| [Docs Command](user-guide/docs-command.md) | 15 min | Intermediate |
 
 ### 💻 Development (4 docs)
 
@@ -170,6 +173,7 @@ Perfect for: Project overview and history
 ### Commands
 - [Retrieve Command](user-guide/usage.md#sf-profiler-retrieve)
 - [Compare Command](user-guide/compare-command.md)
+- [Docs Command](user-guide/docs-command.md)
 - [All Flags](user-guide/usage.md#flags)
 - [Examples](user-guide/usage.md#examples)
 
