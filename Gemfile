@@ -30,6 +30,7 @@ gem "wdm", "~> 0.1", :platforms => [:mingw, :x64_mingw, :mswin]
 # do not have a Java counterpart.
 gem "http_parser.rb", "~> 0.6.0", :platforms => [:jruby]
 
-# GitHub Pages compatibility
-gem "github-pages", group: :jekyll_plugins
+# Note: We use Jekyll directly instead of github-pages gem
+# because GitHub Actions uses the official Jekyll build action
+# which doesn't require the github-pages compatibility gem
 
