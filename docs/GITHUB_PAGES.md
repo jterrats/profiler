@@ -310,6 +310,6 @@ For issues with:
 
 ---
 
-**Site URL**: [https://jterrats.github.io/profiler](https://jterrats.github.io/profiler)  
+**Site URL**: [https://jterrats.github.io/profiler](https://jterrats.github.io/profiler)
 **Repository**: [https://github.com/jterrats/profiler](https://github.com/jterrats/profiler)
 

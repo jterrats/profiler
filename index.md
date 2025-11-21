@@ -139,7 +139,7 @@ This project is licensed under the BSD 3-Clause License - see the [LICENSE.txt](
 
 ---
 
-**Documentation Site**: [https://jterrats.github.io/profiler](https://jterrats.github.io/profiler)  
-**GitHub Repository**: [https://github.com/jterrats/profiler](https://github.com/jterrats/profiler)  
+**Documentation Site**: [https://jterrats.github.io/profiler](https://jterrats.github.io/profiler)
+**GitHub Repository**: [https://github.com/jterrats/profiler](https://github.com/jterrats/profiler)
 **npm Package**: `sf plugins install profiler`
 

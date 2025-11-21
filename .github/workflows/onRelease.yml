@@ -1,4 +1,8 @@
 name: publish
+
+# NOTE: This workflow uses Salesforce CLI official actions
+# It will only work if you have access to Salesforce organization secrets
+# For personal repos, use manual publishing: npm publish
 on:
   release:
     # both release and prereleases
@@ -12,6 +16,8 @@ on:
         required: true
 jobs:
   getDistTag:
+    # Only run if this is a Salesforce official repo
+    if: github.repository_owner == 'salesforcecli'
     outputs:
       tag: ${{ steps.distTag.outputs.tag }}
     runs-on: ubuntu-latest

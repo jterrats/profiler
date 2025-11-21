@@ -1,12 +1,15 @@
 name: create-github-release
 
+# DISABLED: This workflow requires SVC_CLI_BOT_GITHUB_TOKEN which is only available in Salesforce official repos
+# For manual releases, use: npm version <major|minor|patch> && git push --follow-tags && npm publish
 on:
-  push:
-    branches:
-      - main
-      - prerelease/**
-    tags-ignore:
-      - "*"
+  # Disabled - uncomment to enable
+  # push:
+  #   branches:
+  #     - main
+  #     - prerelease/**
+  #   tags-ignore:
+  #     - "*"
   workflow_dispatch:
     inputs:
       prerelease:
@@ -15,6 +18,8 @@ on:
 
 jobs:
   release:
+    # Check if the required token exists before running
+    if: ${{ secrets.SVC_CLI_BOT_GITHUB_TOKEN != '' }}
     uses: salesforcecli/github-workflows/.github/workflows/create-github-release.yml@main
     secrets:
       SVC_CLI_BOT_GITHUB_TOKEN: ${{ secrets.SVC_CLI_BOT_GITHUB_TOKEN }}
