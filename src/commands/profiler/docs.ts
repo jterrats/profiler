@@ -6,7 +6,7 @@ import { Messages } from '@salesforce/core';
 import { parseStringPromise } from 'xml2js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('profiler', 'profiler.docs');
+const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.docs');
 
 type ProfilePermission = {
   application?: string;
@@ -73,7 +73,11 @@ export default class ProfilerDocs extends SfCommand<void> {
   private projectPath!: string;
 
   // Static methods
-  private static buildMarkdownDocumentation(profileName: string, fileName: string, profile: ProfileMetadata['Profile']): string {
+  private static buildMarkdownDocumentation(
+    profileName: string,
+    fileName: string,
+    profile: ProfileMetadata['Profile']
+  ): string {
     let markdown = `# Profile Documentation: ${profileName}\n\n`;
     markdown += `**File Name:** \`${fileName}\`\n\n`;
 
@@ -192,7 +196,9 @@ export default class ProfilerDocs extends SfCommand<void> {
       const viewAll = obj.viewAllRecords?.[0] ?? 'false';
       const modifyAll = obj.modifyAllRecords?.[0] ?? 'false';
 
-      section += `| ${name} | ${ProfilerDocs.getIcon(create)} | ${ProfilerDocs.getIcon(read)} | ${ProfilerDocs.getIcon(edit)} | ${ProfilerDocs.getIcon(del)} | ${ProfilerDocs.getIcon(viewAll)} | ${ProfilerDocs.getIcon(modifyAll)} |\n`;
+      section += `| ${name} | ${ProfilerDocs.getIcon(create)} | ${ProfilerDocs.getIcon(read)} | ${ProfilerDocs.getIcon(
+        edit
+      )} | ${ProfilerDocs.getIcon(del)} | ${ProfilerDocs.getIcon(viewAll)} | ${ProfilerDocs.getIcon(modifyAll)} |\n`;
     }
 
     section += '\n';
@@ -365,9 +371,7 @@ export default class ProfilerDocs extends SfCommand<void> {
 
     // Generate documentation for each profile
     await Promise.all(
-      profilesToDocument.map((profileFile) =>
-        this.generateProfileDocumentation(profilesPath, profileFile, outputDir)
-      )
+      profilesToDocument.map((profileFile) => this.generateProfileDocumentation(profilesPath, profileFile, outputDir))
     );
 
     this.log(`\n✅ Documentation generated successfully in: ${outputDir}`);
