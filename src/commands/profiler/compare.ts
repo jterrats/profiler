@@ -9,7 +9,7 @@ import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 const execAsync = promisify(exec);
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('profiler', 'profiler.compare');
+const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.compare');
 
 type ProfileComparison = {
   profileName: string;
@@ -181,9 +181,7 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
 
     try {
       const files = await fs.readdir(profilesDir);
-      return files
-        .filter((f) => f.endsWith('.profile-meta.xml'))
-        .map((f) => f.replace('.profile-meta.xml', ''));
+      return files.filter((f) => f.endsWith('.profile-meta.xml')).map((f) => f.replace('.profile-meta.xml', ''));
     } catch (error) {
       return [];
     }
@@ -335,4 +333,3 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
     }
   }
 }
-

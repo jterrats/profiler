@@ -9,7 +9,7 @@ import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 const execAsync = promisify(exec);
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('profiler', 'profiler.retrieve');
+const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.retrieve');
 
 export type ProfilerRetrieveResult = {
   success: boolean;
@@ -143,9 +143,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
           const metadataArray = Array.isArray(metadata) ? metadata : [metadata];
 
           if (metadataArray.length > 0) {
-            const sortedMembers = metadataArray
-              .map((m) => m.fullName)
-              .sort();
+            const sortedMembers = metadataArray.map((m) => m.fullName).sort();
 
             return {
               type: metadataType,
@@ -355,4 +353,3 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     }
   }
 }
-
