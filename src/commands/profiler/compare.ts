@@ -1,5 +1,6 @@
 import { exec } from 'node:child_process';
 import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -121,8 +122,9 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
     const project = await SfProject.resolve();
     this.projectPath = project.getPath();
 
-    // Create temp directory for org versions
-    this.tempDir = path.join(this.projectPath, 'temp-compare');
+    // Create temp directory for org versions in OS temp (not in project)
+    const timestamp = Date.now();
+    this.tempDir = path.join(os.tmpdir(), `profiler-compare-${timestamp}`);
     await fs.mkdir(this.tempDir, { recursive: true });
 
     try {

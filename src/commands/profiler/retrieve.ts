@@ -97,7 +97,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     // Create temporary directories in system temp (not in project)
     const timestamp = Date.now();
     const baseTempDir = path.join(os.tmpdir(), `profiler-${timestamp}`);
-    
+
     // Directory for package.xml
     this.tempDir = path.join(baseTempDir, 'package');
     await fs.mkdir(this.tempDir, { recursive: true });
