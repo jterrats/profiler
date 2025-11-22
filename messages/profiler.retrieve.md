@@ -14,11 +14,11 @@ The target org to retrieve profiles from.
 
 # flags.name.summary
 
-The name of a specific profile to retrieve.
+The name of a specific profile or comma-separated list of profiles to retrieve.
 
 # flags.name.description
 
-When specified, only retrieves the named profile instead of all profiles. The profile name should match exactly (e.g., "Admin", "Standard User").
+When specified, only retrieves the named profile(s) instead of all profiles. You can specify a single profile or multiple profiles separated by commas. Profile names should match exactly (e.g., "Admin", "Standard User", "Admin,Custom Profile,Sales").
 
 # flags.all-fields.summary
 
@@ -54,13 +54,17 @@ When enabled, reads metadata component names from the local project directories 
 
   <%= config.bin %> <%= command.id %> --target-org myOrg --name Admin
 
+- Retrieve multiple profiles:
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg --name "Admin,Custom Profile,Sales Profile"
+
 - Retrieve all profiles with all fields including FLS:
 
   <%= config.bin %> <%= command.id %> --target-org myOrg --all-fields
 
-- Retrieve a specific profile with FLS:
+- Retrieve specific profiles with FLS:
 
-  <%= config.bin %> <%= command.id %> --target-org myOrg --name "Standard User" --all-fields
+  <%= config.bin %> <%= command.id %> --target-org myOrg --name "Admin,Standard User" --all-fields
 
 - Retrieve profiles with a specific API version:
 
@@ -70,9 +74,9 @@ When enabled, reads metadata component names from the local project directories 
 
   <%= config.bin %> <%= command.id %> --target-org myOrg --from-project
 
-- Retrieve a specific profile using local metadata:
+- Retrieve specific profiles using local metadata:
 
-  <%= config.bin %> <%= command.id %> --target-org myOrg --name Admin --from-project
+  <%= config.bin %> <%= command.id %> --target-org myOrg --name "Admin,Sales Profile" --from-project
 
 # info.starting
 
@@ -81,6 +85,10 @@ Starting profile retrieval for org: %s
 # info.starting-with-name
 
 Starting retrieval of profile "%s" for org: %s
+
+# info.starting-with-names
+
+Starting retrieval of %s profiles (%s) for org: %s
 
 # info.listing-metadata
 
@@ -121,3 +129,11 @@ Failed to list metadata for type %s: %s
 # warn.profile-not-found
 
 Profile "%s" not found in org. Skipping profile retrieval.
+
+# warn.profiles-not-found
+
+None of the specified profiles (%s) were found in org. Skipping profile retrieval.
+
+# warn.some-profiles-not-found
+
+Some profiles not found in org: %s
