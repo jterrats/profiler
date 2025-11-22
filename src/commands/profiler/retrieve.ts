@@ -126,11 +126,15 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
 
       this.log(messages.getMessage('info.building-package', [metadataTypes.length.toString()]));
 
-      // Retrieve metadata to temporary directory
+      // Retrieve metadata to project directory
       this.log(messages.getMessage('info.retrieving'));
       await this.retrieveMetadataToTemp(org, packageXmlPath, includeAllFields);
 
-      // Copy only profiles from temp to project
+      // Clean up non-profile metadata
+      this.log('Cleaning up non-profile metadata...');
+      await this.cleanupNonProfileMetadata();
+
+      // Copy processed profiles from temp to project
       this.log('Copying profiles to project...');
       await this.copyProfilesFromTemp();
 
@@ -335,8 +339,8 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
   private async retrieveMetadataToTemp(org: Org, packageXmlPath: string, includeAllFields: boolean): Promise<void> {
     const username = org.getUsername();
 
-    // Build the retrieve command - retrieve to temporary directory
-    const retrieveCmd = `sf project retrieve start --manifest "${packageXmlPath}" --target-org ${username} --target-metadata-dir "${this.tempRetrieveDir}"`;
+    // Retrieve to project (we'll extract profiles later)
+    const retrieveCmd = `sf project retrieve start --manifest "${packageXmlPath}" --target-org ${username}`;
 
     try {
       const { stdout, stderr } = await execAsync(retrieveCmd, {
@@ -354,18 +358,64 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       throw new SfError(`Retrieve failed: ${errorMessage}`);
     }
 
-    // If not including all fields, clean up the retrieved profiles to remove FLS
+    // Copy profiles to temp directory immediately
+    await this.copyProfilesToTemp();
+
+    // If not including all fields, remove FLS from temp profiles
     if (!includeAllFields) {
       await this.removeFieldLevelSecurityInTemp();
     }
   }
 
+  private async copyProfilesToTemp(): Promise<void> {
+    try {
+      const projectProfilesDir = path.join(this.projectPath, 'force-app', 'main', 'default', 'profiles');
+      const tempProfilesDir = path.join(this.tempRetrieveDir, 'profiles');
+
+      // Ensure temp directory exists
+      await fs.mkdir(tempProfilesDir, { recursive: true });
+
+      // Check if profiles directory exists in project
+      try {
+        await fs.access(projectProfilesDir);
+      } catch {
+        this.warn('No profiles directory found after retrieve');
+        return;
+      }
+
+      // Get all profiles from project
+      const profiles = await fs.readdir(projectProfilesDir);
+      const profileFiles = profiles.filter((f) => f.endsWith('.profile-meta.xml'));
+
+      if (profileFiles.length === 0) {
+        this.warn('No profiles found in retrieved metadata');
+        return;
+      }
+
+      // Copy all profiles to temp
+      await Promise.all(
+        profileFiles.map((profile) =>
+          fs.copyFile(path.join(projectProfilesDir, profile), path.join(tempProfilesDir, profile))
+        )
+      );
+
+      this.log(`Backed up ${profileFiles.length} profiles to temp directory`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new SfError(`Failed to backup profiles to temp directory: ${errorMessage}`);
+    }
+  }
+
   private async removeFieldLevelSecurityInTemp(): Promise<void> {
     try {
-      const profilesDir = path.join(this.tempRetrieveDir, 'force-app', 'main', 'default', 'profiles');
+      const profilesDir = path.join(this.tempRetrieveDir, 'profiles');
       const profiles = await fs.readdir(profilesDir);
 
       const profileFiles = profiles.filter((p) => p.endsWith('.profile-meta.xml'));
+
+      if (profileFiles.length === 0) {
+        return;
+      }
 
       // Process all profiles in parallel
       await Promise.all(
@@ -387,9 +437,35 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     }
   }
 
+  private async cleanupNonProfileMetadata(): Promise<void> {
+    try {
+      const defaultDir = path.join(this.projectPath, 'force-app', 'main', 'default');
+
+      // Metadata folders to clean (everything except profiles)
+      const foldersToClean = ['applications', 'classes', 'customPermissions', 'flows', 'layouts', 'objects', 'tabs'];
+
+      // Remove each folder if it exists
+      await Promise.all(
+        foldersToClean.map(async (folder) => {
+          const folderPath = path.join(defaultDir, folder);
+          try {
+            await fs.rm(folderPath, { recursive: true, force: true });
+          } catch {
+            // Ignore if folder doesn't exist
+          }
+        })
+      );
+
+      this.log('Cleaned up non-profile metadata');
+    } catch (error) {
+      // If cleanup fails, warn but don't fail the command
+      this.warn('Could not clean up non-profile metadata');
+    }
+  }
+
   private async copyProfilesFromTemp(): Promise<void> {
     try {
-      const tempProfilesDir = path.join(this.tempRetrieveDir, 'force-app', 'main', 'default', 'profiles');
+      const tempProfilesDir = path.join(this.tempRetrieveDir, 'profiles');
       const projectProfilesDir = path.join(this.projectPath, 'force-app', 'main', 'default', 'profiles');
 
       // Ensure target directory exists
@@ -400,7 +476,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       const profileFiles = profiles.filter((f) => f.endsWith('.profile-meta.xml'));
 
       if (profileFiles.length === 0) {
-        this.warn('No profiles found in retrieved metadata');
+        this.warn('No profiles found in temp directory');
         return;
       }
 
