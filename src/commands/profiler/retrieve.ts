@@ -55,6 +55,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
   private tempDir = '';
   private tempRetrieveDir = '';
   private projectPath = '';
+  private existingFiles: Map<string, Set<string>> = new Map();
 
   public async run(): Promise<ProfilerRetrieveResult> {
     const { flags } = await this.parse(ProfilerRetrieve);
@@ -125,6 +126,9 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       await fs.writeFile(packageXmlPath, packageXmlContent);
 
       this.log(messages.getMessage('info.building-package', [metadataTypes.length.toString()]));
+
+      // Snapshot existing files before retrieve
+      await this.snapshotExistingFiles();
 
       // Retrieve metadata to project directory
       this.log(messages.getMessage('info.retrieving'));
@@ -437,6 +441,35 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     }
   }
 
+  private async snapshotExistingFiles(): Promise<void> {
+    try {
+      const defaultDir = path.join(this.projectPath, 'force-app', 'main', 'default');
+
+      // Metadata folders to track (everything except profiles)
+      const foldersToTrack = ['applications', 'classes', 'customPermissions', 'flows', 'layouts', 'objects', 'tabs'];
+
+      // Snapshot existing files in each folder
+      await Promise.all(
+        foldersToTrack.map(async (folder) => {
+          const folderPath = path.join(defaultDir, folder);
+          try {
+            const files = await fs.readdir(folderPath, { recursive: true });
+            // Store relative paths
+            this.existingFiles.set(folder, new Set(files.filter((f) => typeof f === 'string')));
+          } catch {
+            // Folder doesn't exist yet, that's fine
+            this.existingFiles.set(folder, new Set());
+          }
+        })
+      );
+
+      this.log('Snapshotted existing files');
+    } catch (error) {
+      // If snapshot fails, just continue (we'll skip cleanup)
+      this.warn('Could not snapshot existing files');
+    }
+  }
+
   private async cleanupNonProfileMetadata(): Promise<void> {
     try {
       const defaultDir = path.join(this.projectPath, 'force-app', 'main', 'default');
@@ -444,19 +477,39 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       // Metadata folders to clean (everything except profiles)
       const foldersToClean = ['applications', 'classes', 'customPermissions', 'flows', 'layouts', 'objects', 'tabs'];
 
-      // Remove each folder if it exists
+      // Clean up only NEW files (not existing ones)
       await Promise.all(
         foldersToClean.map(async (folder) => {
           const folderPath = path.join(defaultDir, folder);
+          const existingInFolder = this.existingFiles.get(folder) ?? new Set();
+
           try {
-            await fs.rm(folderPath, { recursive: true, force: true });
+            const currentFiles = await fs.readdir(folderPath, { recursive: true });
+
+            // Delete files that are NEW (not in existing snapshot)
+            await Promise.all(
+              currentFiles
+                .filter((f) => typeof f === 'string' && !existingInFolder.has(f))
+                .map(async (file) => {
+                  const filePath = path.join(folderPath, file);
+                  try {
+                    // Check if it's a file (not a directory)
+                    const stat = await fs.stat(filePath);
+                    if (stat.isFile()) {
+                      await fs.unlink(filePath);
+                    }
+                  } catch {
+                    // Ignore errors for individual files
+                  }
+                })
+            );
           } catch {
-            // Ignore if folder doesn't exist
+            // Folder doesn't exist or can't be read, that's fine
           }
         })
       );
 
-      this.log('Cleaned up non-profile metadata');
+      this.log('Cleaned up newly retrieved non-profile metadata');
     } catch (error) {
       // If cleanup fails, warn but don't fail the command
       this.warn('Could not clean up non-profile metadata');
