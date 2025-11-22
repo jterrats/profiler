@@ -86,7 +86,7 @@ jobs:
 
       - name: Verify plugin installation
         run: |
-          sf plugins | grep profiler
+          sf plugins | grep @jterrats/profiler
           if [ $? -eq 0 ]; then
             echo "✓ Plugin linked successfully"
           else
@@ -101,7 +101,7 @@ jobs:
           sf profiler compare --help
 
       - name: Unlink plugin
-        run: sf plugins unlink profiler
+        run: sf plugins unlink @jterrats/profiler
 
   code-quality:
     name: Code Quality Checks
@@ -187,4 +187,3 @@ jobs:
           else
             echo "❌ **Some checks failed**" >> $GITHUB_STEP_SUMMARY
           fi
-
