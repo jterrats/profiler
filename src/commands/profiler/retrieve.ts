@@ -30,6 +30,11 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       summary: messages.getMessage('flags.target-org.summary'),
       required: true,
     }),
+    name: Flags.string({
+      char: 'n',
+      summary: messages.getMessage('flags.name.summary'),
+      description: messages.getMessage('flags.name.description'),
+    }),
     'all-fields': Flags.boolean({
       summary: messages.getMessage('flags.all-fields.summary'),
       description: messages.getMessage('flags.all-fields.description'),
@@ -54,11 +59,16 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
   public async run(): Promise<ProfilerRetrieveResult> {
     const { flags } = await this.parse(ProfilerRetrieve);
     const org = flags['target-org'];
+    const profileName = flags.name;
     const includeAllFields = flags['all-fields'];
     const fromProject = flags['from-project'];
     const apiVersion = flags['api-version'] ?? (await org.retrieveMaxApiVersion());
 
-    this.log(messages.getMessage('info.starting', [org.getUsername() ?? org.getOrgId()]));
+    if (profileName) {
+      this.log(messages.getMessage('info.starting-with-name', [profileName, org.getUsername() ?? org.getOrgId()]));
+    } else {
+      this.log(messages.getMessage('info.starting', [org.getUsername() ?? org.getOrgId()]));
+    }
 
     // Get project path
     const project = await SfProject.resolve();
@@ -88,8 +98,8 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
 
       // Collect all metadata
       const packageXmlContent = fromProject
-        ? await this.buildPackageXmlFromProject(metadataTypes, apiVersion)
-        : await this.buildPackageXml(org, metadataTypes, apiVersion);
+        ? await this.buildPackageXmlFromProject(metadataTypes, apiVersion, profileName)
+        : await this.buildPackageXml(org, metadataTypes, apiVersion, profileName);
 
       // Write package.xml
       const packageXmlPath = path.join(this.tempDir, 'package.xml');
@@ -139,7 +149,12 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     }
   }
 
-  private async buildPackageXml(org: Org, metadataTypes: string[], apiVersion: string): Promise<string> {
+  private async buildPackageXml(
+    org: Org,
+    metadataTypes: string[],
+    apiVersion: string,
+    profileName?: string
+  ): Promise<string> {
     let packageXml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     packageXml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
 
@@ -156,7 +171,16 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
           const metadataArray = Array.isArray(metadata) ? metadata : [metadata];
 
           if (metadataArray.length > 0) {
-            const sortedMembers = metadataArray.map((m) => m.fullName).sort();
+            let sortedMembers = metadataArray.map((m) => m.fullName).sort();
+
+            // Filter profiles if profileName is specified
+            if (metadataType === 'Profile' && profileName) {
+              sortedMembers = sortedMembers.filter((member) => member === profileName);
+              if (sortedMembers.length === 0) {
+                this.warn(messages.getMessage('warn.profile-not-found', [profileName]));
+                return null;
+              }
+            }
 
             return {
               type: metadataType,
@@ -191,7 +215,11 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     return packageXml;
   }
 
-  private async buildPackageXmlFromProject(metadataTypes: string[], apiVersion: string): Promise<string> {
+  private async buildPackageXmlFromProject(
+    metadataTypes: string[],
+    apiVersion: string,
+    profileName?: string
+  ): Promise<string> {
     let packageXml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     packageXml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
 
@@ -234,6 +262,15 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
             members = files
               .filter((file) => file.endsWith(config.extension))
               .map((file) => file.replace(config.extension, ''));
+          }
+
+          // Filter profiles if profileName is specified
+          if (metadataType === 'Profile' && profileName) {
+            members = members.filter((member) => member === profileName);
+            if (members.length === 0) {
+              this.warn(messages.getMessage('warn.profile-not-found', [profileName]));
+              return null;
+            }
           }
 
           if (members.length > 0) {
