@@ -22,6 +22,7 @@ Please do not create a public GitHub issue for security vulnerabilities.
 Send an email to: **jterrats@example.com** (replace with your actual email)
 
 Include:
+
 - Description of the vulnerability
 - Steps to reproduce
 - Potential impact
@@ -44,6 +45,7 @@ sf plugins update
 ### 2. Verify Installation
 
 Only install from official sources:
+
 ```bash
 sf plugins install @jterrats/profiler
 ```
@@ -51,6 +53,7 @@ sf plugins install @jterrats/profiler
 ### 3. Review Permissions
 
 This plugin requires:
+
 - Read access to Profile metadata
 - Write access to local files
 - Git operations (for restore functionality)
@@ -66,6 +69,7 @@ This plugin requires:
 ### Profile Metadata Access
 
 This plugin:
+
 - ✅ Reads Profile metadata from Salesforce orgs
 - ✅ Writes to local filesystem only
 - ❌ Does NOT send data to external services
@@ -74,6 +78,7 @@ This plugin:
 ### Git Operations
 
 The plugin uses git commands:
+
 - `git checkout` - To restore metadata
 - `git clean` - To clean temporary files
 
@@ -82,6 +87,7 @@ The plugin uses git commands:
 ### Temporary Files
 
 The plugin creates temporary directories:
+
 - `temp/` - For package.xml generation
 - `temp-compare/` - For profile comparison
 - `profile-docs/` - For documentation output
@@ -91,6 +97,7 @@ These are automatically cleaned up and added to `.gitignore`.
 ## Dependency Security
 
 We use:
+
 - ✅ **Dependabot** - Automated dependency updates
 - ✅ **npm audit** - Regular security audits
 - ✅ **Minimal dependencies** - Only trusted Salesforce packages
@@ -100,7 +107,7 @@ We use:
 Currently, this plugin is **not signed by Salesforce**. When installing, you will see:
 
 ```
-? profiler isn't signed by Salesforce. Only install 
+? profiler isn't signed by Salesforce. Only install
 the plugin if you trust its creator.
 ```
 
@@ -127,6 +134,7 @@ This is normal for community plugins. To avoid this prompt in the future, you ca
 ## Security Updates
 
 Security updates will be:
+
 1. Released as patches
 2. Documented in [CHANGELOG.md](CHANGELOG.md)
 3. Announced in release notes
@@ -135,6 +143,7 @@ Security updates will be:
 ## Compliance
 
 This project follows:
+
 - [Node.js Security Best Practices](https://nodejs.org/en/docs/guides/security/)
 - [npm Security Best Practices](https://docs.npmjs.com/packages-and-modules/securing-your-code)
 - [Salesforce Security Guidelines](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_dev2gp_security.htm)
@@ -149,4 +158,3 @@ This project follows:
 ---
 
 **Last Updated**: November 2025
-

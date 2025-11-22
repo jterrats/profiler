@@ -1,5 +1,6 @@
 import { exec } from 'node:child_process';
 import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -47,6 +48,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
   };
 
   private tempDir = '';
+  private tempRetrieveDir = '';
   private projectPath = '';
 
   public async run(): Promise<ProfilerRetrieveResult> {
@@ -62,9 +64,14 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     const project = await SfProject.resolve();
     this.projectPath = project.getPath();
 
-    // Create temp directory
+    // Create temporary directory for package.xml
     this.tempDir = path.join(this.projectPath, 'temp');
     await fs.mkdir(this.tempDir, { recursive: true });
+
+    // Create temporary directory for metadata retrieval (isolated from project)
+    const timestamp = Date.now();
+    this.tempRetrieveDir = path.join(os.tmpdir(), `profiler-retrieve-${timestamp}`);
+    await fs.mkdir(this.tempRetrieveDir, { recursive: true });
 
     try {
       // Define metadata types to retrieve
@@ -90,11 +97,15 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
 
       this.log(messages.getMessage('info.building-package', [metadataTypes.length.toString()]));
 
-      // Retrieve metadata
+      // Retrieve metadata to temporary directory
       this.log(messages.getMessage('info.retrieving'));
-      await this.retrieveMetadata(org, packageXmlPath, includeAllFields);
+      await this.retrieveMetadataToTemp(org, packageXmlPath, includeAllFields);
 
-      // Clean up
+      // Copy only profiles from temp to project
+      this.log('Copying profiles to project...');
+      await this.copyProfilesFromTemp();
+
+      // Clean up both temp directories
       this.log(messages.getMessage('info.cleaning'));
       await this.cleanup();
 
@@ -121,6 +132,8 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
 
       return result;
     } catch (error) {
+      // Cleanup on error
+      await this.cleanup();
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new SfError(messages.getMessage('error.retrieve-failed', [errorMessage]));
     }
@@ -255,11 +268,11 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     return packageXml;
   }
 
-  private async retrieveMetadata(org: Org, packageXmlPath: string, includeAllFields: boolean): Promise<void> {
+  private async retrieveMetadataToTemp(org: Org, packageXmlPath: string, includeAllFields: boolean): Promise<void> {
     const username = org.getUsername();
 
-    // Build the retrieve command
-    const retrieveCmd = `sf project retrieve start --manifest "${packageXmlPath}" --target-org ${username}`;
+    // Build the retrieve command - retrieve to temporary directory
+    const retrieveCmd = `sf project retrieve start --manifest "${packageXmlPath}" --target-org ${username} --target-metadata-dir "${this.tempRetrieveDir}"`;
 
     try {
       const { stdout, stderr } = await execAsync(retrieveCmd, {
@@ -279,16 +292,13 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
 
     // If not including all fields, clean up the retrieved profiles to remove FLS
     if (!includeAllFields) {
-      await this.removeFieldLevelSecurity();
+      await this.removeFieldLevelSecurityInTemp();
     }
-
-    // Clean retrieved metadata to restore original versions from git
-    await this.restoreOriginalMetadata();
   }
 
-  private async removeFieldLevelSecurity(): Promise<void> {
+  private async removeFieldLevelSecurityInTemp(): Promise<void> {
     try {
-      const profilesDir = path.join(this.projectPath, 'force-app', 'main', 'default', 'profiles');
+      const profilesDir = path.join(this.tempRetrieveDir, 'force-app', 'main', 'default', 'profiles');
       const profiles = await fs.readdir(profilesDir);
 
       const profileFiles = profiles.filter((p) => p.endsWith('.profile-meta.xml'));
@@ -305,51 +315,58 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
           await fs.writeFile(profilePath, content);
         })
       );
+
+      this.log(`Removed FLS from ${profileFiles.length} profiles`);
     } catch (error) {
       // If we can't remove FLS, just warn
       this.warn('Could not remove Field Level Security from profiles');
     }
   }
 
-  private async restoreOriginalMetadata(): Promise<void> {
+  private async copyProfilesFromTemp(): Promise<void> {
     try {
-      // Clean untracked files in force-app/
-      await execAsync('git clean -f force-app/', {
-        cwd: this.projectPath,
-      }).catch(() => {
-        // Ignore errors if git clean fails (e.g., not a git repo)
-      });
+      const tempProfilesDir = path.join(this.tempRetrieveDir, 'force-app', 'main', 'default', 'profiles');
+      const projectProfilesDir = path.join(this.projectPath, 'force-app', 'main', 'default', 'profiles');
 
-      // Restore original versions of metadata that we don't want to update
-      const pathsToRestore = [
-        'force-app/main/default/applications/',
-        'force-app/main/default/classes/',
-        'force-app/main/default/flows/',
-        'force-app/main/default/layouts/',
-        'force-app/main/default/objects/',
-      ];
+      // Ensure target directory exists
+      await fs.mkdir(projectProfilesDir, { recursive: true });
 
-      // Restore all paths in parallel
+      // Get all profiles from temp directory
+      const profiles = await fs.readdir(tempProfilesDir);
+      const profileFiles = profiles.filter((f) => f.endsWith('.profile-meta.xml'));
+
+      if (profileFiles.length === 0) {
+        this.warn('No profiles found in retrieved metadata');
+        return;
+      }
+
+      // Copy all profiles in parallel
       await Promise.all(
-        pathsToRestore.map((metadataPath) =>
-          execAsync(`git checkout -- ${metadataPath}`, {
-            cwd: this.projectPath,
-          }).catch(() => {
-            // Ignore errors if checkout fails (e.g., path doesn't exist or not in git)
-          })
+        profileFiles.map((profile) =>
+          fs.copyFile(path.join(tempProfilesDir, profile), path.join(projectProfilesDir, profile))
         )
       );
+
+      this.log(`Copied ${profileFiles.length} profiles to project`);
     } catch (error) {
-      // If git operations fail, just warn - this is not critical
-      this.warn('Could not restore original metadata from git. This is normal if not using git.');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new SfError(`Failed to copy profiles from temp directory: ${errorMessage}`);
     }
   }
 
   private async cleanup(): Promise<void> {
+    // Clean up package.xml temp directory
     try {
       await fs.rm(this.tempDir, { recursive: true, force: true });
     } catch (error) {
       this.warn('Could not remove temp directory');
+    }
+
+    // Clean up temporary retrieve directory
+    try {
+      await fs.rm(this.tempRetrieveDir, { recursive: true, force: true });
+    } catch (error) {
+      this.warn('Could not remove temporary retrieve directory');
     }
   }
 }
