@@ -4,7 +4,9 @@ Retrieve Profile metadata with all required dependencies.
 
 # description
 
-The profiler retrieve command retrieves Profile metadata along with all its dependencies from the target org, including Apex Classes, Custom Applications, Custom Objects, Custom Permissions, Custom Tabs, Flows, and Layouts. Use the --all-fields flag to include Field Level Security (FLS) permissions.
+The profiler retrieve command safely retrieves Profile metadata along with all its dependencies from the target org, including Apex Classes, Custom Applications, Custom Objects, Custom Permissions, Custom Tabs, Flows, and Layouts. Use the --all-fields flag to include Field Level Security (FLS) permissions.
+
+IMPORTANT: This command uses a temporary directory for all retrieval operations, ensuring your local uncommitted changes are NEVER overwritten. Only profile files are copied to your project - all other metadata remains untouched. No git operations are required.
 
 # flags.target-org.summary
 
@@ -95,4 +97,3 @@ A target org must be specified. Use --target-org flag.
 # error.metadata-list-failed
 
 Failed to list metadata for type %s: %s
-

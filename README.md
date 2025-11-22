@@ -9,11 +9,13 @@
 The Profiler plugin is an essential Salesforce CLI extension engineered to guarantee complete retrieval and comparison of Profile metadata with all required dependencies. This plugin automates profile operations including:
 
 **Supported Operations**:
+
 - 🔄 Retrieve profiles with all dependencies
 - 🔍 Compare local vs org profile versions
 - 📊 Line-by-line difference analysis
 
 **Retrieved Metadata Types**:
+
 - Apex Classes
 - Custom Applications
 - Custom Objects
@@ -24,11 +26,13 @@ The Profiler plugin is an essential Salesforce CLI extension engineered to guara
 - Profiles
 
 **Key Features**:
-- Field Level Security (FLS) control
-- Git integration for selective updates
-- Cross-platform compatibility
-- Parallel metadata processing
-- Comprehensive error handling
+
+- ✅ **Safe retrieval** - Uses temporary directories, never overwrites local changes
+- 🔒 Field Level Security (FLS) control
+- 🚀 No git operations required
+- ⚡ Cross-platform compatibility
+- 🔄 Parallel metadata processing
+- 🛡️ Comprehensive error handling
 
 ## ⚠️ Important Context: Profiles vs Permission Sets
 
@@ -139,9 +143,13 @@ GLOBAL FLAGS
   --json  Format output as json.
 
 DESCRIPTION
-  The profiler retrieve command retrieves Profile metadata along with all its dependencies from the target org,
+  The profiler retrieve command safely retrieves Profile metadata along with all its dependencies from the target org,
   including Apex Classes, Custom Applications, Custom Objects, Custom Permissions, Custom Tabs, Flows, and Layouts.
   Use the --all-fields flag to include Field Level Security (FLS) permissions.
+
+  IMPORTANT: This command uses a temporary directory for all retrieval operations, ensuring your local uncommitted
+  changes are NEVER overwritten. Only profile files are copied to your project - all other metadata remains
+  untouched. No git operations are required.
 
 EXAMPLES
   Retrieve profiles with metadata (without FLS):
@@ -247,4 +255,3 @@ EXAMPLES
 ```
 
 <!-- commandsstop -->
-

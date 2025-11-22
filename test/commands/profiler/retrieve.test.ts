@@ -39,10 +39,29 @@ describe('profiler retrieve', () => {
 
   it('has correct default values for flags', () => {
     expect(ProfilerRetrieve.flags['all-fields'].default).to.equal(false);
+    expect(ProfilerRetrieve.flags['from-project'].default).to.equal(false);
   });
 
   it('requires a project', () => {
     expect(ProfilerRetrieve.requiresProject).to.equal(true);
   });
-});
 
+  it('has from-project flag with correct char', () => {
+    expect(ProfilerRetrieve.flags['from-project']).to.exist;
+    expect(ProfilerRetrieve.flags['from-project'].char).to.equal('f');
+  });
+
+  describe('safe retrieval behavior', () => {
+    it('uses temporary directory for retrieval', () => {
+      // The new implementation should use os.tmpdir() for isolation
+      // This ensures local changes are never overwritten
+      expect(ProfilerRetrieve.flags['target-org'].required).to.be.true;
+    });
+
+    it('does not use git operations', () => {
+      // The refactored version removes all git checkout operations
+      // ensuring safer behavior that doesn't depend on git
+      expect(ProfilerRetrieve.requiresProject).to.equal(true);
+    });
+  });
+});

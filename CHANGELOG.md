@@ -1,171 +1,124 @@
 # Changelog
 
-All notable changes to the Profiler plugin will be documented in this file.
+All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - TBD
 
-## [1.0.0] - 2024-01-XX
+### ⚠️ Breaking Changes
 
-### Added
+#### Changed: Safe Retrieval using Temporary Directories
 
-#### Core Features
-- Initial release of the Profiler plugin for Salesforce CLI
-- Command `sf profiler retrieve` to retrieve Profile metadata with dependencies
-- Automatic retrieval of all profile dependencies:
-  - Apex Classes
-  - Custom Applications
-  - Custom Objects
-  - Custom Permissions
-  - Custom Tabs
-  - Flows
-  - Layouts
-  - Profiles
+The `retrieve` command has been completely refactored to prioritize **safety** and **reliability**:
 
-#### Flags and Options
-- `--target-org` flag to specify target Salesforce org (required)
-- `--all-fields` flag to include Field Level Security in retrieved profiles
-- `--api-version` flag to override the API version for metadata operations
-- `--json` flag for structured output
+**What Changed:**
 
-#### Smart Features
-- Automatic Field Level Security (FLS) removal when `--all-fields` is not specified
-- Smart metadata restoration from Git to preserve existing metadata
-- Automatic cleanup of temporary files
-- Progress logging throughout the operation
+- ❌ **REMOVED**: `git checkout --` operations that could overwrite local changes
+- ❌ **REMOVED**: `git clean` operations
+- ✅ **NEW**: All metadata is retrieved to an isolated temporary directory
+- ✅ **NEW**: Only profiles are copied from temp to your project
+- ✅ **NEW**: Your local uncommitted changes are NEVER touched
 
-#### Developer Experience
-- Comprehensive error handling with clear error messages
-- Warnings for non-critical operations
-- Project validation to ensure command runs in valid Salesforce project
-- TypeScript implementation with full type safety
+**Why This Matters:**
 
-#### Documentation
-- Complete README with installation and usage instructions
-- USAGE.md with detailed usage guide and best practices
-- FEATURES.md documenting all features and comparisons
-- Examples directory with:
-  - CI/CD bash script example
-  - GitHub Actions workflow example
-  - Multiple CI/CD platform examples
-- Comprehensive inline code documentation
+The previous implementation used `git checkout --` to restore non-profile metadata after retrieval. While functional, this approach had a critical flaw:
 
-#### Testing
-- Unit tests for command functionality
-- Integration tests (NUT tests) for end-to-end validation
-- Test coverage for critical paths
+```bash
+# OLD BEHAVIOR (DANGEROUS)
+sf profiler retrieve --target-org myOrg
+# 1. Retrieves ALL metadata to project
+# 2. Uses git checkout -- to restore non-profile files
+# 3. 💥 OVERWRITES any uncommitted local changes!
+```
 
-#### Development Tools
-- Configured linting with ESLint
-- Code formatting with Prettier
-- Git hooks with Husky
-- Conventional commits with commitlint
-- TypeScript compilation
-- Automated build pipeline with wireit
+```bash
+# NEW BEHAVIOR (SAFE)
+sf profiler retrieve --target-org myOrg
+# 1. Retrieves ALL metadata to /tmp/profiler-retrieve-{timestamp}/
+# 2. Processes profiles in temp directory
+# 3. Copies ONLY profiles to project
+# 4. ✅ Local changes preserved!
+# 5. ✅ No git operations!
+```
 
-### Changed
-- Converted original bash script (`fetchProfiles.sh`) to TypeScript plugin
-- Replaced `sfdx` commands with modern `sf` CLI commands
-- Improved error handling compared to shell script
-- Enhanced logging and user feedback
+**Benefits:**
 
-### Technical Details
-
-#### Dependencies
-- `@oclif/core`: ^4 - CLI framework
-- `@salesforce/core`: ^8 - Core Salesforce functionality
-- `@salesforce/sf-plugins-core`: ^12 - Plugin framework
-
-#### Node.js Support
-- Requires Node.js >= 18.0.0
-- Tested on Node.js 18.x and 20.x
-
-#### Platform Support
-- Windows (native support)
-- macOS (native support)
-- Linux (native support)
+| Aspect             | Before (v1.x)               | After (v2.0)                   |
+| ------------------ | --------------------------- | ------------------------------ |
+| **Safety**         | ❌ Could lose local changes | ✅ Preserves all local changes |
+| **Git Required**   | ⚠️ Yes                      | ✅ No                          |
+| **Files Modified** | ⚠️ All metadata types       | ✅ Only profiles               |
+| **Predictability** | ⚠️ Git-dependent            | ✅ Always consistent           |
+| **Performance**    | ⚠️ Multiple git operations  | ✅ Faster, no git ops          |
 
 ### Migration Guide
 
-For users of the original `fetchProfiles.sh` script:
+**No action required!** The new behavior is safer and more predictable.
 
-**Old Command (Shell Script):**
+**However, if you relied on `git checkout` restoring other metadata types:**
+
+The old implementation had a side effect where it would restore non-profile metadata from git after retrieval. If your workflow depended on this behavior, you'll need to adjust.
+
+**Old workflow that no longer applies:**
+
 ```bash
-./fetchProfiles.sh
+# This used to also restore any modified classes/objects from git
+sf profiler retrieve --target-org myOrg
 ```
 
-**New Command (Plugin):**
+**New equivalent:**
+
 ```bash
-sf profiler retrieve --target-org your-org
+# Now only profiles are updated
+sf profiler retrieve --target-org myOrg
+
+# If you want to restore other metadata, do it explicitly:
+git checkout -- force-app/main/default/classes/
+git checkout -- force-app/main/default/objects/
 ```
-
-**Key Differences:**
-1. No need to set `TARGET_ORG` environment variable - use `--target-org` flag
-2. FLS control available with `--all-fields` flag
-3. API version can be specified with `--api-version` flag
-4. JSON output available with `--json` flag
-5. Works on all platforms (not just Unix-based systems)
-
-## [0.1.0] - Development
 
 ### Added
-- Initial project setup
-- Basic command structure
-- Development environment configuration
+
+- **Safe retrieval**: Temporary directory isolation prevents local file overwrites
+- **Better error handling**: Cleanup happens even on errors
+- **Clearer logging**: Shows when profiles are being copied and from where
+
+### Removed
+
+- `restoreOriginalMetadata()` method (used dangerous `git checkout --`)
+- All git operations from retrieve flow
+- Dependency on git repository
+
+### Technical Details
+
+**Temporary Directory Structure:**
+
+```
+/tmp/profiler-retrieve-{timestamp}/
+└── force-app/
+    └── main/
+        └── default/
+            ├── profiles/          # ✅ Copied to project
+            ├── classes/           # ❌ Discarded
+            ├── objects/           # ❌ Discarded
+            └── ...                # ❌ Discarded
+```
+
+**Error Handling:**
+The new implementation ensures cleanup happens even if errors occur during retrieval or processing.
 
 ---
 
-## Version History
+## [1.0.0] - 2024-11-22
 
-- **1.0.0**: First stable release with full feature set
-- **0.1.0**: Development version
+### Added
 
-## Upgrade Instructions
-
-### From Shell Script to Plugin
-
-1. Install the plugin:
-   ```bash
-   sf plugins install profiler
-   ```
-
-2. Update your scripts:
-   ```bash
-   # Replace this:
-   ./fetchProfiles.sh
-
-   # With this:
-   sf profiler retrieve --target-org $TARGET_ORG
-   ```
-
-3. Update CI/CD pipelines using the examples in the `examples/` directory
-
-### Future Upgrades
-
-To upgrade to the latest version:
-```bash
-sf plugins update profiler
-```
-
-## Support
-
-For issues, questions, or contributions:
-- GitHub Issues: [Create an issue](https://github.com/yourusername/profiler/issues)
-- Email: jaime.terrats@example.com
-
-## License
-
-BSD-3-Clause - see [LICENSE](LICENSE.txt) for details
-
-## Contributors
-
-- Jaime Terrats - Initial work and maintenance
-
-## Acknowledgments
-
-- Original shell script served as the foundation for this plugin
-- Salesforce CLI team for the plugin framework
-- Community feedback and contributions
-
+- Initial release of `@jterrats/profiler`
+- `profiler retrieve` command with `--all-fields` and `--from-project` flags
+- `profiler compare` command for local vs org profile comparison
+- `profiler docs` command to generate Markdown documentation
+- Complete test suite
+- GitHub Actions CI/CD
+- Documentation site with GitHub Pages
