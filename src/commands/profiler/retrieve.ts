@@ -64,8 +64,27 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     const fromProject = flags['from-project'];
     const apiVersion = flags['api-version'] ?? (await org.retrieveMaxApiVersion());
 
-    if (profileName) {
-      this.log(messages.getMessage('info.starting-with-name', [profileName, org.getUsername() ?? org.getOrgId()]));
+    // Parse profile names (comma-separated)
+    const profileNames = profileName
+      ? profileName
+          .split(',')
+          .map((name) => name.trim())
+          .filter((name) => name.length > 0)
+      : undefined;
+
+    if (profileNames && profileNames.length > 0) {
+      const profileList = profileNames.join(', ');
+      if (profileNames.length === 1) {
+        this.log(messages.getMessage('info.starting-with-name', [profileList, org.getUsername() ?? org.getOrgId()]));
+      } else {
+        this.log(
+          messages.getMessage('info.starting-with-names', [
+            profileNames.length.toString(),
+            profileList,
+            org.getUsername() ?? org.getOrgId(),
+          ])
+        );
+      }
     } else {
       this.log(messages.getMessage('info.starting', [org.getUsername() ?? org.getOrgId()]));
     }
@@ -98,8 +117,8 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
 
       // Collect all metadata
       const packageXmlContent = fromProject
-        ? await this.buildPackageXmlFromProject(metadataTypes, apiVersion, profileName)
-        : await this.buildPackageXml(org, metadataTypes, apiVersion, profileName);
+        ? await this.buildPackageXmlFromProject(metadataTypes, apiVersion, profileNames)
+        : await this.buildPackageXml(org, metadataTypes, apiVersion, profileNames);
 
       // Write package.xml
       const packageXmlPath = path.join(this.tempDir, 'package.xml');
@@ -153,7 +172,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     org: Org,
     metadataTypes: string[],
     apiVersion: string,
-    profileName?: string
+    profileNames?: string[]
   ): Promise<string> {
     let packageXml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     packageXml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
@@ -173,12 +192,16 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
           if (metadataArray.length > 0) {
             let sortedMembers = metadataArray.map((m) => m.fullName).sort();
 
-            // Filter profiles if profileName is specified
-            if (metadataType === 'Profile' && profileName) {
-              sortedMembers = sortedMembers.filter((member) => member === profileName);
+            // Filter profiles if profileNames is specified
+            if (metadataType === 'Profile' && profileNames && profileNames.length > 0) {
+              sortedMembers = sortedMembers.filter((member) => profileNames.includes(member));
               if (sortedMembers.length === 0) {
-                this.warn(messages.getMessage('warn.profile-not-found', [profileName]));
+                this.warn(messages.getMessage('warn.profiles-not-found', [profileNames.join(', ')]));
                 return null;
+              } else if (sortedMembers.length < profileNames.length) {
+                // Some profiles were not found
+                const notFound = profileNames.filter((name) => !sortedMembers.includes(name));
+                this.warn(messages.getMessage('warn.some-profiles-not-found', [notFound.join(', ')]));
               }
             }
 
@@ -218,7 +241,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
   private async buildPackageXmlFromProject(
     metadataTypes: string[],
     apiVersion: string,
-    profileName?: string
+    profileNames?: string[]
   ): Promise<string> {
     let packageXml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     packageXml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
@@ -264,12 +287,16 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
               .map((file) => file.replace(config.extension, ''));
           }
 
-          // Filter profiles if profileName is specified
-          if (metadataType === 'Profile' && profileName) {
-            members = members.filter((member) => member === profileName);
+          // Filter profiles if profileNames is specified
+          if (metadataType === 'Profile' && profileNames && profileNames.length > 0) {
+            members = members.filter((member) => profileNames.includes(member));
             if (members.length === 0) {
-              this.warn(messages.getMessage('warn.profile-not-found', [profileName]));
+              this.warn(messages.getMessage('warn.profiles-not-found', [profileNames.join(', ')]));
               return null;
+            } else if (members.length < profileNames.length) {
+              // Some profiles were not found
+              const notFound = profileNames.filter((name) => !members.includes(name));
+              this.warn(messages.getMessage('warn.some-profiles-not-found', [notFound.join(', ')]));
             }
           }
 
