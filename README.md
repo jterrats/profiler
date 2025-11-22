@@ -64,7 +64,11 @@ Complete documentation is available in the [`docs/`](docs/) directory:
 ## Install
 
 ```bash
-sf plugins install @jterrats/profiler@x.y.z
+# Install latest version
+sf plugins install @jterrats/profiler
+
+# Or install a specific version
+sf plugins install @jterrats/profiler@2.0.0
 ```
 
 ## Issues

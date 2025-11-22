@@ -14,12 +14,14 @@ title: Home
 The Profiler plugin is an essential Salesforce CLI extension engineered to guarantee complete retrieval and comparison of Profile metadata with all required dependencies. This plugin automates profile operations including:
 
 **Supported Operations**:
+
 - 🔄 Retrieve profiles with all dependencies
 - 🔍 Compare local vs org profile versions
 - 📊 Line-by-line difference analysis
 - 📄 Generate comprehensive markdown documentation
 
 **Retrieved Metadata Types**:
+
 - Apex Classes
 - Custom Applications
 - Custom Objects
@@ -30,6 +32,7 @@ The Profiler plugin is an essential Salesforce CLI extension engineered to guara
 - Profiles
 
 **Key Features**:
+
 - Field Level Security (FLS) control
 - Git integration for selective updates
 - Cross-platform compatibility
@@ -64,7 +67,11 @@ Complete documentation is available in the navigation menu above or in the [`doc
 ## Install
 
 ```bash
-sf plugins install @jterrats/profiler@x.y.z
+# Install latest version
+sf plugins install @jterrats/profiler
+
+# Or install a specific version
+sf plugins install @jterrats/profiler@2.0.0
 ```
 
 ## Commands
@@ -142,4 +149,3 @@ This project is licensed under the BSD 3-Clause License - see the [LICENSE.txt](
 **Documentation Site**: [https://jterrats.github.io/profiler](https://jterrats.github.io/profiler)
 **GitHub Repository**: [https://github.com/jterrats/profiler](https://github.com/jterrats/profiler)
 **npm Package**: `sf plugins install profiler`
-
