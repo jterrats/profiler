@@ -74,54 +74,67 @@ sf plugins install @jterrats/profiler@2.0.0
 
 ## Issues
 
-Please report any issues at https://github.com/forcedotcom/cli/issues
+Please report any issues at https://github.com/jterrats/profiler/issues
 
 ## Contributing
 
-1. Please read our [Code of Conduct](CODE_OF_CONDUCT.md)
-2. Create a new issue before starting your project so that we can keep track of
-   what you are trying to add/fix. That way, we can also offer suggestions or
-   let you know if there is already an effort in progress.
-3. Fork this repository.
-4. [Build the plugin locally](#build)
-5. Create a _topic_ branch in your fork. Note, this step is recommended but technically not required if contributing using a fork.
-6. Edit the code in your fork.
-7. Write appropriate tests for your changes. Try to achieve at least 95% code coverage on any new code. No pull request will be accepted without unit tests.
-8. Sign CLA (see [CLA](#cla) below).
-9. Send us a pull request when you are done. We'll review your code, suggest any needed changes, and merge it in.
+Contributions are welcome! Please follow these steps:
 
-### CLA
+1. **Read the [Code of Conduct](CODE_OF_CONDUCT.md)**
+2. **Create an issue** before starting work to discuss your proposed changes
+3. **Fork this repository**
+4. **Create a feature branch** from `main`
+5. **Make your changes** with appropriate tests (aim for 95% code coverage)
+6. **Ensure all tests pass**: `yarn test`
+7. **Ensure linting passes**: `yarn lint`
+8. **Submit a pull request** with a clear description of your changes
 
-External contributors will be required to sign a Contributor's License
-Agreement. You can do so by going to https://cla.salesforce.com/sign-cla.
+For detailed development instructions, see [CONTRIBUTING.md](CONTRIBUTING.md)
 
-### Build
+## Build
 
 To build the plugin locally, make sure to have yarn installed and run the following commands:
 
 ```bash
 # Clone the repository
-git clone git@github.com:salesforcecli/profiler
+git clone git@github.com:jterrats/profiler.git
+cd profiler
 
-# Install the dependencies and compile
-yarn && yarn build
+# Install dependencies and compile
+yarn install
+yarn build
 ```
 
-To use your plugin, run using the local `./bin/dev` or `./bin/dev.cmd` file.
+### Local Development
+
+You can link the plugin to your Salesforce CLI for local testing:
 
 ```bash
-# Run using local run file.
-./bin/dev hello world
-```
-
-There should be no differences when running via the Salesforce CLI or using the local run file. However, it can be useful to link the plugin to do some additional testing or run your commands from anywhere on your machine.
-
-```bash
-# Link your plugin to the sf cli
+# Link your plugin to the sf CLI
 sf plugins link .
-# To verify
-sf plugins
+
+# Verify the plugin is linked
+sf plugins | grep profiler
+
+# Test commands
+sf profiler --help
+sf profiler retrieve --help
 ```
+
+### Running Tests
+
+```bash
+# Run all tests with coverage
+yarn test
+
+# Run tests only (no coverage)
+yarn test:only
+
+# Run linting
+yarn lint
+```
+
+For more details, see [Testing and Publishing Guide](docs/development/testing-and-publishing.md)
 
 ## Commands
 
