@@ -55,7 +55,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
   private tempDir = '';
   private tempRetrieveDir = '';
   private projectPath = '';
-  private existingFiles: Map<string, Set<string>> = new Map();
+  private backupDir = '';
 
   public async run(): Promise<ProfilerRetrieveResult> {
     const { flags } = await this.parse(ProfilerRetrieve);
@@ -94,14 +94,21 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     const project = await SfProject.resolve();
     this.projectPath = project.getPath();
 
-    // Create temporary directory for package.xml
-    this.tempDir = path.join(this.projectPath, 'temp');
+    // Create temporary directories in system temp (not in project)
+    const timestamp = Date.now();
+    const baseTempDir = path.join(os.tmpdir(), `profiler-${timestamp}`);
+    
+    // Directory for package.xml
+    this.tempDir = path.join(baseTempDir, 'package');
     await fs.mkdir(this.tempDir, { recursive: true });
 
-    // Create temporary directory for metadata retrieval (isolated from project)
-    const timestamp = Date.now();
-    this.tempRetrieveDir = path.join(os.tmpdir(), `profiler-retrieve-${timestamp}`);
+    // Directory for metadata processing
+    this.tempRetrieveDir = path.join(baseTempDir, 'profiles');
     await fs.mkdir(this.tempRetrieveDir, { recursive: true });
+
+    // Directory for force-app backup
+    this.backupDir = path.join(baseTempDir, 'backup');
+    await fs.mkdir(this.backupDir, { recursive: true });
 
     try {
       // Define metadata types to retrieve
@@ -127,20 +134,17 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
 
       this.log(messages.getMessage('info.building-package', [metadataTypes.length.toString()]));
 
-      // Snapshot existing files before retrieve
-      await this.snapshotExistingFiles();
+      // Backup entire force-app directory before retrieve
+      this.log('Creating backup of your local metadata...');
+      await this.backupForceApp();
 
       // Retrieve metadata to project directory
       this.log(messages.getMessage('info.retrieving'));
       await this.retrieveMetadataToTemp(org, packageXmlPath, includeAllFields);
 
-      // Clean up non-profile metadata
-      this.log('Cleaning up non-profile metadata...');
-      await this.cleanupNonProfileMetadata();
-
-      // Copy processed profiles from temp to project
-      this.log('Copying profiles to project...');
-      await this.copyProfilesFromTemp();
+      // Restore everything except profiles
+      this.log('Restoring your original metadata...');
+      await this.restoreForceAppExceptProfiles();
 
       // Clean up both temp directories
       this.log(messages.getMessage('info.cleaning'));
@@ -441,78 +445,55 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     }
   }
 
-  private async snapshotExistingFiles(): Promise<void> {
+  private async backupForceApp(): Promise<void> {
     try {
-      const defaultDir = path.join(this.projectPath, 'force-app', 'main', 'default');
+      const forceAppSource = path.join(this.projectPath, 'force-app');
+      const forceAppBackup = path.join(this.backupDir, 'force-app');
 
-      // Metadata folders to track (everything except profiles)
-      const foldersToTrack = ['applications', 'classes', 'customPermissions', 'flows', 'layouts', 'objects', 'tabs'];
+      // Check if force-app exists
+      try {
+        await fs.access(forceAppSource);
+      } catch {
+        this.log('No force-app directory found, skipping backup');
+        return;
+      }
 
-      // Snapshot existing files in each folder
-      await Promise.all(
-        foldersToTrack.map(async (folder) => {
-          const folderPath = path.join(defaultDir, folder);
-          try {
-            const files = await fs.readdir(folderPath, { recursive: true });
-            // Store relative paths
-            this.existingFiles.set(folder, new Set(files.filter((f) => typeof f === 'string')));
-          } catch {
-            // Folder doesn't exist yet, that's fine
-            this.existingFiles.set(folder, new Set());
-          }
-        })
-      );
+      // Copy entire force-app directory to backup
+      await fs.cp(forceAppSource, forceAppBackup, { recursive: true });
 
-      this.log('Snapshotted existing files');
+      this.log('Backup created successfully');
     } catch (error) {
-      // If snapshot fails, just continue (we'll skip cleanup)
-      this.warn('Could not snapshot existing files');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new SfError(`Failed to create backup: ${errorMessage}`);
     }
   }
 
-  private async cleanupNonProfileMetadata(): Promise<void> {
+  private async restoreForceAppExceptProfiles(): Promise<void> {
     try {
-      const defaultDir = path.join(this.projectPath, 'force-app', 'main', 'default');
+      const forceAppBackup = path.join(this.backupDir, 'force-app');
+      const forceAppProject = path.join(this.projectPath, 'force-app');
 
-      // Metadata folders to clean (everything except profiles)
-      const foldersToClean = ['applications', 'classes', 'customPermissions', 'flows', 'layouts', 'objects', 'tabs'];
+      // Check if backup exists
+      try {
+        await fs.access(forceAppBackup);
+      } catch {
+        this.warn('No backup found, skipping restore');
+        return;
+      }
 
-      // Clean up only NEW files (not existing ones)
-      await Promise.all(
-        foldersToClean.map(async (folder) => {
-          const folderPath = path.join(defaultDir, folder);
-          const existingInFolder = this.existingFiles.get(folder) ?? new Set();
+      // Remove current force-app
+      await fs.rm(forceAppProject, { recursive: true, force: true });
 
-          try {
-            const currentFiles = await fs.readdir(folderPath, { recursive: true });
+      // Restore from backup
+      await fs.cp(forceAppBackup, forceAppProject, { recursive: true });
 
-            // Delete files that are NEW (not in existing snapshot)
-            await Promise.all(
-              currentFiles
-                .filter((f) => typeof f === 'string' && !existingInFolder.has(f))
-                .map(async (file) => {
-                  const filePath = path.join(folderPath, file);
-                  try {
-                    // Check if it's a file (not a directory)
-                    const stat = await fs.stat(filePath);
-                    if (stat.isFile()) {
-                      await fs.unlink(filePath);
-                    }
-                  } catch {
-                    // Ignore errors for individual files
-                  }
-                })
-            );
-          } catch {
-            // Folder doesn't exist or can't be read, that's fine
-          }
-        })
-      );
+      // Now copy the newly retrieved profiles back
+      await this.copyProfilesFromTemp();
 
-      this.log('Cleaned up newly retrieved non-profile metadata');
+      this.log('Original metadata restored, profiles updated');
     } catch (error) {
-      // If cleanup fails, warn but don't fail the command
-      this.warn('Could not clean up non-profile metadata');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new SfError(`Failed to restore from backup: ${errorMessage}`);
     }
   }
 
@@ -548,18 +529,12 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
   }
 
   private async cleanup(): Promise<void> {
-    // Clean up package.xml temp directory
+    // Clean up entire temp directory tree (includes package, profiles, and backup)
     try {
-      await fs.rm(this.tempDir, { recursive: true, force: true });
+      const baseTempDir = path.dirname(this.tempDir);
+      await fs.rm(baseTempDir, { recursive: true, force: true });
     } catch (error) {
-      this.warn('Could not remove temp directory');
-    }
-
-    // Clean up temporary retrieve directory
-    try {
-      await fs.rm(this.tempRetrieveDir, { recursive: true, force: true });
-    } catch (error) {
-      this.warn('Could not remove temporary retrieve directory');
+      this.warn('Could not remove temporary directories');
     }
   }
 }

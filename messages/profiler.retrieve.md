@@ -6,7 +6,7 @@ Retrieve Profile metadata with all required dependencies.
 
 The profiler retrieve command safely retrieves Profile metadata along with all its dependencies from the target org, including Apex Classes, Custom Applications, Custom Objects, Custom Permissions, Custom Tabs, Flows, and Layouts. Use the --all-fields flag to include Field Level Security (FLS) permissions.
 
-IMPORTANT: This command uses a temporary directory for all retrieval operations, ensuring your local uncommitted changes are NEVER overwritten. Only profile files are copied to your project - all other metadata remains untouched. No git operations are required.
+IMPORTANT: This command uses system temporary directories (outside your project) for all retrieval operations, ensuring your local uncommitted changes are NEVER overwritten. Only profile files are copied to your project - all other metadata remains untouched. No git operations are required and no temporary files are created in your project directory.
 
 # flags.target-org.summary
 
