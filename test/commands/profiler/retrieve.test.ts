@@ -33,6 +33,7 @@ describe('profiler retrieve', () => {
     // This test would need proper mocking of the org connection and file system
     // For now, we'll just verify the command structure
     expect(ProfilerRetrieve.flags['target-org']).to.exist;
+    expect(ProfilerRetrieve.flags.name).to.exist;
     expect(ProfilerRetrieve.flags['all-fields']).to.exist;
     expect(ProfilerRetrieve.flags['api-version']).to.exist;
   });
@@ -49,6 +50,11 @@ describe('profiler retrieve', () => {
   it('has from-project flag with correct char', () => {
     expect(ProfilerRetrieve.flags['from-project']).to.exist;
     expect(ProfilerRetrieve.flags['from-project'].char).to.equal('f');
+  });
+
+  it('has name flag with correct char', () => {
+    expect(ProfilerRetrieve.flags.name).to.exist;
+    expect(ProfilerRetrieve.flags.name.char).to.equal('n');
   });
 
   describe('safe retrieval behavior', () => {

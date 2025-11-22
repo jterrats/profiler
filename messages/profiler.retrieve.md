@@ -12,6 +12,14 @@ IMPORTANT: This command uses a temporary directory for all retrieval operations,
 
 The target org to retrieve profiles from.
 
+# flags.name.summary
+
+The name of a specific profile to retrieve.
+
+# flags.name.description
+
+When specified, only retrieves the named profile instead of all profiles. The profile name should match exactly (e.g., "Admin", "Standard User").
+
 # flags.all-fields.summary
 
 Include Field Level Security (FLS) in the retrieved profiles.
@@ -38,13 +46,21 @@ When enabled, reads metadata component names from the local project directories 
 
 # examples
 
-- Retrieve profiles with metadata (without FLS):
+- Retrieve all profiles with metadata (without FLS):
 
   <%= config.bin %> <%= command.id %> --target-org myOrg
 
-- Retrieve profiles with all fields including FLS:
+- Retrieve a specific profile:
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg --name Admin
+
+- Retrieve all profiles with all fields including FLS:
 
   <%= config.bin %> <%= command.id %> --target-org myOrg --all-fields
+
+- Retrieve a specific profile with FLS:
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg --name "Standard User" --all-fields
 
 - Retrieve profiles with a specific API version:
 
@@ -54,13 +70,17 @@ When enabled, reads metadata component names from the local project directories 
 
   <%= config.bin %> <%= command.id %> --target-org myOrg --from-project
 
-- Retrieve using local metadata with all fields:
+- Retrieve a specific profile using local metadata:
 
-  <%= config.bin %> <%= command.id %> --target-org myOrg --from-project --all-fields
+  <%= config.bin %> <%= command.id %> --target-org myOrg --name Admin --from-project
 
 # info.starting
 
 Starting profile retrieval for org: %s
+
+# info.starting-with-name
+
+Starting retrieval of profile "%s" for org: %s
 
 # info.listing-metadata
 
@@ -97,3 +117,7 @@ A target org must be specified. Use --target-org flag.
 # error.metadata-list-failed
 
 Failed to list metadata for type %s: %s
+
+# warn.profile-not-found
+
+Profile "%s" not found in org. Skipping profile retrieval.
