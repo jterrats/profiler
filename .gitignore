@@ -1,7 +1,5 @@
 # -- CLEAN
-tmp/
-temp/
-temp-compare/
+# Temporary directories are now in OS temp (os.tmpdir()), not in project
 profile-docs/
 # use yarn by default, so ignore npm
 package-lock.json
