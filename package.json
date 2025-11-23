@@ -184,5 +184,13 @@
   },
   "exports": "./lib/index.js",
   "type": "module",
-  "author": "Jaime Terrats"
+  "author": "Jaime Terrats",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jterrats/profiler.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jterrats/profiler/issues"
+  },
+  "homepage": "https://github.com/jterrats/profiler#readme"
 }
