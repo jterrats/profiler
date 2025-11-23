@@ -131,11 +131,23 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       const comparisons: ProfileComparison[] = [];
 
       if (profileName) {
-        // Compare single profile
-        const comparison = await this.compareProfile(org, profileName, apiVersion);
-        if (comparison) {
-          comparisons.push(comparison);
+        // Parse profile names (comma-separated)
+        const profileNames = profileName
+          .split(',')
+          .map((name) => name.trim())
+          .filter((name) => name.length > 0);
+
+        if (profileNames.length === 1) {
+          this.log(messages.getMessage('info.comparing-profile', [profileNames[0]]));
+        } else {
+          this.log(`Comparing ${profileNames.length} profiles: ${profileNames.join(', ')}`);
         }
+
+        // Compare specified profiles in parallel
+        const comparisonPromises = profileNames.map(async (profile) => this.compareProfile(org, profile, apiVersion));
+
+        const results = await Promise.all(comparisonPromises);
+        comparisons.push(...results.filter((c): c is ProfileComparison => c !== null));
       } else {
         // Compare all profiles
         const localProfiles = await this.getLocalProfiles();
@@ -143,11 +155,10 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
           throw new SfError(messages.getMessage('error.no-profiles-found'));
         }
 
+        this.log(`Comparing all ${localProfiles.length} local profiles...`);
+
         // Compare all profiles in parallel
-        const comparisonPromises = localProfiles.map(async (profile) => {
-          this.log(messages.getMessage('info.comparing-profile', [profile]));
-          return this.compareProfile(org, profile, apiVersion);
-        });
+        const comparisonPromises = localProfiles.map(async (profile) => this.compareProfile(org, profile, apiVersion));
 
         const results = await Promise.all(comparisonPromises);
         comparisons.push(...results.filter((c): c is ProfileComparison => c !== null));

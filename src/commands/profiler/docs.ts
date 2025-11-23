@@ -383,8 +383,24 @@ export default class ProfilerDocs extends SfCommand<void> {
     const profileFiles = allFiles.filter((file) => file.endsWith('.profile-meta.xml'));
 
     if (profileName) {
-      const targetFile = `${profileName}.profile-meta.xml`;
-      return profileFiles.includes(targetFile) ? [targetFile] : [];
+      // Parse profile names (comma-separated)
+      const profileNames = profileName
+        .split(',')
+        .map((name) => name.trim())
+        .filter((name) => name.length > 0);
+
+      // Find all matching profiles
+      const matchingFiles: string[] = [];
+      for (const name of profileNames) {
+        const targetFile = `${name}.profile-meta.xml`;
+        if (profileFiles.includes(targetFile)) {
+          matchingFiles.push(targetFile);
+        } else {
+          this.warn(`Profile "${name}" not found, skipping...`);
+        }
+      }
+
+      return matchingFiles;
     }
 
     this.log(`Found ${profileFiles.length} profile(s) to document`);
