@@ -12,11 +12,11 @@ The target org to compare profiles against.
 
 # flags.name.summary
 
-The name of the profile to compare.
+The name of a specific profile or comma-separated list of profiles to compare.
 
 # flags.name.description
 
-Specify the profile name without the .profile-meta.xml extension. If not provided, all profiles in the local project will be compared.
+Specify one or more profile names (without the .profile-meta.xml extension). You can provide a single profile or multiple profiles separated by commas. If not provided, all local profiles will be compared. Examples: "Admin", "Admin,Sales Profile,Custom".
 
 # flags.api-version.summary
 
@@ -70,7 +70,7 @@ Profiles with differences: %s
 
 # info.line-added
 
-+ Added (in org, not in local):
+- Added (in org, not in local):
 
 # info.line-removed
 
@@ -109,5 +109,3 @@ Make sure you have profiles in force-app/main/default/profiles/
 # warning.temp-dir-cleanup
 
 Could not clean up temporary comparison directory
-
-
