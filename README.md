@@ -140,48 +140,9 @@ For more details, see [Testing and Publishing Guide](docs/development/testing-an
 
 <!-- commands -->
 
-- [`sf profiler retrieve`](#sf-profiler-retrieve)
 - [`sf profiler compare`](#sf-profiler-compare)
 - [`sf profiler docs`](#sf-profiler-docs)
-
-## `sf profiler retrieve`
-
-Retrieve Profile metadata with all required dependencies.
-
-```
-USAGE
-  $ sf profiler retrieve --target-org <value> [--json] [--all-fields] [--api-version <value>]
-
-FLAGS
-  --target-org=<value>     (required) The target org to retrieve profiles from.
-  --all-fields             Include Field Level Security (FLS) in the retrieved profiles.
-  --api-version=<value>    Override the API version used for metadata operations.
-
-GLOBAL FLAGS
-  --json  Format output as json.
-
-DESCRIPTION
-  The profiler retrieve command safely retrieves Profile metadata along with all its dependencies from the target org,
-  including Apex Classes, Custom Applications, Custom Objects, Custom Permissions, Custom Tabs, Flows, and Layouts.
-  Use the --all-fields flag to include Field Level Security (FLS) permissions.
-
-  IMPORTANT: This command uses a temporary directory for all retrieval operations, ensuring your local uncommitted
-  changes are NEVER overwritten. Only profile files are copied to your project - all other metadata remains
-  untouched. No git operations are required.
-
-EXAMPLES
-  Retrieve profiles with metadata (without FLS):
-
-    $ sf profiler retrieve --target-org myOrg
-
-  Retrieve profiles with all fields including FLS:
-
-    $ sf profiler retrieve --target-org myOrg --all-fields
-
-  Retrieve profiles with a specific API version:
-
-    $ sf profiler retrieve --target-org myOrg --all-fields --api-version 60.0
-```
+- [`sf profiler retrieve`](#sf-profiler-retrieve)
 
 ## `sf profiler compare`
 
@@ -189,20 +150,23 @@ Compare local Profile metadata with the version in Salesforce org.
 
 ```
 USAGE
-  $ sf profiler compare --target-org <value> [--json] [-n <value>] [--api-version <value>]
+  $ sf profiler compare -o <value> [--json] [--flags-dir <value>] [-n <value>] [--api-version <value>]
 
 FLAGS
-  --target-org=<value>     (required) The target org to compare profiles against.
-  -n, --name=<value>       The name of the profile to compare.
-  --api-version=<value>    Override the API version used for metadata operations.
+  -n, --name=<value>         The name of the profile to compare.
+  -o, --target-org=<value>   (required) The target org to compare profiles against.
+      --api-version=<value>  Override the API version used for metadata operations.
 
 GLOBAL FLAGS
-  --json  Format output as json.
+  --flags-dir=<value>  Import flag values from a directory.
+  --json               Format output as json.
 
 DESCRIPTION
-  The profiler compare command compares a local profile file with its version in the target org,
-  showing the differences line by line. This is useful for identifying what has changed between
-  your local version and the org version before committing or deploying changes.
+  Compare local Profile metadata with the version in Salesforce org.
+
+  The profiler compare command compares a local profile file with its version in the target org, showing the differences
+  line by line. This is useful for identifying what has changed between your local version and the org version before
+  committing or deploying changes.
 
 EXAMPLES
   Compare a specific profile:
@@ -216,6 +180,16 @@ EXAMPLES
   Compare with specific API version:
 
     $ sf profiler compare --target-org myOrg --name "Sales" --api-version 60.0
+
+FLAG DESCRIPTIONS
+  -n, --name=<value>  The name of the profile to compare.
+
+    Specify the profile name without the .profile-meta.xml extension. If not provided, all profiles in the local project
+    will be compared.
+
+  --api-version=<value>  Override the API version used for metadata operations.
+
+    Specify the API version to use for the comparison. Defaults to the org's API version.
 ```
 
 ## `sf profiler docs`
@@ -224,22 +198,25 @@ Generate comprehensive documentation for Profile metadata in Markdown format.
 
 ```
 USAGE
-  $ sf profiler docs [--json] [-n <value>] [-d <value>]
+  $ sf profiler docs [--json] [--flags-dir <value>] [-n <value>] [-d <value>]
 
 FLAGS
-  -n, --name=<value>         Name of the profile to generate documentation for.
-  -d, --output-dir=<value>   [default: profile-docs] Directory where the documentation files will be created.
+  -d, --output-dir=<value>  [default: profile-docs] Directory where the documentation files will be created.
+  -n, --name=<value>        Name of the profile to generate documentation for.
 
 GLOBAL FLAGS
-  --json  Format output as json.
+  --flags-dir=<value>  Import flag values from a directory.
+  --json               Format output as json.
 
 DESCRIPTION
+  Generate comprehensive documentation for Profile metadata in Markdown format.
+
   The profiler docs command generates detailed documentation for Salesforce Profile metadata files in Markdown format.
   It creates tables/matrices for all permission types including user permissions, object permissions, field-level
   security, application visibilities, and more.
 
-  Use the --name flag to generate documentation for a specific profile, or omit it to generate documentation for
-  all profiles in the project.
+  Use the --name flag to generate documentation for a specific profile, or omit it to generate documentation for all
+  profiles in the project.
 
   The generated documentation includes:
   - Profile description and metadata
@@ -270,6 +247,105 @@ EXAMPLES
   Generate documentation for a specific profile in a custom directory:
 
     $ sf profiler docs --name "Sales User" --output-dir salesforce-docs
+
+FLAG DESCRIPTIONS
+  -d, --output-dir=<value>  Directory where the documentation files will be created.
+
+    Specify the output directory for the generated Markdown documentation files. Defaults to 'profile-docs' in the
+    project root.
+
+  -n, --name=<value>  Name of the profile to generate documentation for.
+
+    Specify the name of a single profile to generate documentation for. If not provided, documentation will be generated
+    for all profiles in the project.
+```
+
+## `sf profiler retrieve`
+
+Retrieve Profile metadata with all required dependencies.
+
+```
+USAGE
+  $ sf profiler retrieve -o <value> [--json] [--flags-dir <value>] [-n <value>] [--all-fields] [--api-version <value>]
+    [-f]
+
+FLAGS
+  -f, --from-project         Use local project metadata to build the package.xml instead of listing from org.
+  -n, --name=<value>         The name of a specific profile or comma-separated list of profiles to retrieve.
+  -o, --target-org=<value>   (required) The target org to retrieve profiles from.
+      --all-fields           Include Field Level Security (FLS) in the retrieved profiles.
+      --api-version=<value>  Override the API version used for metadata operations.
+
+GLOBAL FLAGS
+  --flags-dir=<value>  Import flag values from a directory.
+  --json               Format output as json.
+
+DESCRIPTION
+  Retrieve Profile metadata with all required dependencies.
+
+  The profiler retrieve command safely retrieves Profile metadata along with all its dependencies from the target org,
+  including Apex Classes, Custom Applications, Custom Objects, Custom Permissions, Custom Tabs, Flows, and Layouts. Use
+  the --all-fields flag to include Field Level Security (FLS) permissions.
+
+  IMPORTANT: This command uses system temporary directories (outside your project) for all retrieval operations,
+  ensuring your local uncommitted changes are NEVER overwritten. Only profile files are copied to your project - all
+  other metadata remains untouched. No git operations are required and no temporary files are created in your project
+  directory.
+
+EXAMPLES
+  Retrieve all profiles with metadata (without FLS):
+
+    $ sf profiler retrieve --target-org myOrg
+
+  Retrieve a specific profile:
+
+    $ sf profiler retrieve --target-org myOrg --name Admin
+
+  Retrieve multiple profiles:
+
+    $ sf profiler retrieve --target-org myOrg --name "Admin,Custom Profile,Sales Profile"
+
+  Retrieve all profiles with all fields including FLS:
+
+    $ sf profiler retrieve --target-org myOrg --all-fields
+
+  Retrieve specific profiles with FLS:
+
+    $ sf profiler retrieve --target-org myOrg --name "Admin,Standard User" --all-fields
+
+  Retrieve profiles with a specific API version:
+
+    $ sf profiler retrieve --target-org myOrg --all-fields --api-version 60.0
+
+  Retrieve profiles using local project metadata:
+
+    $ sf profiler retrieve --target-org myOrg --from-project
+
+  Retrieve specific profiles using local metadata:
+
+    $ sf profiler retrieve --target-org myOrg --name "Admin,Sales Profile" --from-project
+
+FLAG DESCRIPTIONS
+  -f, --from-project  Use local project metadata to build the package.xml instead of listing from org.
+
+    When enabled, reads metadata component names from the local project directories (classes, objects, flows, etc.) to
+    build the package.xml, instead of querying the org. This is faster and useful when you want to retrieve only what
+    exists in your project.
+
+  -n, --name=<value>  The name of a specific profile or comma-separated list of profiles to retrieve.
+
+    When specified, only retrieves the named profile(s) instead of all profiles. You can specify a single profile or
+    multiple profiles separated by commas. Profile names should match exactly (e.g., "Admin", "Standard User",
+    "Admin,Custom Profile,Sales").
+
+  --all-fields  Include Field Level Security (FLS) in the retrieved profiles.
+
+    When enabled, retrieves complete profile metadata including Field Level Security settings for all objects and
+    fields.
+
+  --api-version=<value>  Override the API version used for metadata operations.
+
+    Specify the API version to use for the retrieve operation. Defaults to the org's API version.
 ```
 
 <!-- commandsstop -->
