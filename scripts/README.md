@@ -46,9 +46,46 @@ sf profiler retrieve --target-org yourOrg -f
 
 ---
 
-## 📦 publish.sh
+## 🚀 publish-release.sh (RECOMMENDED)
 
-Interactive script for publishing to npm.
+**Automatic publishing via GitHub Release** with npm provenance for supply chain security.
+
+### Usage
+
+```bash
+./scripts/publish-release.sh
+```
+
+### What it does
+
+1. ✅ Verifies no uncommitted changes
+2. ✅ Checks current version from package.json
+3. ✅ Creates git tag (e.g., v2.0.0)
+4. ✅ Pushes tag to GitHub
+5. ✅ Creates GitHub Release
+6. ✅ **GitHub Actions automatically publishes to npm with cryptographic signing**
+
+### Prerequisites
+
+- npm token stored in GitHub Secrets as `NPM_TOKEN`
+- GitHub CLI (`gh`) installed: `brew install gh`
+- GitHub CLI authenticated: `gh auth login`
+- Clean working directory
+- Version updated in `package.json`
+
+### Benefits
+
+- 🔒 Cryptographic signing with Sigstore (npm provenance)
+- 🤖 Fully automated via GitHub Actions
+- 📝 Auto-generates release notes from CHANGELOG.md
+- ✅ Runs tests before publishing
+- 🔐 More secure than local publishing
+
+---
+
+## 📦 publish.sh (LEGACY)
+
+**Manual publishing** - for local testing only.
 
 ### Usage
 
@@ -73,6 +110,8 @@ Interactive script for publishing to npm.
 - Logged in: `npm login`
 - Clean working directory
 
+⚠️ **Note**: This method does not include npm provenance. Use `publish-release.sh` for production releases.
+
 ---
 
 ## Quick Reference
@@ -95,7 +134,19 @@ sf profiler retrieve --target-org yourOrg -f
 sf profiler retrieve --target-org yourOrg
 ```
 
-### Publishing
+### Publishing (Automatic - Recommended)
+```bash
+# 1. Update version in package.json
+# 2. Commit changes
+git add .
+git commit -m "chore: bump version to 2.0.0"
+git push
+
+# 3. Publish via GitHub Release
+./scripts/publish-release.sh
+```
+
+### Publishing (Manual - Legacy)
 ```bash
 # Interactive publish
 ./scripts/publish.sh
