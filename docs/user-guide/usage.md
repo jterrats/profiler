@@ -31,12 +31,26 @@ sf plugins install profiler
 
 Retrieves Profile metadata along with all required dependencies from a Salesforce org.
 
+**🔒 SAFETY GUARANTEE**: This command uses a complete backup/restore strategy to ensure your local files are NEVER modified (except profiles). All operations happen in system temporary directories.
+
 #### Basic Usage
 
-Retrieve profiles without Field Level Security (FLS):
+Retrieve ALL profiles without Field Level Security (FLS):
 
 ```bash
 sf profiler retrieve --target-org myOrg
+```
+
+#### Retrieve Specific Profile(s)
+
+Retrieve one or more specific profiles by name:
+
+```bash
+# Single profile
+sf profiler retrieve --target-org myOrg --name Admin
+
+# Multiple profiles (comma-separated)
+sf profiler retrieve --target-org myOrg --name "Admin,Custom Profile,Sales Profile"
 ```
 
 #### With Field Level Security
@@ -44,7 +58,11 @@ sf profiler retrieve --target-org myOrg
 Retrieve profiles including Field Level Security permissions:
 
 ```bash
+# All profiles with FLS
 sf profiler retrieve --target-org myOrg --all-fields
+
+# Specific profiles with FLS
+sf profiler retrieve --target-org myOrg --name "Admin,Sales" --all-fields
 ```
 
 #### With Custom API Version
@@ -111,6 +129,7 @@ You need to specify the `--target-org` flag with a valid org alias or username.
 ### Permission Errors
 
 Ensure your authenticated user has the necessary permissions to retrieve metadata from the org:
+
 - View All Data
 - Modify All Data (for some metadata types)
 
@@ -159,4 +178,3 @@ Jaime Terrats
 ## License
 
 BSD-3-Clause
-
