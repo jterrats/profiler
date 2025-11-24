@@ -22,7 +22,7 @@ sf plugins link .
 ### Install from npm (when published)
 
 ```bash
-sf plugins install profiler
+sf plugins install @jterrats/profiler
 ```
 
 ## Commands

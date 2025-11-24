@@ -128,7 +128,7 @@ sf profiler retrieve --target-org your-org
 
 1. Install the plugin:
    ```bash
-   sf plugins install profiler
+   sf plugins install @jterrats/profiler
    ```
 
 2. Update your scripts:
