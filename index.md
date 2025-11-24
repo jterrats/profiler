@@ -5,7 +5,7 @@ title: Home
 
 # Profiler - Salesforce CLI Plugin
 
-[![npm version](https://img.shields.io/badge/npm-2.0.0-blue.svg)](https://www.npmjs.com/package/@jterrats/profiler)
+[![npm version](https://img.shields.io/badge/npm-2.0.1-blue.svg)](https://www.npmjs.com/package/@jterrats/profiler)
 [![Test Status](https://github.com/jterrats/profiler/workflows/Test%20Plugin%20on%20Push/badge.svg)](https://github.com/jterrats/profiler/actions)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-brightgreen.svg)](https://raw.githubusercontent.com/jterrats/profiler/main/LICENSE.txt)
 [![Node.js Version](https://img.shields.io/node/v/@jterrats/profiler)](https://nodejs.org)
@@ -149,4 +149,4 @@ This project is licensed under the BSD 3-Clause License - see the [LICENSE.txt](
 
 **Documentation Site**: [https://jterrats.github.io/profiler](https://jterrats.github.io/profiler)
 **GitHub Repository**: [https://github.com/jterrats/profiler](https://github.com/jterrats/profiler)
-**npm Package**: `sf plugins install profiler`
+**npm Package**: `@jterrats/profiler`
