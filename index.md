@@ -82,11 +82,20 @@ sf plugins install @jterrats/profiler@2.0.2
 Retrieve Profile metadata with all required dependencies.
 
 ```bash
-# Retrieve profiles without FLS
+# Retrieve all profiles without FLS
 sf profiler retrieve --target-org myOrg
+
+# Retrieve a specific profile
+sf profiler retrieve --target-org myOrg --name Admin
+
+# Retrieve multiple profiles
+sf profiler retrieve --target-org myOrg --name "Admin,Sales Profile,Custom Profile"
 
 # Retrieve profiles with all fields including FLS
 sf profiler retrieve --target-org myOrg --all-fields
+
+# Retrieve specific profiles with FLS
+sf profiler retrieve --target-org myOrg --name "Admin,Standard User" --all-fields
 
 # Use local project metadata for faster retrieval
 sf profiler retrieve --target-org myOrg --from-project
