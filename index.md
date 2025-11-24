@@ -136,8 +136,7 @@ Please report any issues at [https://github.com/jterrats/profiler/issues](https:
 3. Fork this repository
 4. Create a _topic_ branch in your fork
 5. Edit the code and write appropriate tests
-6. Sign CLA at [https://cla.salesforce.com/sign-cla](https://cla.salesforce.com/sign-cla)
-7. Send us a pull request
+6. Send us a pull request
 
 [Full contributing guide →](CONTRIBUTING)
 

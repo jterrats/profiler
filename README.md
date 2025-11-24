@@ -1,6 +1,6 @@
 # Profiler - Salesforce CLI Plugin
 
-[![npm version](https://img.shields.io/badge/npm-2.0.0-blue.svg)](https://www.npmjs.com/package/@jterrats/profiler)
+[![npm version](https://img.shields.io/badge/npm-2.0.2-blue.svg)](https://www.npmjs.com/package/@jterrats/profiler)
 [![Test Status](https://github.com/jterrats/profiler/workflows/Test%20Plugin%20on%20Push/badge.svg)](https://github.com/jterrats/profiler/actions)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-brightgreen.svg)](https://raw.githubusercontent.com/jterrats/profiler/main/LICENSE.txt)
 [![Node.js Version](https://img.shields.io/node/v/@jterrats/profiler)](https://nodejs.org)
@@ -139,10 +139,9 @@ For more details, see [Testing and Publishing Guide](docs/development/testing-an
 ## Commands
 
 <!-- commands -->
-
-- [`sf profiler compare`](#sf-profiler-compare)
-- [`sf profiler docs`](#sf-profiler-docs)
-- [`sf profiler retrieve`](#sf-profiler-retrieve)
+* [`sf profiler compare`](#sf-profiler-compare)
+* [`sf profiler docs`](#sf-profiler-docs)
+* [`sf profiler retrieve`](#sf-profiler-retrieve)
 
 ## `sf profiler compare`
 
@@ -153,7 +152,7 @@ USAGE
   $ sf profiler compare -o <value> [--json] [--flags-dir <value>] [-n <value>] [--api-version <value>]
 
 FLAGS
-  -n, --name=<value>         The name of the profile to compare.
+  -n, --name=<value>         The name of a specific profile or comma-separated list of profiles to compare.
   -o, --target-org=<value>   (required) The target org to compare profiles against.
       --api-version=<value>  Override the API version used for metadata operations.
 
@@ -182,15 +181,18 @@ EXAMPLES
     $ sf profiler compare --target-org myOrg --name "Sales" --api-version 60.0
 
 FLAG DESCRIPTIONS
-  -n, --name=<value>  The name of the profile to compare.
+  -n, --name=<value>  The name of a specific profile or comma-separated list of profiles to compare.
 
-    Specify the profile name without the .profile-meta.xml extension. If not provided, all profiles in the local project
-    will be compared.
+    Specify one or more profile names (without the .profile-meta.xml extension). You can provide a single profile or
+    multiple profiles separated by commas. If not provided, all local profiles will be compared. Examples: "Admin",
+    "Admin,Sales Profile,Custom".
 
   --api-version=<value>  Override the API version used for metadata operations.
 
     Specify the API version to use for the comparison. Defaults to the org's API version.
 ```
+
+_See code: [src/commands/profiler/compare.ts](https://github.com/jterrats/profiler/blob/v2.0.2/src/commands/profiler/compare.ts)_
 
 ## `sf profiler docs`
 
@@ -202,7 +204,7 @@ USAGE
 
 FLAGS
   -d, --output-dir=<value>  [default: profile-docs] Directory where the documentation files will be created.
-  -n, --name=<value>        Name of the profile to generate documentation for.
+  -n, --name=<value>        Name of a specific profile or comma-separated list of profiles to document.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -219,6 +221,7 @@ DESCRIPTION
   profiles in the project.
 
   The generated documentation includes:
+
   - Profile description and metadata
   - User permissions matrix
   - Object permissions (CRUD + View/Modify All)
@@ -254,11 +257,14 @@ FLAG DESCRIPTIONS
     Specify the output directory for the generated Markdown documentation files. Defaults to 'profile-docs' in the
     project root.
 
-  -n, --name=<value>  Name of the profile to generate documentation for.
+  -n, --name=<value>  Name of a specific profile or comma-separated list of profiles to document.
 
-    Specify the name of a single profile to generate documentation for. If not provided, documentation will be generated
-    for all profiles in the project.
+    Specify one or more profile names (without the .profile-meta.xml extension). You can provide a single profile or
+    multiple profiles separated by commas. If not provided, documentation will be generated for all profiles found in
+    the project. Examples: "Admin", "Admin,Sales Profile,Custom".
 ```
+
+_See code: [src/commands/profiler/docs.ts](https://github.com/jterrats/profiler/blob/v2.0.2/src/commands/profiler/docs.ts)_
 
 ## `sf profiler retrieve`
 
@@ -348,4 +354,5 @@ FLAG DESCRIPTIONS
     Specify the API version to use for the retrieve operation. Defaults to the org's API version.
 ```
 
+_See code: [src/commands/profiler/retrieve.ts](https://github.com/jterrats/profiler/blob/v2.0.2/src/commands/profiler/retrieve.ts)_
 <!-- commandsstop -->
