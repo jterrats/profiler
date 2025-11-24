@@ -46,7 +46,7 @@
     ],
     "topics": {
       "profiler": {
-        "description": "Commands to retrieve Profile metadata with dependencies."
+        "description": "Manage Salesforce Profile metadata with complete dependency retrieval, comparison, and documentation generation. Includes commands to retrieve profiles with all required dependencies (Apex Classes, Objects, Permissions, Tabs, Flows, Layouts), compare local vs org profiles, and generate comprehensive markdown documentation."
       }
     },
     "flexibleTaxonomy": true
