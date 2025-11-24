@@ -212,8 +212,8 @@ sf profiler --help
 ### For Production
 
 ```bash
-# Install from npm (when published)
-sf plugins install profiler
+# Install from npm
+sf plugins install @jterrats/profiler
 
 # Or install from GitHub
 sf plugins install github:username/profiler

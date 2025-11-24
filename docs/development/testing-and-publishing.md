@@ -133,7 +133,7 @@ sf profiler compare --target-org myOrg
 
    ```json
    {
-     "name": "@yourusername/profiler", // Use scoped package
+     "name": "@jterrats/profiler", // Use scoped package
      "version": "1.0.0",
      "description": "Salesforce CLI plugin for profile management",
      "author": "Jaime Terrats",
@@ -242,7 +242,7 @@ npm publish
 **Option B: Scoped Package**
 
 ```bash
-# If using @yourusername/profiler
+# Publishing scoped package
 npm publish --access public
 ```
 
@@ -260,20 +260,20 @@ npm publish --access restricted
 
 ```bash
 # Check on npm
-npm view @yourusername/profiler
+npm view @jterrats/profiler
 
 # Or visit
-# https://www.npmjs.com/package/@yourusername/profiler
+# https://www.npmjs.com/package/@jterrats/profiler
 ```
 
 #### Install from npm
 
 ```bash
 # Users can now install with:
-sf plugins install @yourusername/profiler
+sf plugins install @jterrats/profiler
 
 # Or specific version
-sf plugins install @yourusername/profiler@1.0.0
+sf plugins install @jterrats/profiler@2.0.2
 ```
 
 ---
@@ -294,7 +294,7 @@ EOF
 
 ```json
 {
-  "name": "@yourusername/profiler",
+  "name": "@jterrats/profiler",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   }
@@ -515,7 +515,7 @@ yarn build
 npm whoami
 
 # Check package name is available
-npm view @yourusername/profiler
+npm view @jterrats/profiler
 # (should return 404 if available)
 
 # Login again

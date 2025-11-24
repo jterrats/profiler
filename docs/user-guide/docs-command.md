@@ -255,7 +255,7 @@ jobs:
       - name: Install SF CLI
         run: npm install -g @salesforce/cli
       - name: Install Plugin
-        run: sf plugins install profiler
+        run: sf plugins install @jterrats/profiler
       - name: Generate Docs
         run: sf profiler docs
       - name: Commit Documentation
