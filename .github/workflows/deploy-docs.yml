@@ -7,6 +7,7 @@ on:
     paths:
       - 'docs/**'
       - 'README.md'
+      - 'index.md'
       - '.github/workflows/deploy-docs.yml'
       - '_config.yml'
       - 'Gemfile'
