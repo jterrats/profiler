@@ -5,11 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.5] - 2024-11-25
+
+### Fixed
+
+- **Critical**: Removed `postpack` script that was deleting `lib/` directory during npm publish. This was the root cause of versions 2.0.2, 2.0.3, and 2.0.4 being published without compiled JavaScript files.
+
 ## [2.0.4] - 2024-11-24
 
 ### Fixed
 
-- **Critical**: Added verification step in CI/CD workflow to ensure `lib/` directory exists before publishing. Versions 2.0.2 and 2.0.3 were published without compiled files due to a build race condition in GitHub Actions.
+- **Critical**: Added verification step in CI/CD workflow (issue persisted, see 2.0.5).
 
 ## [2.0.3] - 2024-11-24
 
