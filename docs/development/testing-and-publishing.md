@@ -273,7 +273,7 @@ npm view @jterrats/profiler
 sf plugins install @jterrats/profiler
 
 # Or specific version
-sf plugins install @jterrats/profiler@2.0.2
+sf plugins install @jterrats/profiler@2.0.5
 ```
 
 ---
