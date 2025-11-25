@@ -38,6 +38,17 @@ jobs:
       - name: Run linter
         run: yarn lint
 
+      - name: Verify lib directory exists
+        run: |
+          echo "Checking lib/ directory..."
+          if [ ! -d "lib" ]; then
+            echo "❌ ERROR: lib/ directory not found!"
+            echo "Running yarn build..."
+            yarn build
+          fi
+          ls -la lib/
+          ls -la lib/commands/profiler/
+
       - name: Verify package contents
         run: |
           npm pack --dry-run
