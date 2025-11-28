@@ -26,6 +26,14 @@ Override the API version used for metadata operations.
 
 Specify the API version to use for the comparison. Defaults to the org's API version.
 
+# flags.exclude-managed.summary
+
+Exclude metadata from managed packages (with namespace prefixes).
+
+# flags.exclude-managed.description
+
+When enabled, filters out all metadata components that belong to managed packages (identified by namespace prefixes like "namespace\_\_ComponentName"). This helps avoid errors when comparing profiles that reference components from uninstalled or inaccessible managed packages.
+
 # examples
 
 - Compare a specific profile:
@@ -39,6 +47,10 @@ Specify the API version to use for the comparison. Defaults to the org's API ver
 - Compare with specific API version:
 
   <%= config.bin %> <%= command.id %> --target-org myOrg --name "Sales" --api-version 60.0
+
+- Compare excluding managed package metadata:
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg --name "Admin" --exclude-managed
 
 # info.starting
 
