@@ -2,6 +2,92 @@
 
 Quick scripts to facilitate development, testing, and publishing.
 
+## 🧪 e2e-test.sh
+
+Automated end-to-end testing script that validates the plugin functionality in a real environment.
+
+### Usage
+
+```bash
+./scripts/e2e-test.sh
+```
+
+### What it does
+
+1. ✅ Creates a local Salesforce project (`test-project/` in plugin root)
+2. ✅ Uses your default authorized org (from `sf org list`)
+3. ✅ Tests all retrieve command variations:
+   - Basic retrieve (all profiles)
+   - Retrieve specific profile by name
+   - Retrieve with `--exclude-managed` flag (with baseline comparison)
+   - Retrieve with `--from-project` flag
+4. ✅ Validates profile content (XML structure):
+   - Object Permissions
+   - Layout Assignments
+   - Apex Class Accesses
+   - Apex Page Accesses (Visualforce)
+   - Tab Visibilities
+   - Counts metadata elements
+5. ✅ Validates managed package filtering:
+   - Compares with/without `--exclude-managed`
+   - Counts managed package components
+   - Verifies reduction in managed packages
+6. ✅ Validates git safety (no unintended file modifications)
+7. ✅ Cleans up automatically (removes test project after tests)
+
+### Prerequisites
+
+- Salesforce CLI (`sf`) installed
+- At least one authorized org: `sf org login web`
+- Plugin linked or installed: `sf plugins link` or `sf plugins install @jterrats/profiler`
+
+### Benefits
+
+- 🔒 Safe: Creates isolated temporary project
+- 🧹 Clean: Auto-cleanup on exit (even on errors)
+- ✅ Comprehensive: Tests all main features
+- 📊 Detailed: Shows results for each test
+- 🚀 Fast: Completes in ~30 seconds
+
+### Output Example
+
+```
+✓ Salesforce CLI found
+✓ Plugin @jterrats/profiler is available
+✓ Using org: user@example.com
+✓ Project created
+✓ Git repository initialized
+
+═══════════════════════════════════════════
+Test 1: Retrieve all profiles (basic)
+═══════════════════════════════════════════
+✓ Profiles retrieved: 5
+✓ No other files modified (safe retrieve confirmed)
+
+═══════════════════════════════════════════
+Test 2: Retrieve specific profile (Admin)
+═══════════════════════════════════════════
+✓ Admin profile retrieved successfully
+
+═══════════════════════════════════════════
+Test 3: Retrieve excluding managed packages
+═══════════════════════════════════════════
+ℹ Excluded 23 managed package Layout(s)
+✓ Managed package filtering is working
+✓ Profile retrieved with --exclude-managed flag
+
+═══════════════════════════════════════════
+Test 4: Retrieve using --from-project
+═══════════════════════════════════════════
+✓ Retrieve with --from-project completed
+
+═══════════════════════════════════════════
+✓ All E2E tests passed!
+═══════════════════════════════════════════
+```
+
+---
+
 ## 🔗 link-plugin.sh
 
 Helper script for local testing.
@@ -117,6 +203,7 @@ sf profiler retrieve --target-org yourOrg -f
 ## Quick Reference
 
 ### First Time Testing
+
 ```bash
 # Build and link
 ./scripts/link-plugin.sh link
@@ -126,6 +213,7 @@ sf profiler retrieve --target-org yourOrg -f
 ```
 
 ### After Making Changes
+
 ```bash
 # Just rebuild (stay linked)
 ./scripts/link-plugin.sh rebuild
@@ -135,6 +223,7 @@ sf profiler retrieve --target-org yourOrg
 ```
 
 ### Publishing (Automatic - Recommended)
+
 ```bash
 # 1. Update version in package.json
 # 2. Commit changes
@@ -147,6 +236,7 @@ git push
 ```
 
 ### Publishing (Manual - Legacy)
+
 ```bash
 # Interactive publish
 ./scripts/publish.sh
@@ -166,6 +256,7 @@ git push origin main --tags
 If you prefer not to use scripts:
 
 ### Link Manually
+
 ```bash
 yarn build
 sf plugins link .
@@ -173,6 +264,7 @@ sf plugins  # verify
 ```
 
 ### Publish Manually
+
 ```bash
 # Prepare
 yarn clean-all
@@ -191,4 +283,3 @@ npm publish --access public
 git push origin main
 git push origin v1.0.1
 ```
-

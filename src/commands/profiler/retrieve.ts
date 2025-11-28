@@ -50,6 +50,11 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       description: messages.getMessage('flags.from-project.description'),
       default: false,
     }),
+    'exclude-managed': Flags.boolean({
+      summary: messages.getMessage('flags.exclude-managed.summary'),
+      description: messages.getMessage('flags.exclude-managed.description'),
+      default: false,
+    }),
   };
 
   private tempDir = '';
@@ -63,6 +68,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     const profileName = flags.name;
     const includeAllFields = flags['all-fields'];
     const fromProject = flags['from-project'];
+    const excludeManaged = flags['exclude-managed'];
     const apiVersion = flags['api-version'] ?? (await org.retrieveMaxApiVersion());
 
     // Parse profile names (comma-separated)
@@ -114,6 +120,8 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       // Define metadata types to retrieve
       const metadataTypes = [
         'ApexClass',
+        'ApexPage',
+        'ConnectedApp',
         'CustomApplication',
         'CustomObject',
         'CustomPermission',
@@ -125,8 +133,8 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
 
       // Collect all metadata
       const packageXmlContent = fromProject
-        ? await this.buildPackageXmlFromProject(metadataTypes, apiVersion, profileNames)
-        : await this.buildPackageXml(org, metadataTypes, apiVersion, profileNames);
+        ? await this.buildPackageXmlFromProject(metadataTypes, apiVersion, profileNames, excludeManaged)
+        : await this.buildPackageXml(org, metadataTypes, apiVersion, profileNames, excludeManaged);
 
       // Write package.xml
       const packageXmlPath = path.join(this.tempDir, 'package.xml');
@@ -184,7 +192,8 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     org: Org,
     metadataTypes: string[],
     apiVersion: string,
-    profileNames?: string[]
+    profileNames?: string[],
+    excludeManaged = false
   ): Promise<string> {
     let packageXml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     packageXml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
@@ -203,6 +212,16 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
 
           if (metadataArray.length > 0) {
             let sortedMembers = metadataArray.map((m) => m.fullName).sort();
+
+            // Filter out managed package metadata if excludeManaged is true
+            if (excludeManaged) {
+              const beforeCount = sortedMembers.length;
+              sortedMembers = sortedMembers.filter((member) => !member.includes('__') || member.endsWith('__c'));
+              const excludedCount = beforeCount - sortedMembers.length;
+              if (excludedCount > 0) {
+                this.log(`Excluded ${excludedCount} managed package ${metadataType}(s)`);
+              }
+            }
 
             // Filter profiles if profileNames is specified
             if (metadataType === 'Profile' && profileNames && profileNames.length > 0) {
@@ -253,13 +272,16 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
   private async buildPackageXmlFromProject(
     metadataTypes: string[],
     apiVersion: string,
-    profileNames?: string[]
+    profileNames?: string[],
+    excludeManaged = false
   ): Promise<string> {
     let packageXml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     packageXml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
 
     const metadataTypeMap: Record<string, { folder: string; extension: string }> = {
       ApexClass: { folder: 'classes', extension: '.cls' },
+      ApexPage: { folder: 'pages', extension: '.page' },
+      ConnectedApp: { folder: 'connectedApps', extension: '.connectedApp-meta.xml' },
       CustomApplication: { folder: 'applications', extension: '.app-meta.xml' },
       CustomObject: { folder: 'objects', extension: '' },
       CustomPermission: { folder: 'customPermissions', extension: '.customPermission-meta.xml' },
@@ -297,6 +319,16 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
             members = files
               .filter((file) => file.endsWith(config.extension))
               .map((file) => file.replace(config.extension, ''));
+          }
+
+          // Filter out managed package metadata if excludeManaged is true
+          if (excludeManaged) {
+            const beforeCount = members.length;
+            members = members.filter((member) => !member.includes('__') || member.endsWith('__c'));
+            const excludedCount = beforeCount - members.length;
+            if (excludedCount > 0) {
+              this.log(`Excluded ${excludedCount} managed package ${metadataType}(s) from project`);
+            }
           }
 
           // Filter profiles if profileNames is specified
@@ -345,7 +377,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
   }
 
   private async retrieveMetadataToTemp(org: Org, packageXmlPath: string, includeAllFields: boolean): Promise<void> {
-    const username = org.getUsername();
+    const username = org.getUsername() ?? org.getOrgId();
 
     // Retrieve to project (we'll extract profiles later)
     const retrieveCmd = `sf project retrieve start --manifest "${packageXmlPath}" --target-org ${username}`;

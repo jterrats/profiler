@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [2.1.0] - 2024-11-28
+
+### Added
+
+- **New Metadata Types**: Added support for `ApexPage` (Visualforce pages) and `ConnectedApp` in profile retrieval. These metadata types are now automatically included when retrieving profiles. Note: `RecordType` metadata is already included as part of `CustomObject` retrieval.
+- **Managed Package Filtering**: Added `--exclude-managed` flag to `retrieve`, `compare`, and `docs` commands. When enabled, filters out all metadata components from managed packages (identified by namespace prefixes like `namespace__ComponentName`). This helps avoid errors when retrieving profiles that reference components from uninstalled or inaccessible managed packages, and makes documentation cleaner by hiding managed package permissions. Custom objects ending in `__c` are always included even with this flag.
+- **E2E Testing Script**: Added `scripts/e2e-test.sh` for comprehensive end-to-end testing. Creates a local Salesforce project (`test-project/`), tests all retrieve command variations, validates profile XML content (objectPermissions, layoutAssignments, classAccesses, pageAccesses, tabVisibilities), validates managed package filtering with baseline comparison, validates git safety, and cleans up automatically. Uses default authorized org from `sf org list`.
+
+### Changed
+
+- **Description Update**: Updated `retrieve` command description to list all supported metadata types including the new ones.
+- **Test Project Location**: E2E test now creates project in `test-project/` directory (added to `.gitignore`) instead of using temporary system directories.
+
 ## [2.0.5] - 2024-11-25
 
 ### Fixed

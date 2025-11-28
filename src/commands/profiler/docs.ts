@@ -67,6 +67,11 @@ export default class ProfilerDocs extends SfCommand<void> {
       description: messages.getMessage('flags.output-dir.description'),
       default: 'profile-docs',
     }),
+    'exclude-managed': Flags.boolean({
+      summary: messages.getMessage('flags.exclude-managed.summary'),
+      description: messages.getMessage('flags.exclude-managed.description'),
+      default: false,
+    }),
   };
 
   // Instance properties - must come before static methods
@@ -76,7 +81,8 @@ export default class ProfilerDocs extends SfCommand<void> {
   private static buildMarkdownDocumentation(
     profileName: string,
     fileName: string,
-    profile: ProfileMetadata['Profile']
+    profile: ProfileMetadata['Profile'],
+    excludeManaged = false
   ): string {
     let markdown = `# Profile Documentation: ${profileName}\n\n`;
     markdown += `**File Name:** \`${fileName}\`\n\n`;
@@ -96,15 +102,15 @@ export default class ProfilerDocs extends SfCommand<void> {
     markdown += '---\n\n';
 
     // Generate sections for each permission type
-    markdown += ProfilerDocs.buildUserPermissionsSection(profile.userPermissions);
-    markdown += ProfilerDocs.buildApplicationVisibilitiesSection(profile.applicationVisibilities);
-    markdown += ProfilerDocs.buildClassAccessesSection(profile.classAccesses);
-    markdown += ProfilerDocs.buildObjectPermissionsSection(profile.objectPermissions);
-    markdown += ProfilerDocs.buildFieldPermissionsSection(profile.fieldPermissions);
-    markdown += ProfilerDocs.buildRecordTypeVisibilitiesSection(profile.recordTypeVisibilities);
-    markdown += ProfilerDocs.buildPageAccessesSection(profile.pageAccesses);
-    markdown += ProfilerDocs.buildTabVisibilitiesSection(profile.tabVisibilities);
-    markdown += ProfilerDocs.buildLayoutAssignmentsSection(profile.layoutAssignments);
+    markdown += ProfilerDocs.buildUserPermissionsSection(profile.userPermissions, excludeManaged);
+    markdown += ProfilerDocs.buildApplicationVisibilitiesSection(profile.applicationVisibilities, excludeManaged);
+    markdown += ProfilerDocs.buildClassAccessesSection(profile.classAccesses, excludeManaged);
+    markdown += ProfilerDocs.buildObjectPermissionsSection(profile.objectPermissions, excludeManaged);
+    markdown += ProfilerDocs.buildFieldPermissionsSection(profile.fieldPermissions, excludeManaged);
+    markdown += ProfilerDocs.buildRecordTypeVisibilitiesSection(profile.recordTypeVisibilities, excludeManaged);
+    markdown += ProfilerDocs.buildPageAccessesSection(profile.pageAccesses, excludeManaged);
+    markdown += ProfilerDocs.buildTabVisibilitiesSection(profile.tabVisibilities, excludeManaged);
+    markdown += ProfilerDocs.buildLayoutAssignmentsSection(profile.layoutAssignments, excludeManaged);
 
     // Summary statistics
     markdown += ProfilerDocs.buildSummarySection(profile);
@@ -112,17 +118,30 @@ export default class ProfilerDocs extends SfCommand<void> {
     return markdown;
   }
 
-  private static buildUserPermissionsSection(permissions?: ProfilePermission[]): string {
+  private static buildUserPermissionsSection(permissions?: ProfilePermission[], excludeManaged = false): string {
     if (!permissions || permissions.length === 0) {
       return '';
     }
 
+    // Filter managed packages if requested
+    let filteredPermissions = permissions;
+    if (excludeManaged) {
+      filteredPermissions = permissions.filter((perm) => {
+        const name = perm.name?.[0] ?? '';
+        return !ProfilerDocs.isManaged(name);
+      });
+    }
+
+    if (filteredPermissions.length === 0) {
+      return '';
+    }
+
     let section = '## User Permissions\n\n';
-    section += `Total: **${permissions.length}** permissions\n\n`;
+    section += `Total: **${filteredPermissions.length}** permissions\n\n`;
     section += '| Permission Name | Enabled |\n';
     section += '|-----------------|:-------:|\n';
 
-    for (const perm of permissions) {
+    for (const perm of filteredPermissions) {
       const name = perm.name?.[0] ?? 'Unknown';
       const enabled = perm.enabled?.[0] ?? 'false';
       const enabledIcon = enabled === 'true' ? '✅' : '❌';
@@ -133,17 +152,26 @@ export default class ProfilerDocs extends SfCommand<void> {
     return section;
   }
 
-  private static buildApplicationVisibilitiesSection(apps?: ProfilePermission[]): string {
+  private static buildApplicationVisibilitiesSection(apps?: ProfilePermission[], excludeManaged = false): string {
     if (!apps || apps.length === 0) {
       return '';
     }
 
+    let filteredApps = apps;
+    if (excludeManaged) {
+      filteredApps = apps.filter((app) => !ProfilerDocs.isManaged(app.application ?? ''));
+    }
+
+    if (filteredApps.length === 0) {
+      return '';
+    }
+
     let section = '## Application Visibilities\n\n';
-    section += `Total: **${apps.length}** applications\n\n`;
+    section += `Total: **${filteredApps.length}** applications\n\n`;
     section += '| Application | Visible | Default |\n';
     section += '|-------------|:-------:|:-------:|\n';
 
-    for (const app of apps) {
+    for (const app of filteredApps) {
       const name = app.application ?? 'Unknown';
       const visible = app.visible?.[0] ?? 'false';
       const isDefault = app.default?.[0] ?? 'false';
@@ -156,17 +184,26 @@ export default class ProfilerDocs extends SfCommand<void> {
     return section;
   }
 
-  private static buildClassAccessesSection(classes?: ProfilePermission[]): string {
+  private static buildClassAccessesSection(classes?: ProfilePermission[], excludeManaged = false): string {
     if (!classes || classes.length === 0) {
       return '';
     }
 
+    let filteredClasses = classes;
+    if (excludeManaged) {
+      filteredClasses = classes.filter((cls) => !ProfilerDocs.isManaged(cls.apexClass ?? ''));
+    }
+
+    if (filteredClasses.length === 0) {
+      return '';
+    }
+
     let section = '## Apex Class Accesses\n\n';
-    section += `Total: **${classes.length}** classes\n\n`;
+    section += `Total: **${filteredClasses.length}** classes\n\n`;
     section += '| Apex Class | Enabled |\n';
     section += '|------------|:-------:|\n';
 
-    for (const cls of classes) {
+    for (const cls of filteredClasses) {
       const name = cls.apexClass ?? 'Unknown';
       const enabled = cls.enabled?.[0] ?? 'false';
       const enabledIcon = enabled === 'true' ? '✅' : '❌';
@@ -177,17 +214,26 @@ export default class ProfilerDocs extends SfCommand<void> {
     return section;
   }
 
-  private static buildObjectPermissionsSection(objects?: ProfilePermission[]): string {
+  private static buildObjectPermissionsSection(objects?: ProfilePermission[], excludeManaged = false): string {
     if (!objects || objects.length === 0) {
       return '';
     }
 
+    let filteredObjects = objects;
+    if (excludeManaged) {
+      filteredObjects = objects.filter((obj) => !ProfilerDocs.isManaged(obj.object ?? ''));
+    }
+
+    if (filteredObjects.length === 0) {
+      return '';
+    }
+
     let section = '## Object Permissions\n\n';
-    section += `Total: **${objects.length}** objects\n\n`;
+    section += `Total: **${filteredObjects.length}** objects\n\n`;
     section += '| Object | Create | Read | Edit | Delete | View All | Modify All |\n';
     section += '|--------|:------:|:----:|:----:|:------:|:--------:|:----------:|\n';
 
-    for (const obj of objects) {
+    for (const obj of filteredObjects) {
       const name = obj.object ?? 'Unknown';
       const create = obj.allowCreate?.[0] ?? 'false';
       const read = obj.allowRead?.[0] ?? 'false';
@@ -205,17 +251,26 @@ export default class ProfilerDocs extends SfCommand<void> {
     return section;
   }
 
-  private static buildFieldPermissionsSection(fields?: ProfilePermission[]): string {
+  private static buildFieldPermissionsSection(fields?: ProfilePermission[], excludeManaged = false): string {
     if (!fields || fields.length === 0) {
       return '';
     }
 
+    let filteredFields = fields;
+    if (excludeManaged) {
+      filteredFields = fields.filter((field) => !ProfilerDocs.isManaged(field.field ?? ''));
+    }
+
+    if (filteredFields.length === 0) {
+      return '';
+    }
+
     let section = '## Field Level Security (FLS)\n\n';
-    section += `Total: **${fields.length}** field permissions\n\n`;
+    section += `Total: **${filteredFields.length}** field permissions\n\n`;
     section += '| Field | Readable | Editable |\n';
     section += '|-------|:--------:|:--------:|\n';
 
-    for (const field of fields) {
+    for (const field of filteredFields) {
       const name = field.field ?? 'Unknown';
       const readable = field.readable?.[0] ?? 'false';
       const editable = field.editable?.[0] ?? 'false';
@@ -226,17 +281,26 @@ export default class ProfilerDocs extends SfCommand<void> {
     return section;
   }
 
-  private static buildRecordTypeVisibilitiesSection(recordTypes?: ProfilePermission[]): string {
+  private static buildRecordTypeVisibilitiesSection(recordTypes?: ProfilePermission[], excludeManaged = false): string {
     if (!recordTypes || recordTypes.length === 0) {
       return '';
     }
 
+    let filteredRecordTypes = recordTypes;
+    if (excludeManaged) {
+      filteredRecordTypes = recordTypes.filter((rt) => !ProfilerDocs.isManaged(rt.recordType ?? ''));
+    }
+
+    if (filteredRecordTypes.length === 0) {
+      return '';
+    }
+
     let section = '## Record Type Visibilities\n\n';
-    section += `Total: **${recordTypes.length}** record types\n\n`;
+    section += `Total: **${filteredRecordTypes.length}** record types\n\n`;
     section += '| Record Type | Visible | Default |\n';
     section += '|-------------|:-------:|:-------:|\n';
 
-    for (const rt of recordTypes) {
+    for (const rt of filteredRecordTypes) {
       const name = rt.recordType ?? 'Unknown';
       const visible = rt.visible?.[0] ?? 'false';
       const isDefault = rt.default?.[0] ?? 'false';
@@ -247,17 +311,26 @@ export default class ProfilerDocs extends SfCommand<void> {
     return section;
   }
 
-  private static buildPageAccessesSection(pages?: ProfilePermission[]): string {
+  private static buildPageAccessesSection(pages?: ProfilePermission[], excludeManaged = false): string {
     if (!pages || pages.length === 0) {
       return '';
     }
 
+    let filteredPages = pages;
+    if (excludeManaged) {
+      filteredPages = pages.filter((page) => !ProfilerDocs.isManaged(page.apexPage ?? ''));
+    }
+
+    if (filteredPages.length === 0) {
+      return '';
+    }
+
     let section = '## Visualforce Page Accesses\n\n';
-    section += `Total: **${pages.length}** pages\n\n`;
+    section += `Total: **${filteredPages.length}** pages\n\n`;
     section += '| Page | Enabled |\n';
     section += '|------|:-------:|\n';
 
-    for (const page of pages) {
+    for (const page of filteredPages) {
       const name = page.apexPage ?? 'Unknown';
       const enabled = page.enabled?.[0] ?? 'false';
       section += `| ${name} | ${ProfilerDocs.getIcon(enabled)} |\n`;
@@ -267,17 +340,26 @@ export default class ProfilerDocs extends SfCommand<void> {
     return section;
   }
 
-  private static buildTabVisibilitiesSection(tabs?: ProfilePermission[]): string {
+  private static buildTabVisibilitiesSection(tabs?: ProfilePermission[], excludeManaged = false): string {
     if (!tabs || tabs.length === 0) {
       return '';
     }
 
+    let filteredTabs = tabs;
+    if (excludeManaged) {
+      filteredTabs = tabs.filter((tab) => !ProfilerDocs.isManaged(tab.tab ?? ''));
+    }
+
+    if (filteredTabs.length === 0) {
+      return '';
+    }
+
     let section = '## Tab Visibilities\n\n';
-    section += `Total: **${tabs.length}** tabs\n\n`;
+    section += `Total: **${filteredTabs.length}** tabs\n\n`;
     section += '| Tab | Visibility |\n';
     section += '|-----|:----------:|\n';
 
-    for (const tab of tabs) {
+    for (const tab of filteredTabs) {
       const name = tab.tab ?? 'Unknown';
       const visibility = tab.visibility?.[0] ?? 'Unknown';
       section += `| ${name} | ${visibility} |\n`;
@@ -287,17 +369,26 @@ export default class ProfilerDocs extends SfCommand<void> {
     return section;
   }
 
-  private static buildLayoutAssignmentsSection(layouts?: ProfilePermission[]): string {
+  private static buildLayoutAssignmentsSection(layouts?: ProfilePermission[], excludeManaged = false): string {
     if (!layouts || layouts.length === 0) {
       return '';
     }
 
+    let filteredLayouts = layouts;
+    if (excludeManaged) {
+      filteredLayouts = layouts.filter((layout) => !ProfilerDocs.isManaged(layout.layout?.[0] ?? ''));
+    }
+
+    if (filteredLayouts.length === 0) {
+      return '';
+    }
+
     let section = '## Layout Assignments\n\n';
-    section += `Total: **${layouts.length}** layout assignments\n\n`;
+    section += `Total: **${filteredLayouts.length}** layout assignments\n\n`;
     section += '| Layout | Record Type |\n';
     section += '|--------|-------------|\n';
 
-    for (const layout of layouts) {
+    for (const layout of filteredLayouts) {
       const layoutName = layout.layout?.[0] ?? 'Unknown';
       const recordType = layout.recordType ?? '-';
       section += `| ${layoutName} | ${recordType} |\n`;
@@ -337,6 +428,11 @@ export default class ProfilerDocs extends SfCommand<void> {
     return section;
   }
 
+  private static isManaged(name: string): boolean {
+    // Check if it's a managed package component (has namespace__ but doesn't end with __c)
+    return name.includes('__') && !name.endsWith('__c');
+  }
+
   private static getIcon(value: string): string {
     return value === 'true' ? '✅' : '❌';
   }
@@ -371,7 +467,9 @@ export default class ProfilerDocs extends SfCommand<void> {
 
     // Generate documentation for each profile
     await Promise.all(
-      profilesToDocument.map((profileFile) => this.generateProfileDocumentation(profilesPath, profileFile, outputDir))
+      profilesToDocument.map((profileFile) =>
+        this.generateProfileDocumentation(profilesPath, profileFile, outputDir, flags['exclude-managed'])
+      )
     );
 
     this.log(`\n✅ Documentation generated successfully in: ${outputDir}`);
@@ -410,7 +508,8 @@ export default class ProfilerDocs extends SfCommand<void> {
   private async generateProfileDocumentation(
     profilesPath: string,
     profileFile: string,
-    outputDir: string
+    outputDir: string,
+    excludeManaged: boolean
   ): Promise<void> {
     const profilePath = path.join(profilesPath, profileFile);
     const profileName = profileFile.replace('.profile-meta.xml', '');
@@ -423,7 +522,7 @@ export default class ProfilerDocs extends SfCommand<void> {
     const profile = parsedProfile.Profile;
 
     // Generate markdown documentation
-    const markdown = ProfilerDocs.buildMarkdownDocumentation(profileName, profileFile, profile);
+    const markdown = ProfilerDocs.buildMarkdownDocumentation(profileName, profileFile, profile, excludeManaged);
 
     // Write documentation file
     const outputFile = path.join(outputDir, `${profileName}.md`);

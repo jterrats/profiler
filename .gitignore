@@ -1,6 +1,9 @@
 # -- CLEAN
 # Temporary directories are now in OS temp (os.tmpdir()), not in project
 profile-docs/
+
+# E2E test project directory
+test-project/
 # use yarn by default, so ignore npm
 package-lock.json
 

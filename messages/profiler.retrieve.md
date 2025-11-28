@@ -4,7 +4,7 @@ Retrieve Profile metadata with all required dependencies.
 
 # description
 
-The profiler retrieve command safely retrieves Profile metadata along with all its dependencies from the target org, including Apex Classes, Custom Applications, Custom Objects, Custom Permissions, Custom Tabs, Flows, and Layouts. Use the --all-fields flag to include Field Level Security (FLS) permissions.
+The profiler retrieve command safely retrieves Profile metadata along with all its dependencies from the target org, including Apex Classes, Apex Pages (Visualforce), Connected Apps, Custom Applications, Custom Objects (with Record Types), Custom Permissions, Custom Tabs, Flows, and Layouts. Use the --all-fields flag to include Field Level Security (FLS) permissions.
 
 IMPORTANT: This command uses system temporary directories (outside your project) for all retrieval operations, ensuring your local uncommitted changes are NEVER overwritten. Only profile files are copied to your project - all other metadata remains untouched. No git operations are required and no temporary files are created in your project directory.
 
@@ -44,6 +44,14 @@ Use local project metadata to build the package.xml instead of listing from org.
 
 When enabled, reads metadata component names from the local project directories (classes, objects, flows, etc.) to build the package.xml, instead of querying the org. This is faster and useful when you want to retrieve only what exists in your project.
 
+# flags.exclude-managed.summary
+
+Exclude metadata from managed packages (with namespace prefixes).
+
+# flags.exclude-managed.description
+
+When enabled, filters out all metadata components that belong to managed packages (identified by namespace prefixes like "namespace**ComponentName"). This helps avoid errors when retrieving profiles that reference components from uninstalled or inaccessible managed packages. Custom objects ending in "**c" are always included even with this flag.
+
 # examples
 
 - Retrieve all profiles with metadata (without FLS):
@@ -77,6 +85,14 @@ When enabled, reads metadata component names from the local project directories 
 - Retrieve specific profiles using local metadata:
 
   <%= config.bin %> <%= command.id %> --target-org myOrg --name "Admin,Sales Profile" --from-project
+
+- Retrieve profiles excluding managed package metadata:
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg --exclude-managed
+
+- Retrieve specific profiles excluding managed packages:
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg --name Admin --exclude-managed
 
 # info.starting
 

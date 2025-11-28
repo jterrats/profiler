@@ -52,6 +52,11 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       summary: messages.getMessage('flags.api-version.summary'),
       description: messages.getMessage('flags.api-version.description'),
     }),
+    'exclude-managed': Flags.boolean({
+      summary: messages.getMessage('flags.exclude-managed.summary'),
+      description: messages.getMessage('flags.exclude-managed.description'),
+      default: false,
+    }),
   };
 
   private tempDir = '';
@@ -255,7 +260,7 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       await fs.mkdir(outputDir, { recursive: true });
 
       // Retrieve using sf CLI
-      const username = org.getUsername();
+      const username = org.getUsername() ?? org.getOrgId();
       const retrieveCmd = `sf project retrieve start --manifest "${packageXmlPath}" --target-org ${username} --output-dir "${outputDir}"`;
 
       await execAsync(retrieveCmd, {
@@ -309,7 +314,7 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       if (added.length > 0) {
         this.log(messages.getMessage('info.line-added'));
         for (const diff of added) {
-          this.log(`  Line ${diff.lineNumber}: ${diff.orgLine}`);
+          this.log(`  Line ${diff.lineNumber}: ${diff.orgLine ?? ''}`);
         }
         this.log('');
       }
@@ -317,7 +322,7 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       if (removed.length > 0) {
         this.log(messages.getMessage('info.line-removed'));
         for (const diff of removed) {
-          this.log(`  Line ${diff.lineNumber}: ${diff.localLine}`);
+          this.log(`  Line ${diff.lineNumber}: ${diff.localLine ?? ''}`);
         }
         this.log('');
       }
@@ -327,8 +332,8 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
         for (const diff of changed.slice(0, 20)) {
           // Limit to first 20 for readability
           this.log(`  Line ${diff.lineNumber}:`);
-          this.log(`    Local:  ${diff.localLine}`);
-          this.log(`    Org:    ${diff.orgLine}`);
+          this.log(`    Local:  ${diff.localLine ?? ''}`);
+          this.log(`    Org:    ${diff.orgLine ?? ''}`);
         }
         if (changed.length > 20) {
           this.log(`  ... and ${changed.length - 20} more changed lines`);

@@ -38,6 +38,14 @@ Directory where the documentation files will be created.
 
 Specify the output directory for the generated Markdown documentation files. Defaults to 'profile-docs' in the project root.
 
+# flags.exclude-managed.summary
+
+Exclude metadata from managed packages in documentation.
+
+# flags.exclude-managed.description
+
+When enabled, filters out metadata components that belong to managed packages (identified by namespace prefixes like "namespace\_\_ComponentName") from the generated documentation. This makes documentation cleaner by hiding managed package permissions that may not be relevant to your implementation.
+
 # examples
 
 - Generate documentation for all profiles in the project:
@@ -55,3 +63,7 @@ Specify the output directory for the generated Markdown documentation files. Def
 - Generate documentation for a specific profile in a custom directory:
 
   <%= config.bin %> <%= command.id %> --name "Sales User" --output-dir salesforce-docs
+
+- Generate documentation excluding managed package metadata:
+
+  <%= config.bin %> <%= command.id %> --name Admin --exclude-managed

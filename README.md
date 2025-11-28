@@ -1,6 +1,6 @@
 # Profiler - Salesforce CLI Plugin
 
-[![npm version](https://img.shields.io/badge/npm-2.0.5-blue.svg)](https://www.npmjs.com/package/@jterrats/profiler)
+[![npm version](https://img.shields.io/badge/npm-2.1.0-blue.svg)](https://www.npmjs.com/package/@jterrats/profiler)
 [![Test Status](https://github.com/jterrats/profiler/workflows/Test%20Plugin%20on%20Push/badge.svg)](https://github.com/jterrats/profiler/actions)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-brightgreen.svg)](https://raw.githubusercontent.com/jterrats/profiler/main/LICENSE.txt)
 [![Node.js Version](https://img.shields.io/node/v/@jterrats/profiler)](https://nodejs.org)
@@ -139,9 +139,10 @@ For more details, see [Testing and Publishing Guide](docs/development/testing-an
 ## Commands
 
 <!-- commands -->
-* [`sf profiler compare`](#sf-profiler-compare)
-* [`sf profiler docs`](#sf-profiler-docs)
-* [`sf profiler retrieve`](#sf-profiler-retrieve)
+
+- [`sf profiler compare`](#sf-profiler-compare)
+- [`sf profiler docs`](#sf-profiler-docs)
+- [`sf profiler retrieve`](#sf-profiler-retrieve)
 
 ## `sf profiler compare`
 
@@ -150,11 +151,13 @@ Compare local Profile metadata with the version in Salesforce org.
 ```
 USAGE
   $ sf profiler compare -o <value> [--json] [--flags-dir <value>] [-n <value>] [--api-version <value>]
+    [--exclude-managed]
 
 FLAGS
   -n, --name=<value>         The name of a specific profile or comma-separated list of profiles to compare.
   -o, --target-org=<value>   (required) The target org to compare profiles against.
       --api-version=<value>  Override the API version used for metadata operations.
+      --exclude-managed      Exclude metadata from managed packages (with namespace prefixes).
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -180,6 +183,10 @@ EXAMPLES
 
     $ sf profiler compare --target-org myOrg --name "Sales" --api-version 60.0
 
+  Compare excluding managed package metadata:
+
+    $ sf profiler compare --target-org myOrg --name "Admin" --exclude-managed
+
 FLAG DESCRIPTIONS
   -n, --name=<value>  The name of a specific profile or comma-separated list of profiles to compare.
 
@@ -190,9 +197,15 @@ FLAG DESCRIPTIONS
   --api-version=<value>  Override the API version used for metadata operations.
 
     Specify the API version to use for the comparison. Defaults to the org's API version.
+
+  --exclude-managed  Exclude metadata from managed packages (with namespace prefixes).
+
+    When enabled, filters out all metadata components that belong to managed packages (identified by namespace prefixes
+    like "namespace__ComponentName"). This helps avoid errors when comparing profiles that reference components from
+    uninstalled or inaccessible managed packages.
 ```
 
-_See code: [src/commands/profiler/compare.ts](https://github.com/jterrats/profiler/blob/v2.0.2/src/commands/profiler/compare.ts)_
+_See code: [src/commands/profiler/compare.ts](https://github.com/jterrats/profiler/blob/v2.1.0/src/commands/profiler/compare.ts)_
 
 ## `sf profiler docs`
 
@@ -200,11 +213,12 @@ Generate comprehensive documentation for Profile metadata in Markdown format.
 
 ```
 USAGE
-  $ sf profiler docs [--json] [--flags-dir <value>] [-n <value>] [-d <value>]
+  $ sf profiler docs [--json] [--flags-dir <value>] [-n <value>] [-d <value>] [--exclude-managed]
 
 FLAGS
   -d, --output-dir=<value>  [default: profile-docs] Directory where the documentation files will be created.
   -n, --name=<value>        Name of a specific profile or comma-separated list of profiles to document.
+      --exclude-managed     Exclude metadata from managed packages in documentation.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -251,6 +265,10 @@ EXAMPLES
 
     $ sf profiler docs --name "Sales User" --output-dir salesforce-docs
 
+  Generate documentation excluding managed package metadata:
+
+    $ sf profiler docs --name Admin --exclude-managed
+
 FLAG DESCRIPTIONS
   -d, --output-dir=<value>  Directory where the documentation files will be created.
 
@@ -262,9 +280,15 @@ FLAG DESCRIPTIONS
     Specify one or more profile names (without the .profile-meta.xml extension). You can provide a single profile or
     multiple profiles separated by commas. If not provided, documentation will be generated for all profiles found in
     the project. Examples: "Admin", "Admin,Sales Profile,Custom".
+
+  --exclude-managed  Exclude metadata from managed packages in documentation.
+
+    When enabled, filters out metadata components that belong to managed packages (identified by namespace prefixes like
+    "namespace__ComponentName") from the generated documentation. This makes documentation cleaner by hiding managed
+    package permissions that may not be relevant to your implementation.
 ```
 
-_See code: [src/commands/profiler/docs.ts](https://github.com/jterrats/profiler/blob/v2.0.2/src/commands/profiler/docs.ts)_
+_See code: [src/commands/profiler/docs.ts](https://github.com/jterrats/profiler/blob/v2.1.0/src/commands/profiler/docs.ts)_
 
 ## `sf profiler retrieve`
 
@@ -273,7 +297,7 @@ Retrieve Profile metadata with all required dependencies.
 ```
 USAGE
   $ sf profiler retrieve -o <value> [--json] [--flags-dir <value>] [-n <value>] [--all-fields] [--api-version <value>]
-    [-f]
+    [-f] [--exclude-managed]
 
 FLAGS
   -f, --from-project         Use local project metadata to build the package.xml instead of listing from org.
@@ -281,6 +305,7 @@ FLAGS
   -o, --target-org=<value>   (required) The target org to retrieve profiles from.
       --all-fields           Include Field Level Security (FLS) in the retrieved profiles.
       --api-version=<value>  Override the API version used for metadata operations.
+      --exclude-managed      Exclude metadata from managed packages (with namespace prefixes).
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -290,8 +315,9 @@ DESCRIPTION
   Retrieve Profile metadata with all required dependencies.
 
   The profiler retrieve command safely retrieves Profile metadata along with all its dependencies from the target org,
-  including Apex Classes, Custom Applications, Custom Objects, Custom Permissions, Custom Tabs, Flows, and Layouts. Use
-  the --all-fields flag to include Field Level Security (FLS) permissions.
+  including Apex Classes, Apex Pages (Visualforce), Connected Apps, Custom Applications, Custom Objects (with Record
+  Types), Custom Permissions, Custom Tabs, Flows, and Layouts. Use the --all-fields flag to include Field Level Security
+  (FLS) permissions.
 
   IMPORTANT: This command uses system temporary directories (outside your project) for all retrieval operations,
   ensuring your local uncommitted changes are NEVER overwritten. Only profile files are copied to your project - all
@@ -331,6 +357,14 @@ EXAMPLES
 
     $ sf profiler retrieve --target-org myOrg --name "Admin,Sales Profile" --from-project
 
+  Retrieve profiles excluding managed package metadata:
+
+    $ sf profiler retrieve --target-org myOrg --exclude-managed
+
+  Retrieve specific profiles excluding managed packages:
+
+    $ sf profiler retrieve --target-org myOrg --name Admin --exclude-managed
+
 FLAG DESCRIPTIONS
   -f, --from-project  Use local project metadata to build the package.xml instead of listing from org.
 
@@ -352,7 +386,15 @@ FLAG DESCRIPTIONS
   --api-version=<value>  Override the API version used for metadata operations.
 
     Specify the API version to use for the retrieve operation. Defaults to the org's API version.
+
+  --exclude-managed  Exclude metadata from managed packages (with namespace prefixes).
+
+    When enabled, filters out all metadata components that belong to managed packages (identified by namespace prefixes
+    like "namespace__ComponentName"). This helps avoid errors when retrieving profiles that reference components from
+    uninstalled or inaccessible managed packages. Custom objects ending in "__c" are always included even with this
+    flag.
 ```
 
-_See code: [src/commands/profiler/retrieve.ts](https://github.com/jterrats/profiler/blob/v2.0.2/src/commands/profiler/retrieve.ts)_
+_See code: [src/commands/profiler/retrieve.ts](https://github.com/jterrats/profiler/blob/v2.1.0/src/commands/profiler/retrieve.ts)_
+
 <!-- commandsstop -->

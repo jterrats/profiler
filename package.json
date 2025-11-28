@@ -1,7 +1,7 @@
 {
   "name": "@jterrats/profiler",
   "description": "The profiler command is an essential addition to the Salesforce CLI, engineered to guarantee the complete retrieval of Profile metadata along with all its required dependencies.",
-  "version": "2.0.5",
+  "version": "2.1.0",
   "dependencies": {
     "@oclif/core": "^4",
     "@salesforce/core": "^8",
