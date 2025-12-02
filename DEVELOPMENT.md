@@ -55,17 +55,17 @@ This will launch an interactive prompt:
 
 ### Commit Types
 
-| Type | Description | Example |
-|------|-------------|---------|
-| `feat` | New feature | `feat(retrieve): add --exclude-managed flag` |
-| `fix` | Bug fix | `fix(compare): handle special characters` |
-| `docs` | Documentation only | `docs(readme): update installation guide` |
-| `refactor` | Code refactoring | `refactor(retrieve): extract temp directory logic` |
-| `perf` | Performance improvement | `perf(retrieve): optimize XML parsing` |
-| `style` | Code formatting | `style: fix indentation` |
-| `test` | Adding/updating tests | `test(retrieve): add edge case tests` |
-| `chore` | Maintenance tasks | `chore(deps): update dependencies` |
-| `ci` | CI/CD changes | `ci: update GitHub Actions workflow` |
+| Type       | Description             | Example                                            |
+| ---------- | ----------------------- | -------------------------------------------------- |
+| `feat`     | New feature             | `feat(retrieve): add --exclude-managed flag`       |
+| `fix`      | Bug fix                 | `fix(compare): handle special characters`          |
+| `docs`     | Documentation only      | `docs(readme): update installation guide`          |
+| `refactor` | Code refactoring        | `refactor(retrieve): extract temp directory logic` |
+| `perf`     | Performance improvement | `perf(retrieve): optimize XML parsing`             |
+| `style`    | Code formatting         | `style: fix indentation`                           |
+| `test`     | Adding/updating tests   | `test(retrieve): add edge case tests`              |
+| `chore`    | Maintenance tasks       | `chore(deps): update dependencies`                 |
+| `ci`       | CI/CD changes           | `ci: update GitHub Actions workflow`               |
 
 ### Scopes
 
@@ -142,6 +142,7 @@ yarn test
 ```
 
 This runs:
+
 1. TypeScript compilation
 2. Unit tests
 3. Code linting
@@ -167,6 +168,7 @@ yarn test:nuts
 ```
 
 Validates:
+
 - Profile retrieval with all flags
 - Managed package filtering
 - XML content validation
@@ -193,6 +195,7 @@ git checkout -b feat/your-feature-name
 ```
 
 Branch naming conventions:
+
 - `feat/` - New features
 - `fix/` - Bug fixes
 - `docs/` - Documentation
@@ -333,13 +336,14 @@ This auto-generates README from command metadata.
 ### Publish Process
 
 1. **Update Version** (following semver):
+
    ```bash
    # Patch (1.0.0 -> 1.0.1)
    npm version patch
-   
+
    # Minor (1.0.0 -> 1.1.0)
    npm version minor
-   
+
    # Major (1.0.0 -> 2.0.0)
    npm version major
    ```
@@ -347,11 +351,13 @@ This auto-generates README from command metadata.
 2. **Update CHANGELOG.md** with changes
 
 3. **Create Release**:
+
    ```bash
    ./scripts/publish-release.sh
    ```
 
    This will:
+
    - Create git tag
    - Push to GitHub
    - Create GitHub Release
@@ -448,4 +454,3 @@ git commit -m "message"
 ---
 
 **Last Updated**: 2024-12-02
-

@@ -44,17 +44,12 @@ All TypeScript code must use strict mode:
 
 ```typescript
 // Function signatures
-export async function retrieveProfiles(
-  org: Org,
-  profileNames?: string[]
-): Promise<RetrieveResult> {
+export async function retrieveProfiles(org: Org, profileNames?: string[]): Promise<RetrieveResult> {
   // Implementation
 }
 
 // Complex return types
-export function parseProfileXML(
-  content: string
-): {
+export function parseProfileXML(content: string): {
   permissions: UserPermission[];
   objects: ObjectPermission[];
   errors: string[];
@@ -154,11 +149,10 @@ import { SfError } from '@salesforce/core';
 
 // ✅ DO: Use SfError
 if (!profileExists) {
-  throw new SfError(
-    `Profile '${profileName}' not found in org`,
-    'ProfileNotFoundError',
-    ['Verify the profile name', 'Check org permissions']
-  );
+  throw new SfError(`Profile '${profileName}' not found in org`, 'ProfileNotFoundError', [
+    'Verify the profile name',
+    'Check org permissions',
+  ]);
 }
 
 // ❌ DON'T: Generic Error
@@ -176,11 +170,7 @@ try {
   throw new SfError(
     `Failed to retrieve profiles: ${error.message}`,
     'RetrieveError',
-    [
-      'Check your org connection',
-      'Verify metadata API access',
-      'Try with --api-version flag',
-    ],
+    ['Check your org connection', 'Verify metadata API access', 'Try with --api-version flag'],
     0, // exit code
     error // original error
   );
@@ -424,4 +414,3 @@ Before committing, ensure:
 ---
 
 **Last Updated**: 2024-12-02
-
