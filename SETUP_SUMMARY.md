@@ -11,8 +11,8 @@
 
 ### 2. Branch Protection Setup
 - **Creado** `.github/BRANCH_PROTECTION.md` con documentación completa
-- **Creado** `scripts/setup-branch-protection.sh` script automatizado
-- **Configurado** script como ejecutable
+- **Configurado** branch protection manualmente via GitHub UI
+- **Activo** ruleset para branch `main`
 
 ---
 
@@ -28,59 +28,19 @@ sf plugins trust allow @jterrats/profiler
 sf plugins install @jterrats/profiler
 ```
 
-### Paso 2: Configurar Branch Protection (IMPORTANTE)
+### Paso 2: Configurar Branch Protection ✅ COMPLETADO
 
-Tienes **2 opciones**:
+Branch protection fue configurado manualmente via GitHub UI con las siguientes reglas:
 
-#### Opción A: Script Automatizado (Recomendado) 🚀
+- ✅ Restrict creations, updates, and deletions
+- ✅ Require pull request before merging (1 approval)
+- ✅ Dismiss stale pull request approvals
+- ✅ Require conversation resolution
+- ✅ Require status checks to pass (all test matrices)
+- ✅ Block force pushes
+- ✅ Repository admin bypass allowed
 
-```bash
-# 1. Instalar GitHub CLI si no lo tienes
-brew install gh  # macOS
-# o ver: https://cli.github.com/
-
-# 2. Ejecutar script
-./scripts/setup-branch-protection.sh
-
-# El script te pedirá confirmación antes de aplicar los cambios
-```
-
-#### Opción B: Configuración Manual via Web UI 🖱️
-
-1. Ve a: https://github.com/jterrats/profiler/settings/branches
-2. Click **"Add rule"** (o edita la regla existente para `main`)
-3. Configurar:
-   - ☑ Branch name pattern: `main`
-   - ☑ Require a pull request before merging
-     - ☑ Require approvals: **1**
-     - ☑ Dismiss stale pull request approvals
-   - ☑ Require status checks to pass before merging
-     - ☑ Require branches to be up to date
-     - Status checks: `Test Plugin on Push`
-   - ☑ Require linear history
-   - ☑ Restrict who can push to matching branches
-     - Add: `jterrats` y cualquier otro usuario autorizado
-   - ☑ Include administrators
-   - ☑ Do not allow bypassing the above settings
-4. Click **"Create"** o **"Save changes"**
-
-### Paso 3: Verificar Protección
-
-Después de configurar, prueba:
-
-```bash
-# Test 1: Intentar push directo (debe fallar)
-git checkout main
-echo "test" >> test.txt
-git add test.txt
-git commit -m "test"
-git push origin main
-# ❌ Debería rechazar el push
-
-# Cleanup
-git reset --hard HEAD~1
-git push origin main --force  # Este también debería fallar
-```
+**Ruleset activo en:** https://github.com/jterrats/profiler/settings/rules
 
 ### Paso 4: Commit y Push Cambios
 

@@ -11,8 +11,10 @@ The Profiler plugin streamlines the process of retrieving Salesforce Profile met
 The plugin automatically identifies and retrieves all metadata types that profiles depend on:
 
 - **Apex Classes**: All class permissions referenced in profiles
+- **Apex Pages**: Visualforce page permissions
+- **Connected Apps**: Connected application settings
 - **Custom Applications**: Application visibility settings
-- **Custom Objects**: Object-level permissions
+- **Custom Objects**: Object-level permissions (includes RecordTypes)
 - **Custom Permissions**: Custom permission assignments
 - **Custom Tabs**: Tab visibility settings
 - **Flows**: Flow access permissions
@@ -32,7 +34,22 @@ The plugin automatically identifies and retrieves all metadata types that profil
 - Useful when you need to audit or manage field permissions
 - Required for complete profile deployment with FLS
 
-### 3. Smart Metadata Restoration
+### 3. Managed Package Filtering
+
+#### With `--exclude-managed` Flag
+- Filters out all metadata components from managed packages
+- Identifies components by namespace prefixes (e.g., `namespace__ComponentName`)
+- Helps avoid errors when managed packages are uninstalled or inaccessible
+- Makes profile files cleaner by removing external dependencies
+- Custom objects ending in `__c` are always included even with this flag
+
+**Use Cases:**
+- Retrieving profiles when managed packages are not installed in target org
+- Cleaning up profiles before version control commits
+- Generating documentation without third-party package clutter
+- Comparing profiles across orgs with different managed packages
+
+### 4. Smart Metadata Restoration
 
 Similar to the original script, the plugin includes smart restoration features:
 

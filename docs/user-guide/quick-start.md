@@ -31,21 +31,30 @@ sf profiler retrieve --target-org myOrg
 # Retrieve with Field Level Security
 sf profiler retrieve --target-org myOrg --all-fields
 
+# Retrieve excluding managed packages
+sf profiler retrieve --target-org myOrg --exclude-managed
+
 # Compare a specific profile
 sf profiler compare --target-org myOrg --name "Admin"
 
 # Compare all profiles
 sf profiler compare --target-org myOrg
+
+# Generate documentation
+sf profiler docs
 ```
 
 ## ⚡ Common Commands
 
 ```bash
 # Plugin Commands
-sf profiler retrieve --target-org myOrg              # Retrieve profiles
-sf profiler retrieve --target-org myOrg --all-fields  # Retrieve with FLS
-sf profiler compare --target-org myOrg --name Admin  # Compare specific profile
-sf profiler compare --target-org myOrg               # Compare all profiles
+sf profiler retrieve --target-org myOrg                    # Retrieve profiles
+sf profiler retrieve --target-org myOrg --all-fields       # Retrieve with FLS
+sf profiler retrieve --target-org myOrg --exclude-managed  # Exclude managed packages
+sf profiler compare --target-org myOrg --name Admin        # Compare specific profile
+sf profiler compare --target-org myOrg                     # Compare all profiles
+sf profiler docs                                           # Generate documentation
+sf profiler docs --exclude-managed                         # Docs without managed packages
 
 # Development
 yarn build              # Compile TypeScript
@@ -71,6 +80,7 @@ sf profiler retrieve --target-org <org-alias> [flags]
 
 **Optional Flags:**
 - `--all-fields` - Include Field Level Security
+- `--exclude-managed` - Exclude managed package components
 - `--api-version` - Specify API version
 - `--json` - Output in JSON format
 
@@ -92,8 +102,10 @@ sf profiler compare --target-org <org-alias> [flags]
 The plugin retrieves:
 - ✅ Profiles
 - ✅ Apex Classes
+- ✅ Apex Pages (Visualforce)
+- ✅ Connected Apps
 - ✅ Custom Applications
-- ✅ Custom Objects
+- ✅ Custom Objects (includes RecordTypes)
 - ✅ Custom Permissions
 - ✅ Custom Tabs
 - ✅ Flows
