@@ -72,6 +72,22 @@ sf plugins install @jterrats/profiler
 sf plugins install @jterrats/profiler@2.0.0
 ```
 
+> **⚠️ Unsigned Plugin Notice:** This is a third-party plugin not officially signed by Salesforce. During installation, you'll see a confirmation prompt.
+>
+> **Installation Options:**
+>
+> ```bash
+> # Option 1: Accept the prompt manually during installation
+> sf plugins install @jterrats/profiler
+>
+> # Option 2: Skip the prompt with --force flag
+> sf plugins install @jterrats/profiler --force
+>
+> # Option 3: Trust the plugin permanently (recommended)
+> sf plugins trust allow @jterrats/profiler
+> sf plugins install @jterrats/profiler
+> ```
+
 ## Issues
 
 Please report any issues at https://github.com/jterrats/profiler/issues
