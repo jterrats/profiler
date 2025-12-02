@@ -9,10 +9,14 @@
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
     "@oclif/plugin-command-snapshot": "^5.3.8",
     "@salesforce/cli-plugins-testkit": "^5.3.10",
     "@salesforce/dev-scripts": "^10",
     "@types/xml2js": "^0.4.14",
+    "commitizen": "^4.3.0",
+    "cz-customizable": "^7.0.0",
     "eslint-plugin-sf-plugin": "^1.20.33",
     "oclif": "^4.22.47",
     "ts-node": "^10.9.2",
@@ -55,6 +59,7 @@
     "build": "wireit",
     "clean": "sf-clean",
     "clean-all": "sf-clean all",
+    "commit": "cz",
     "compile": "wireit",
     "docs": "sf-docs",
     "format": "wireit",
@@ -191,5 +196,13 @@
   "bugs": {
     "url": "https://github.com/jterrats/profiler/issues"
   },
-  "homepage": "https://github.com/jterrats/profiler#readme"
+  "homepage": "https://github.com/jterrats/profiler#readme",
+  "config": {
+    "commitizen": {
+      "path": "node_modules/cz-customizable"
+    },
+    "cz-customizable": {
+      "config": ".cz-config.js"
+    }
+  }
 }
