@@ -9,7 +9,7 @@ on:
       - main
       - develop
     paths-ignore:
-      - '**.md'  # Skip docs-only changes
+      - '**.md' # Skip docs-only changes
       - 'docs/**'
       - 'LICENSE'
   pull_request:
@@ -118,6 +118,13 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      # Install Salesforce CLI for E2E tests
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: Verify SF CLI
+        run: sf --version
+
       - name: Build
         run: yarn build
 
@@ -158,4 +165,3 @@ jobs:
             echo "Build failed: lib directory not found"
             exit 1
           fi
-
