@@ -16,6 +16,7 @@ sf profiler docs [--name <profile-name>] [--output-dir <directory>]
 |------|-------|-------------|---------|
 | `--name` | `-n` | Name of a specific profile to document | (all profiles) |
 | `--output-dir` | `-d` | Output directory for generated documentation | `profile-docs` |
+| `--exclude-managed` | - | Exclude metadata from managed packages in documentation | - |
 | `--json` | - | Format output as JSON | - |
 
 ## Usage Examples
@@ -47,10 +48,20 @@ sf profiler docs --output-dir docs/profiles
 
 This will save the generated documentation to `docs/profiles/` instead of the default `profile-docs/` directory.
 
+### Exclude Managed Packages
+
+Generate documentation without managed package permissions:
+
+```bash
+sf profiler docs --exclude-managed
+```
+
+This creates cleaner documentation by filtering out permissions from managed packages.
+
 ### Combine Flags
 
 ```bash
-sf profiler docs --name "Sales User" --output-dir salesforce-docs
+sf profiler docs --name "Sales User" --output-dir salesforce-docs --exclude-managed
 ```
 
 ## Generated Documentation Structure

@@ -21,6 +21,7 @@ sf profiler compare --target-org <org-alias> [--name <profile-name>] [--api-vers
 |------|-------|----------|-------------|
 | `--target-org` | | Yes | The target org to compare profiles against |
 | `--name` | `-n` | No | The name of a specific profile to compare (without .profile-meta.xml) |
+| `--exclude-managed` | | No | Exclude metadata from managed packages (with namespace prefixes) |
 | `--api-version` | | No | Override the API version used for metadata operations |
 | `--json` | | No | Format output as JSON |
 
@@ -47,6 +48,16 @@ sf profiler compare --target-org dev-sandbox
 ```bash
 sf profiler compare --target-org integration --name "Sales" --api-version 60.0
 ```
+
+### Exclude Managed Packages
+
+Compare profiles while excluding managed package components:
+
+```bash
+sf profiler compare --target-org production --name "Admin" --exclude-managed
+```
+
+This is useful when comparing profiles that reference managed package components that may not be installed or accessible.
 
 ### JSON Output for Automation
 
