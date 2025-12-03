@@ -68,6 +68,10 @@
     "prepare": "husky install",
     "prepack": "sf-prepack",
     "test": "wireit",
+    "test:errors": "wireit",
+    "test:unit": "wireit",
+    "test:integration": "wireit",
+    "test:e2e": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
     "test:nuts": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
     "test:only": "wireit",
     "version": "oclif readme"
@@ -146,6 +150,57 @@
         ".nycrc"
       ],
       "output": []
+    },
+    "test:errors": {
+      "command": "nyc mocha \"test/**/*.errors.test.ts\"",
+      "env": {
+        "FORCE_COLOR": "2"
+      },
+      "files": [
+        "test/**/*.errors.test.ts",
+        "src/**/*.ts",
+        "**/tsconfig.json",
+        ".mocha*",
+        ".nycrc"
+      ],
+      "output": [],
+      "dependencies": [
+        "test:compile"
+      ]
+    },
+    "test:unit": {
+      "command": "nyc mocha \"test/unit/**/*.test.ts\"",
+      "env": {
+        "FORCE_COLOR": "2"
+      },
+      "files": [
+        "test/unit/**/*.test.ts",
+        "src/**/*.ts",
+        "**/tsconfig.json",
+        ".mocha*",
+        ".nycrc"
+      ],
+      "output": [],
+      "dependencies": [
+        "test:compile"
+      ]
+    },
+    "test:integration": {
+      "command": "nyc mocha \"test/integration/**/*.test.ts\"",
+      "env": {
+        "FORCE_COLOR": "2"
+      },
+      "files": [
+        "test/integration/**/*.test.ts",
+        "src/**/*.ts",
+        "**/tsconfig.json",
+        ".mocha*",
+        ".nycrc"
+      ],
+      "output": [],
+      "dependencies": [
+        "test:compile"
+      ]
     },
     "test:command-reference": {
       "command": "node --loader ts-node/esm --no-warnings=ExperimentalWarning \"./bin/dev.js\" commandreference:generate --erroronwarnings",

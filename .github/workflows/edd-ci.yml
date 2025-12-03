@@ -1,0 +1,161 @@
+name: EDD CI Pipeline
+
+# Optimized for GitHub Actions Free Tier
+# Philosophy: Run error tests first (cheap), full tests only when needed
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - '**.md'  # Skip docs-only changes
+      - 'docs/**'
+      - 'LICENSE'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+# Cancel in-progress runs when new commit pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Tier 1: Fast checks (runs always, ~2-3 min)
+  quick-check:
+    name: Lint & Error Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # Fast: Linting (catches simple errors)
+      - name: Lint
+        run: yarn lint
+
+      # Fast: Type checking (catches type errors)
+      - name: Type Check
+        run: yarn tsc --noEmit
+
+      # EDD Core: Run error tests FIRST
+      # These tests are designed to be fast and comprehensive
+      - name: Run Error Tests
+        run: |
+          echo "🚨 Running Error-Driven Development Tests..."
+          yarn test:errors --maxWorkers=2
+        env:
+          NODE_ENV: test
+
+      # If error tests pass, we have confidence in error handling
+      - name: ✅ Error Tests Passed
+        if: success()
+        run: echo "All error scenarios properly handled!"
+
+  # Tier 2: Unit & Integration (runs on PRs only, ~5-7 min)
+  unit-tests:
+    name: Unit & Integration Tests
+    needs: quick-check
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # Now run happy path tests
+      - name: Run Unit Tests
+        run: yarn test:unit --maxWorkers=2
+
+      - name: Run Integration Tests
+        run: yarn test:integration --maxWorkers=2
+
+      # Generate coverage report
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  # Tier 3: E2E Tests (runs only on main merge, ~10-15 min)
+  e2e-tests:
+    name: End-to-End Tests
+    needs: quick-check
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build
+        run: yarn build
+
+      # E2E tests use actual SF org
+      - name: Run E2E Tests
+        run: yarn test:e2e
+        env:
+          SALESFORCE_CLIENT_ID: ${{ secrets.SALESFORCE_CLIENT_ID }}
+          SALESFORCE_CLIENT_SECRET: ${{ secrets.SALESFORCE_CLIENT_SECRET }}
+          TESTKIT_AUTH_URL: ${{ secrets.TESTKIT_AUTH_URL }}
+
+  # Optional: Build check (only on main/develop, ~3-5 min)
+  build:
+    name: Build Check
+    needs: quick-check
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build
+        run: yarn build
+
+      - name: Verify build artifacts
+        run: |
+          if [ ! -d "lib" ]; then
+            echo "Build failed: lib directory not found"
+            exit 1
+          fi
+
