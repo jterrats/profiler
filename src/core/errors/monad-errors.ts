@@ -12,11 +12,8 @@ import { FatalError } from './base-errors.js';
  * ```
  */
 export class UnwrapError extends FatalError {
-  constructor(error: Error) {
-    super(
-      `Attempted to unwrap Failure: ${error.message}`,
-      'UNWRAP_FAILURE'
-    );
+  public constructor(error: Error) {
+    super(`Attempted to unwrap Failure: ${error.message}`, 'UNWRAP_FAILURE');
     this.cause = error;
   }
 }
@@ -29,11 +26,7 @@ export class UnwrapError extends FatalError {
  * This is a programming error that indicates a bug in the Result implementation.
  */
 export class TypeGuardError extends FatalError {
-  constructor(message: string) {
-    super(
-      `Type guard assertion failed: ${message}`,
-      'TYPE_GUARD_ERROR'
-    );
+  public constructor(message: string) {
+    super(`Type guard assertion failed: ${message}`, 'TYPE_GUARD_ERROR');
   }
 }
-

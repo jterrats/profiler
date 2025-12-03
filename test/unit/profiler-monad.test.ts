@@ -56,7 +56,7 @@ describe('ProfilerMonad - Happy Path', () => {
     it('should lift async function into monad', async () => {
       // Arrange & Act
       const monad = liftAsync(async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return 'async result';
       });
       const result = await monad.run();
@@ -75,7 +75,7 @@ describe('ProfilerMonad - Happy Path', () => {
       const monad = pure(10);
 
       // Act
-      const mapped = monad.map(x => x * 2);
+      const mapped = monad.map((x) => x * 2);
       const result = await mapped.run();
 
       // Assert
@@ -91,9 +91,9 @@ describe('ProfilerMonad - Happy Path', () => {
 
       // Act
       const result = await monad
-        .map(x => x * 2)   // 10
-        .map(x => x + 3)   // 13
-        .map(x => x * 10)  // 130
+        .map((x) => x * 2) // 10
+        .map((x) => x + 3) // 13
+        .map((x) => x * 10) // 130
         .run();
 
       // Assert
@@ -109,8 +109,8 @@ describe('ProfilerMonad - Happy Path', () => {
 
       // Act
       const result = await monad
-        .map(s => s.toUpperCase())
-        .map(s => s + '!')
+        .map((s) => s.toUpperCase())
+        .map((s) => s + '!')
         .run();
 
       // Assert
@@ -124,13 +124,11 @@ describe('ProfilerMonad - Happy Path', () => {
   describe('flatMap()', () => {
     it('should chain monad-returning functions', async () => {
       // Arrange
-      const divide = (a: number, b: number): ProfilerMonad<number> => {
-        return liftAsync(() => a / b);
-      };
+      const divide = (a: number, b: number): ProfilerMonad<number> => liftAsync(() => a / b);
 
       // Act
       const result = await pure(10)
-        .flatMap(x => divide(x, 2))
+        .flatMap((x) => divide(x, 2))
         .run();
 
       // Assert
@@ -147,9 +145,9 @@ describe('ProfilerMonad - Happy Path', () => {
 
       // Act
       const result = await pure(5)
-        .flatMap(x => add(x, 3))      // 8
-        .flatMap(x => multiply(x, 2)) // 16
-        .flatMap(x => add(x, 4))      // 20
+        .flatMap((x) => add(x, 3)) // 8
+        .flatMap((x) => multiply(x, 2)) // 16
+        .flatMap((x) => add(x, 4)) // 20
         .run();
 
       // Assert
@@ -161,14 +159,15 @@ describe('ProfilerMonad - Happy Path', () => {
 
     it('should work with async operations', async () => {
       // Arrange
-      const fetchData = (id: number) => liftAsync(async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
-        return { id, name: `Item ${id}` };
-      });
+      const fetchData = (id: number) =>
+        liftAsync(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          return { id, name: `Item ${id}` };
+        });
 
       // Act
       const result = await pure(42)
-        .flatMap(id => fetchData(id))
+        .flatMap((id) => fetchData(id))
         .run();
 
       // Assert
@@ -186,7 +185,7 @@ describe('ProfilerMonad - Happy Path', () => {
 
       // Act
       const result = await pure(5)
-        .chain(x => add(x, 3))
+        .chain((x) => add(x, 3))
         .run();
 
       // Assert
@@ -205,7 +204,9 @@ describe('ProfilerMonad - Happy Path', () => {
 
       // Act
       const result = await monad
-        .tap(x => { sideEffect = x; })
+        .tap((x) => {
+          sideEffect = x;
+        })
         .run();
 
       // Assert
@@ -222,9 +223,9 @@ describe('ProfilerMonad - Happy Path', () => {
 
       // Act
       const result = await pure('test')
-        .tap(s => log.push(`Before: ${s}`))
-        .map(s => s.toUpperCase())
-        .tap(s => log.push(`After: ${s}`))
+        .tap((s) => log.push(`Before: ${s}`))
+        .map((s) => s.toUpperCase())
+        .tap((s) => log.push(`After: ${s}`))
         .run();
 
       // Assert
@@ -235,8 +236,10 @@ describe('ProfilerMonad - Happy Path', () => {
     it('should not break chain if tap throws', async () => {
       // Arrange & Act
       const result = await pure(10)
-        .tap(() => { throw new Error('Tap error'); })
-        .map(x => x * 2)
+        .tap(() => {
+          throw new Error('Tap error');
+        })
+        .map((x) => x * 2)
         .run();
 
       // Assert - tap errors are ignored
@@ -289,7 +292,7 @@ describe('ProfilerMonad - Happy Path', () => {
       let errorMessage = '';
       const monad = liftAsync<string>(() => {
         throw new Error('Database error');
-      }).recover(error => {
+      }).recover((error) => {
         errorMessage = error.message;
         return 'default';
       });
@@ -371,11 +374,7 @@ describe('ProfilerMonad - Happy Path', () => {
   describe('sequence()', () => {
     it('should execute multiple monads and collect results', async () => {
       // Arrange
-      const monads = [
-        pure(1),
-        pure(2),
-        pure(3),
-      ];
+      const monads = [pure(1), pure(2), pure(3)];
 
       // Act
       const result = await sequence(monads).run();
@@ -389,11 +388,7 @@ describe('ProfilerMonad - Happy Path', () => {
 
     it('should work with async monads', async () => {
       // Arrange
-      const monads = [
-        liftAsync(async () => 'a'),
-        liftAsync(async () => 'b'),
-        liftAsync(async () => 'c'),
-      ];
+      const monads = [liftAsync(async () => 'a'), liftAsync(async () => 'b'), liftAsync(async () => 'c')];
 
       // Act
       const result = await sequence(monads).run();
@@ -425,10 +420,11 @@ describe('ProfilerMonad - Happy Path', () => {
     it('should work with async operations', async () => {
       // Arrange
       const ids = [1, 2, 3];
-      const fetchItem = (id: number) => liftAsync(async () => ({
-        id,
-        name: `Item ${id}`,
-      }));
+      const fetchItem = (id: number) =>
+        liftAsync(async () => ({
+          id,
+          name: `Item ${id}`,
+        }));
 
       // Act
       const result = await traverse(ids, fetchItem).run();
@@ -447,29 +443,34 @@ describe('ProfilerMonad - Happy Path', () => {
       // Simulate real workflow
       type Profile = { name: string; permissions: string[] };
 
-      const fetchProfile = (name: string) => liftAsync(async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
-        return { name, permissions: ['read'] } as Profile;
-      });
+      const fetchProfile = (name: string) =>
+        liftAsync(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          return { name, permissions: ['read'] } as Profile;
+        });
 
-      const addPermission = (profile: Profile, perm: string) => pure({
-        ...profile,
-        permissions: [...profile.permissions, perm],
-      });
+      const addPermission = (profile: Profile, perm: string) =>
+        pure({
+          ...profile,
+          permissions: [...profile.permissions, perm],
+        });
 
-      const validateProfile = (profile: Profile) => liftAsync(async () => {
-        if (profile.permissions.length === 0) {
-          throw new Error('No permissions');
-        }
-        return profile;
-      });
+      const validateProfile = (profile: Profile) =>
+        liftAsync(async () => {
+          if (profile.permissions.length === 0) {
+            throw new Error('No permissions');
+          }
+          return profile;
+        });
 
       // Act
       const result = await fetchProfile('Admin')
-        .tap(p => console.log(`Fetched: ${p.name}`))
-        .flatMap(p => addPermission(p, 'write'))
-        .flatMap(p => addPermission(p, 'delete'))
-        .flatMap(p => validateProfile(p))
+        .tap(() => {
+          /* Side effect: log */
+        })
+        .flatMap((p) => addPermission(p, 'write'))
+        .flatMap((p) => addPermission(p, 'delete'))
+        .flatMap((p) => validateProfile(p))
         .run();
 
       // Assert
@@ -482,9 +483,10 @@ describe('ProfilerMonad - Happy Path', () => {
 
     it('should handle error recovery in workflow', async () => {
       // Arrange
-      const riskyOperation = () => liftAsync<{ status: string }>(() => {
-        throw new Error('Operation failed');
-      });
+      const riskyOperation = () =>
+        liftAsync<{ status: string }>(() => {
+          throw new Error('Operation failed');
+        });
 
       const fallback = { status: 'fallback' };
 
@@ -502,4 +504,3 @@ describe('ProfilerMonad - Happy Path', () => {
     });
   });
 });
-

@@ -113,7 +113,7 @@ describe('Result Monad - Happy Path', () => {
       const result = success(10);
 
       // Act
-      const mapped = result.map(x => x * 2);
+      const mapped = result.map((x) => x * 2);
 
       // Assert
       expect(mapped.isSuccess()).to.be.true;
@@ -126,9 +126,9 @@ describe('Result Monad - Happy Path', () => {
 
       // Act
       const mapped = result
-        .map(x => x * 2)   // 10
-        .map(x => x + 3)   // 13
-        .map(x => x * 10); // 130
+        .map((x) => x * 2) // 10
+        .map((x) => x + 3) // 13
+        .map((x) => x * 10); // 130
 
       // Assert
       expect(mapped.unsafeUnwrap()).to.equal(130);
@@ -140,7 +140,7 @@ describe('Result Monad - Happy Path', () => {
       let executed = false;
 
       // Act
-      const mapped = result.map(x => {
+      const mapped = result.map((x) => {
         executed = true;
         return x * 2;
       });
@@ -178,7 +178,7 @@ describe('Result Monad - Happy Path', () => {
       const result = success(10);
 
       // Act
-      const chained = result.flatMap(x => divide(x, 2));
+      const chained = result.flatMap((x) => divide(x, 2));
 
       // Assert
       expect(chained.isSuccess()).to.be.true;
@@ -196,9 +196,9 @@ describe('Result Monad - Happy Path', () => {
 
       // Act
       const chained = result
-        .flatMap(x => divide(x, 2))    // Success(5)
-        .flatMap(x => divide(x, 0))    // Failure
-        .flatMap(x => divide(x, 2));   // Should not execute
+        .flatMap((x) => divide(x, 2)) // Success(5)
+        .flatMap((x) => divide(x, 0)) // Failure
+        .flatMap((x) => divide(x, 2)); // Should not execute
 
       // Assert
       expect(chained.isFailure()).to.be.true;
@@ -339,17 +339,16 @@ describe('Result Monad - Happy Path', () => {
         return success(profile);
       };
 
-      const addPermission = (profile: Profile, perm: string): Result<Profile> => {
-        return success({
+      const addPermission = (profile: Profile, perm: string): Result<Profile> =>
+        success({
           ...profile,
           permissions: [...profile.permissions, perm],
         });
-      };
 
       // Act
       const result = getProfile('Admin')
         .flatMap(validateProfile)
-        .flatMap(p => addPermission(p, 'delete'));
+        .flatMap((p) => addPermission(p, 'delete'));
 
       // Assert
       expect(result.isSuccess()).to.be.true;
@@ -360,4 +359,3 @@ describe('Result Monad - Happy Path', () => {
     });
   });
 });
-

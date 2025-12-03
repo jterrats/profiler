@@ -33,42 +33,44 @@ export type Result<T, E = Error> = Success<T> | Failure<E>;
  * Success - Represents a successful result
  */
 export class Success<T> {
-  readonly _tag = 'Success' as const;
+  public readonly _tag = 'Success' as const;
 
-  constructor(readonly value: T) {}
+  public constructor(public readonly value: T) {}
 
   /**
    * Type guard to check if result is Success
    */
-  isSuccess(): this is Success<T> {
+  // eslint-disable-next-line class-methods-use-this
+  public isSuccess(): this is Success<T> {
     return true;
   }
 
   /**
    * Type guard to check if result is Failure
    */
-  isFailure(): this is Failure<never> {
+  // eslint-disable-next-line class-methods-use-this
+  public isFailure(): this is Failure<never> {
     return false;
   }
 
   /**
    * Unwrap the value (safe - cannot fail)
    */
-  unsafeUnwrap(): T {
+  public unsafeUnwrap(): T {
     return this.value;
   }
 
   /**
    * Get the value or a default
    */
-  unwrapOr(_defaultValue: T): T {
+  public unwrapOr(): T {
     return this.value;
   }
 
   /**
    * Map the value if Success
    */
-  map<U>(fn: (value: T) => U): Result<U> {
+  public map<U>(fn: (value: T) => U): Result<U> {
     try {
       return success(fn(this.value));
     } catch (error) {
@@ -79,7 +81,7 @@ export class Success<T> {
   /**
    * FlatMap (chain) for monadic composition
    */
-  flatMap<U>(fn: (value: T) => Result<U>): Result<U> {
+  public flatMap<U>(fn: (value: T) => Result<U>): Result<U> {
     try {
       return fn(this.value);
     } catch (error) {
@@ -92,50 +94,53 @@ export class Success<T> {
  * Failure - Represents a failed result
  */
 export class Failure<E = Error> {
-  readonly _tag = 'Failure' as const;
+  public readonly _tag = 'Failure' as const;
 
-  constructor(readonly error: E) {}
+  public constructor(public readonly error: E) {}
 
   /**
    * Type guard to check if result is Success
    */
-  isSuccess(): this is Success<never> {
+  // eslint-disable-next-line class-methods-use-this
+  public isSuccess(): this is Success<never> {
     return false;
   }
 
   /**
    * Type guard to check if result is Failure
    */
-  isFailure(): this is Failure<E> {
+  // eslint-disable-next-line class-methods-use-this
+  public isFailure(): this is Failure<E> {
     return true;
   }
 
   /**
    * Unwrap the value (unsafe - will throw)
    */
-  unsafeUnwrap(): never {
+  public unsafeUnwrap(): never {
     throw new UnwrapError(this.error instanceof Error ? this.error : new Error(String(this.error)));
   }
 
   /**
    * Get a default value instead of the error
    */
-  unwrapOr<T>(defaultValue: T): T {
+  // eslint-disable-next-line class-methods-use-this
+  public unwrapOr<T>(defaultValue: T): T {
     return defaultValue;
   }
 
   /**
    * Map does nothing on Failure (propagates error)
    */
-  map<U>(_fn: (value: never) => U): Result<U> {
-    return this as any;
+  public map<U>(): Result<U, E> {
+    return this as unknown as Failure<E>;
   }
 
   /**
    * FlatMap does nothing on Failure (propagates error)
    */
-  flatMap<U>(_fn: (value: never) => Result<U>): Result<U> {
-    return this as any;
+  public flatMap<U>(): Result<U, E> {
+    return this as unknown as Failure<E>;
   }
 }
 
@@ -182,4 +187,3 @@ export async function tryCatchAsync<T>(fn: () => Promise<T>): Promise<Result<T>>
     return failure(error instanceof Error ? error : new Error(String(error)));
   }
 }
-

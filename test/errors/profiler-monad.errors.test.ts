@@ -1,9 +1,9 @@
 /**
  * ERROR-DRIVEN DEVELOPMENT: ProfilerMonad Error Tests
- * 
+ *
  * These tests MUST be written BEFORE implementation.
  * They MUST FAIL initially, then pass after implementation.
- * 
+ *
  * Purpose: Ensure ProfilerMonad handles all error cases properly.
  */
 
@@ -42,7 +42,7 @@ describe('ProfilerMonad - Error Handling', () => {
 
       // Assert
       if (result.isFailure()) {
-        expect((result.error as any).cause).to.equal(originalError);
+        expect((result.error as ComputationError).cause).to.equal(originalError);
       }
     });
 
@@ -83,7 +83,7 @@ describe('ProfilerMonad - Error Handling', () => {
     it('should capture errors in nested flatMap', async () => {
       // Arrange
       const monad = pure(1)
-        .flatMap(x => pure(x + 1))
+        .flatMap((x) => pure(x + 1))
         .flatMap(() => {
           throw new Error('Second flatMap failed');
         });
@@ -123,8 +123,8 @@ describe('ProfilerMonad - Error Handling', () => {
       // Arrange
       const originalError = new Error('Original');
       const recoveryError = new Error('Recovery');
-      
-      const monad = liftAsync(() => {
+
+      const monad = liftAsync<number>(() => {
         throw originalError;
       }).recover(() => {
         throw recoveryError;
@@ -137,7 +137,7 @@ describe('ProfilerMonad - Error Handling', () => {
       if (result.isFailure()) {
         expect(result.error.message).to.include('Original');
         expect(result.error.message).to.include('Recovery');
-        expect((result.error as any).cause).to.equal(recoveryError);
+        expect((result.error as RecoveryError).cause).to.equal(recoveryError);
       }
     });
   });
@@ -146,11 +146,13 @@ describe('ProfilerMonad - Error Handling', () => {
     it('should propagate errors through chain', async () => {
       // Arrange
       const monad = pure(5)
-        .map(x => x * 2)
-        .flatMap(() => liftAsync(() => {
-          throw new Error('Step 2 failed');
-        }))
-        .map(x => x + 1); // Should not execute
+        .map((x) => x * 2)
+        .flatMap(() =>
+          liftAsync<number>(() => {
+            throw new Error('Step 2 failed');
+          })
+        )
+        .map((x) => x + 1); // Should not execute
 
       // Act
       const result = await monad.run();
@@ -167,11 +169,10 @@ describe('ProfilerMonad - Error Handling', () => {
       let executed = false;
       const monad = liftAsync(() => {
         throw new Error('First error');
-      })
-        .map(() => {
-          executed = true;
-          return 42;
-        });
+      }).map(() => {
+        executed = true;
+        return 42;
+      });
 
       // Act
       await monad.run();
@@ -186,9 +187,11 @@ describe('ProfilerMonad - Error Handling', () => {
       let step3Executed = false;
 
       const monad = pure(1)
-        .flatMap(() => liftAsync(() => {
-          throw new Error('Step 1 error');
-        }))
+        .flatMap(() =>
+          liftAsync(() => {
+            throw new Error('Step 1 error');
+          })
+        )
         .flatMap(() => {
           step2Executed = true;
           return pure(2);
@@ -305,4 +308,3 @@ describe('ProfilerMonad - Error Handling', () => {
     });
   });
 });
-
