@@ -60,7 +60,6 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
   private tempDir = '';
   private tempRetrieveDir = '';
   private projectPath = '';
-  private backupDir = '';
 
   public async run(): Promise<ProfilerRetrieveResult> {
     const { flags } = await this.parse(ProfilerRetrieve);
@@ -112,10 +111,6 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     this.tempRetrieveDir = path.join(baseTempDir, 'profiles');
     await fs.mkdir(this.tempRetrieveDir, { recursive: true });
 
-    // Directory for force-app backup
-    this.backupDir = path.join(baseTempDir, 'backup');
-    await fs.mkdir(this.backupDir, { recursive: true });
-
     try {
       // Define metadata types to retrieve
       const metadataTypes = [
@@ -142,19 +137,15 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
 
       this.log(messages.getMessage('info.building-package', [metadataTypes.length.toString()]));
 
-      // Backup entire force-app directory before retrieve
-      this.log('Creating backup of your local metadata...');
-      await this.backupForceApp();
-
-      // Retrieve metadata to project directory
+      // Retrieve metadata to temp directory (non-destructive)
       this.log(messages.getMessage('info.retrieving'));
       await this.retrieveMetadataToTemp(org, packageXmlPath, includeAllFields);
 
-      // Restore everything except profiles
-      this.log('Restoring your original metadata...');
-      await this.restoreForceAppExceptProfiles();
+      // Copy only profiles to project (safe - only updates profiles)
+      this.log('Copying profiles to project...');
+      await this.copyProfilesFromTemp();
 
-      // Clean up both temp directories
+      // Clean up temp directories
       this.log(messages.getMessage('info.cleaning'));
       await this.cleanup();
 
@@ -477,58 +468,6 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     }
   }
 
-  private async backupForceApp(): Promise<void> {
-    try {
-      const forceAppSource = path.join(this.projectPath, 'force-app');
-      const forceAppBackup = path.join(this.backupDir, 'force-app');
-
-      // Check if force-app exists
-      try {
-        await fs.access(forceAppSource);
-      } catch {
-        this.log('No force-app directory found, skipping backup');
-        return;
-      }
-
-      // Copy entire force-app directory to backup
-      await fs.cp(forceAppSource, forceAppBackup, { recursive: true });
-
-      this.log('Backup created successfully');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new SfError(`Failed to create backup: ${errorMessage}`);
-    }
-  }
-
-  private async restoreForceAppExceptProfiles(): Promise<void> {
-    try {
-      const forceAppBackup = path.join(this.backupDir, 'force-app');
-      const forceAppProject = path.join(this.projectPath, 'force-app');
-
-      // Check if backup exists
-      try {
-        await fs.access(forceAppBackup);
-      } catch {
-        this.warn('No backup found, skipping restore');
-        return;
-      }
-
-      // Remove current force-app
-      await fs.rm(forceAppProject, { recursive: true, force: true });
-
-      // Restore from backup
-      await fs.cp(forceAppBackup, forceAppProject, { recursive: true });
-
-      // Now copy the newly retrieved profiles back
-      await this.copyProfilesFromTemp();
-
-      this.log('Original metadata restored, profiles updated');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new SfError(`Failed to restore from backup: ${errorMessage}`);
-    }
-  }
-
   private async copyProfilesFromTemp(): Promise<void> {
     try {
       const tempProfilesDir = path.join(this.tempRetrieveDir, 'profiles');
@@ -561,7 +500,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
   }
 
   private async cleanup(): Promise<void> {
-    // Clean up entire temp directory tree (includes package, profiles, and backup)
+    // Clean up temp directory tree (includes package.xml and retrieved profiles)
     try {
       const baseTempDir = path.dirname(this.tempDir);
       await fs.rm(baseTempDir, { recursive: true, force: true });
