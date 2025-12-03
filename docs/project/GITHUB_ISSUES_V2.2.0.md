@@ -6,10 +6,10 @@
 
 ## Issue #1: Implement Result Monad
 
-**Labels:** `enhancement`, `architecture`, `v2.2.0`, `edd-foundation`  
-**Milestone:** v2.2.0  
-**Assignees:** @jterrats  
-**Priority:** Critical  
+**Labels:** `enhancement`, `architecture`, `v2.2.0`, `edd-foundation`
+**Milestone:** v2.2.0
+**Assignees:** @jterrats
+**Priority:** Critical
 **Story Points:** 3
 
 ### Description
@@ -92,10 +92,10 @@ None (foundation)
 
 ## Issue #2: Implement ProfilerMonad
 
-**Labels:** `enhancement`, `architecture`, `v2.2.0`, `edd-foundation`  
-**Milestone:** v2.2.0  
-**Assignees:** @jterrats  
-**Priority:** Critical  
+**Labels:** `enhancement`, `architecture`, `v2.2.0`, `edd-foundation`
+**Milestone:** v2.2.0
+**Assignees:** @jterrats
+**Priority:** Critical
 **Story Points:** 5
 
 ### Description
@@ -196,10 +196,10 @@ const result = await pipeline.run();
 
 ## Issue #3: Implement Metadata Cache
 
-**Labels:** `enhancement`, `performance`, `v2.2.0`, `edd-feature`  
-**Milestone:** v2.2.0  
-**Assignees:** @jterrats  
-**Priority:** High  
+**Labels:** `enhancement`, `performance`, `v2.2.0`, `edd-feature`
+**Milestone:** v2.2.0
+**Assignees:** @jterrats
+**Priority:** High
 **Story Points:** 3
 
 ### Description
@@ -295,10 +295,10 @@ None
 
 ## Issue #4: Implement Incremental Retrieve
 
-**Labels:** `enhancement`, `performance`, `v2.2.0`, `edd-feature`  
-**Milestone:** v2.2.0  
-**Assignees:** @jterrats  
-**Priority:** High  
+**Labels:** `enhancement`, `performance`, `v2.2.0`, `edd-feature`
+**Milestone:** v2.2.0
+**Assignees:** @jterrats
+**Priority:** High
 **Story Points:** 5
 
 ### Description
@@ -387,10 +387,10 @@ So that I only fetch changed metadata
 
 ## Issue #5: Setup Error Testing Infrastructure
 
-**Labels:** `testing`, `infrastructure`, `v2.2.0`, `edd-foundation`  
-**Milestone:** v2.2.0  
-**Assignees:** @jterrats  
-**Priority:** High  
+**Labels:** `testing`, `infrastructure`, `v2.2.0`, `edd-foundation`
+**Milestone:** v2.2.0
+**Assignees:** @jterrats
+**Priority:** High
 **Story Points:** 4
 
 ### Description
@@ -464,10 +464,10 @@ All issues depend on this infrastructure
 
 ## Issue #6: Refactor Retrieve Operation (Monadic + EDD)
 
-**Labels:** `refactor`, `architecture`, `v2.2.0`, `edd-migration`  
-**Milestone:** v2.2.0  
-**Assignees:** @jterrats  
-**Priority:** Critical  
+**Labels:** `refactor`, `architecture`, `v2.2.0`, `edd-migration`
+**Milestone:** v2.2.0
+**Assignees:** @jterrats
+**Priority:** Critical
 **Story Points:** 8
 
 ### Description
@@ -579,10 +579,10 @@ So that I can compose it with other operations
 
 ## Issue #7: Refactor Compare Operation (Monadic + EDD)
 
-**Labels:** `refactor`, `architecture`, `v2.2.0`, `edd-migration`  
-**Milestone:** v2.2.0  
-**Assignees:** @jterrats  
-**Priority:** Critical  
+**Labels:** `refactor`, `architecture`, `v2.2.0`, `edd-migration`
+**Milestone:** v2.2.0
+**Assignees:** @jterrats
+**Priority:** Critical
 **Story Points:** 5
 
 ### Description
@@ -665,10 +665,10 @@ So that I can compose it with retrieve and merge operations
 
 ## Issue #8: Multi-Environment Profile Comparison
 
-**Labels:** `enhancement`, `feature`, `v2.2.0`, `edd-feature`  
-**Milestone:** v2.2.0  
-**Assignees:** @jterrats  
-**Priority:** Critical (Killer Feature!)  
+**Labels:** `enhancement`, `feature`, `v2.2.0`, `edd-feature`
+**Milestone:** v2.2.0
+**Assignees:** @jterrats
+**Priority:** Critical (Killer Feature!)
 **Story Points:** 8
 
 ### Description
@@ -790,10 +790,10 @@ This is the FLAGSHIP FEATURE for v2.2.0! 🚀
 
 ## Issue #9: Create Pipeline DSL
 
-**Labels:** `enhancement`, `dx`, `v2.2.0`, `edd-advanced`  
-**Milestone:** v2.2.0  
-**Assignees:** @jterrats  
-**Priority:** Medium  
+**Labels:** `enhancement`, `dx`, `v2.2.0`, `edd-advanced`
+**Milestone:** v2.2.0
+**Assignees:** @jterrats
+**Priority:** Medium
 **Story Points:** 5
 
 ### Description
@@ -859,10 +859,10 @@ await pipeline({ org: 'qa', profileNames: ['Admin'] })
 
 ## Issue #10: Implement Profile Merge Command
 
-**Labels:** `enhancement`, `feature`, `v2.2.0`, `edd-feature`  
-**Milestone:** v2.2.0  
-**Assignees:** @jterrats  
-**Priority:** Critical  
+**Labels:** `enhancement`, `feature`, `v2.2.0`, `edd-feature`
+**Milestone:** v2.2.0
+**Assignees:** @jterrats
+**Priority:** Critical
 **Story Points:** 8
 
 ### Description
@@ -935,10 +935,10 @@ So that I don't manually edit XML
 
 ## Issue #11: Implement Profile Validation
 
-**Labels:** `enhancement`, `feature`, `v2.2.0`, `edd-feature`  
-**Milestone:** v2.2.0  
-**Assignees:** @jterrats  
-**Priority:** High  
+**Labels:** `enhancement`, `feature`, `v2.2.0`, `edd-feature`
+**Milestone:** v2.2.0
+**Assignees:** @jterrats
+**Priority:** High
 **Story Points:** 5
 
 ### Description
@@ -1005,7 +1005,7 @@ So that I catch deployment errors before pushing
 
 **Sprint Breakdown:**
 - Sprint 1-2 (Foundation): Issues #1-5 = 20 pts
-- Sprint 3-4 (Core Ops): Issues #6-8 = 21 pts  
+- Sprint 3-4 (Core Ops): Issues #6-8 = 21 pts
 - Sprint 5-6 (Advanced): Issues #9-11 = 17 pts
 
 **All issues follow Error-Driven Development:**
