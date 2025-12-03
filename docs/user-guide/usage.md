@@ -73,6 +73,20 @@ Specify a custom API version for the retrieve operation:
 sf profiler retrieve --target-org myOrg --api-version 60.0
 ```
 
+#### Exclude Managed Packages
+
+Filter out metadata from managed packages (with namespace prefixes):
+
+```bash
+# Retrieve profiles without managed package components
+sf profiler retrieve --target-org myOrg --exclude-managed
+
+# Useful when managed packages are uninstalled or inaccessible
+sf profiler retrieve --target-org myOrg --name "Admin" --exclude-managed
+```
+
+This flag filters out all metadata components with namespace prefixes (e.g., `namespace__ComponentName`), helping avoid errors when profiles reference components from uninstalled or inaccessible managed packages.
+
 #### JSON Output
 
 Get the results in JSON format:
@@ -86,13 +100,15 @@ sf profiler retrieve --target-org myOrg --json
 The plugin automatically retrieves the following metadata types along with profiles:
 
 1. **ApexClass** - All Apex classes in the org
-2. **CustomApplication** - Custom applications
-3. **CustomObject** - All custom and standard objects
-4. **CustomPermission** - Custom permissions
-5. **CustomTab** - Custom tabs
-6. **Flow** - Flows and Process Builder processes
-7. **Layout** - Page layouts
-8. **Profile** - All profiles
+2. **ApexPage** - Visualforce pages
+3. **ConnectedApp** - Connected applications
+4. **CustomApplication** - Custom applications
+5. **CustomObject** - All custom and standard objects (includes RecordTypes)
+6. **CustomPermission** - Custom permissions
+7. **CustomTab** - Custom tabs
+8. **Flow** - Flows and Process Builder processes
+9. **Layout** - Page layouts
+10. **Profile** - All profiles
 
 ## Field Level Security (FLS)
 
