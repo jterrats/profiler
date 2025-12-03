@@ -87,7 +87,7 @@ describe('Result Monad - Error Handling', () => {
       if (result.isFailure()) {
         // TypeScript should prevent accessing .value here
         // This is a compile-time check, but we test runtime behavior
-        expect((result as any).value).to.be.undefined;
+        expect((result as unknown as { value?: number }).value).to.be.undefined;
       }
     });
 
@@ -98,7 +98,7 @@ describe('Result Monad - Error Handling', () => {
       // Act & Assert
       if (result.isSuccess()) {
         // TypeScript should prevent accessing .error here
-        expect((result as any).error).to.be.undefined;
+        expect((result as unknown as { error?: Error }).error).to.be.undefined;
       }
     });
 
@@ -187,4 +187,3 @@ describe('Result Monad - Error Handling', () => {
     });
   });
 });
-
