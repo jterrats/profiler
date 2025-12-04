@@ -115,7 +115,7 @@ describe('Compare Operation - Error Tests', () => {
     it('should create error with profile count and timeout', () => {
       // Arrange
       const profileCount = 50;
-      const timeoutMs = 120000;
+      const timeoutMs = 120_000;
 
       // Act
       const error = new ComparisonTimeoutError(profileCount, timeoutMs);
@@ -129,7 +129,7 @@ describe('Compare Operation - Error Tests', () => {
 
     it('should suggest reducing profile count', () => {
       // Arrange & Act
-      const error = new ComparisonTimeoutError(100, 60000);
+      const error = new ComparisonTimeoutError(100, 60_000);
 
       // Assert
       expect(error.actions.some((a) => a.toLowerCase().includes('reduce'))).to.be.true;
@@ -138,7 +138,7 @@ describe('Compare Operation - Error Tests', () => {
 
     it('should be recoverable system error', () => {
       // Arrange & Act
-      const error = new ComparisonTimeoutError(10, 30000);
+      const error = new ComparisonTimeoutError(10, 30_000);
 
       // Assert
       expect(error.recoverable).to.be.true;

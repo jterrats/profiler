@@ -106,7 +106,7 @@ describe('Retrieve Operation - Error Tests', () => {
   describe('RetrieveTimeoutError', () => {
     it('should create error with timeout value', () => {
       // Arrange
-      const timeoutMs = 60000;
+      const timeoutMs = 60_000;
 
       // Act
       const error = new RetrieveTimeoutError(timeoutMs);
@@ -119,7 +119,7 @@ describe('Retrieve Operation - Error Tests', () => {
 
     it('should suggest increasing timeout', () => {
       // Arrange & Act
-      const error = new RetrieveTimeoutError(30000);
+      const error = new RetrieveTimeoutError(30_000);
 
       // Assert
       expect(error.actions.some((a) => a.includes('--timeout'))).to.be.true;
