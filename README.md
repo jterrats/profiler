@@ -1,6 +1,6 @@
 # Profiler - Salesforce CLI Plugin
 
-[![npm version](https://img.shields.io/badge/npm-2.1.0-blue.svg)](https://www.npmjs.com/package/@jterrats/profiler)
+[![npm version](https://img.shields.io/npm/v/@jterrats/profiler.svg)](https://www.npmjs.com/package/@jterrats/profiler)
 [![Test Status](https://github.com/jterrats/profiler/workflows/Test%20Plugin%20on%20Push/badge.svg)](https://github.com/jterrats/profiler/actions)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-brightgreen.svg)](https://raw.githubusercontent.com/jterrats/profiler/main/LICENSE.txt)
 [![Node.js Version](https://img.shields.io/node/v/@jterrats/profiler)](https://nodejs.org)
@@ -217,11 +217,11 @@ FLAG DESCRIPTIONS
   --exclude-managed  Exclude metadata from managed packages (with namespace prefixes).
 
     When enabled, filters out all metadata components that belong to managed packages (identified by namespace prefixes
-    like "namespace__ComponentName"). This helps avoid errors when comparing profiles that reference components from
+    like "namespace\_\_ComponentName"). This helps avoid errors when comparing profiles that reference components from
     uninstalled or inaccessible managed packages.
 ```
 
-_See code: [src/commands/profiler/compare.ts](https://github.com/jterrats/profiler/blob/v2.1.0/src/commands/profiler/compare.ts)_
+_See code: [src/commands/profiler/compare.ts](https://github.com/jterrats/profiler/blob/v2.1.1/src/commands/profiler/compare.ts)_
 
 ## `sf profiler docs`
 
@@ -300,11 +300,11 @@ FLAG DESCRIPTIONS
   --exclude-managed  Exclude metadata from managed packages in documentation.
 
     When enabled, filters out metadata components that belong to managed packages (identified by namespace prefixes like
-    "namespace__ComponentName") from the generated documentation. This makes documentation cleaner by hiding managed
+    "namespace\_\_ComponentName") from the generated documentation. This makes documentation cleaner by hiding managed
     package permissions that may not be relevant to your implementation.
 ```
 
-_See code: [src/commands/profiler/docs.ts](https://github.com/jterrats/profiler/blob/v2.1.0/src/commands/profiler/docs.ts)_
+_See code: [src/commands/profiler/docs.ts](https://github.com/jterrats/profiler/blob/v2.1.1/src/commands/profiler/docs.ts)_
 
 ## `sf profiler retrieve`
 
@@ -406,11 +406,11 @@ FLAG DESCRIPTIONS
   --exclude-managed  Exclude metadata from managed packages (with namespace prefixes).
 
     When enabled, filters out all metadata components that belong to managed packages (identified by namespace prefixes
-    like "namespace__ComponentName"). This helps avoid errors when retrieving profiles that reference components from
-    uninstalled or inaccessible managed packages. Custom objects ending in "__c" are always included even with this
+    like "namespace**ComponentName"). This helps avoid errors when retrieving profiles that reference components from
+    uninstalled or inaccessible managed packages. Custom objects ending in "**c" are always included even with this
     flag.
 ```
 
-_See code: [src/commands/profiler/retrieve.ts](https://github.com/jterrats/profiler/blob/v2.1.0/src/commands/profiler/retrieve.ts)_
+_See code: [src/commands/profiler/retrieve.ts](https://github.com/jterrats/profiler/blob/v2.1.1/src/commands/profiler/retrieve.ts)_
 
 <!-- commandsstop -->
