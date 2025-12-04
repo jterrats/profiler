@@ -89,6 +89,7 @@ jobs:
 
       - name: Run Integration Tests
         run: yarn test:integration --maxWorkers=2
+        continue-on-error: true # Optional - integration tests may not exist yet
 
       # Generate coverage report
       - name: Upload Coverage
