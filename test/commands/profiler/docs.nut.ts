@@ -23,8 +23,7 @@ describe('profiler docs NUTs', () => {
   });
 
   it('should show error when profiles directory does not exist', () => {
-    const result = execCmd('profiler docs --json', { ensureExitCode: 1 }).jsonOutput;
-    expect(result?.status).to.equal(1);
+    const result = execCmd('profiler docs --json', { ensureExitCode: 2 }).jsonOutput;
+    expect(result?.status).to.equal(2);
   });
 });
-
