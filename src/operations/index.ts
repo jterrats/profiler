@@ -34,3 +34,19 @@ export {
   type ProfileXml,
   type ProfileComparison,
 } from './compare-operation.js';
+
+// Merge Operation
+export {
+  mergeProfileOperation,
+  validateMergeStrategy,
+  createBackup,
+  detectConflicts,
+  mergeProfiles,
+  validateMergedProfile,
+  writeMergedProfile,
+  type MergeInput,
+  type MergeResult,
+  type MergeStrategy,
+  type MergeConflict,
+  type MergedProfile,
+} from './merge-operation.js';
