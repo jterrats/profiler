@@ -74,7 +74,7 @@
     "test:e2e": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
     "test:nuts": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
     "test:only": "wireit",
-    "version": "oclif readme"
+    "version": "oclif readme && git add README.md"
   },
   "publishConfig": {
     "access": "public"
