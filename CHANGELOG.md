@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2024-12-04
+
+### Fixed
+
+- **CRITICAL**: Removed dangerous backup/restore mechanism in `retrieve` command that was deleting and restoring the entire `force-app` directory. This posed a serious risk of data loss if the backup failed, the process crashed, or users had uncommitted work. The command now safely copies only profile files from temp directory to the project, making it non-destructive and eliminating all risk of data loss.
+
+### Changed
+
+- **CI Optimization**: Made integration tests optional in EDD CI workflow to prevent failures when test files don't exist yet.
+- **E2E Tests**: Fixed expected exit code for docs command when profiles directory doesn't exist (changed from 1 to 2).
+
 ## [2.1.0] - 2024-11-28
 
 ### Added
