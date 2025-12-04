@@ -221,7 +221,7 @@ FLAG DESCRIPTIONS
     uninstalled or inaccessible managed packages.
 ```
 
-_See code: [src/commands/profiler/compare.ts](https://github.com/jterrats/profiler/blob/v2.1.1/src/commands/profiler/compare.ts)_
+_See code: [src/commands/profiler/compare.ts](https://github.com/jterrats/profiler/blob/v2.1.2/src/commands/profiler/compare.ts)_
 
 ## `sf profiler docs`
 
@@ -304,7 +304,7 @@ FLAG DESCRIPTIONS
     package permissions that may not be relevant to your implementation.
 ```
 
-_See code: [src/commands/profiler/docs.ts](https://github.com/jterrats/profiler/blob/v2.1.1/src/commands/profiler/docs.ts)_
+_See code: [src/commands/profiler/docs.ts](https://github.com/jterrats/profiler/blob/v2.1.2/src/commands/profiler/docs.ts)_
 
 ## `sf profiler retrieve`
 
@@ -411,6 +411,6 @@ FLAG DESCRIPTIONS
     flag.
 ```
 
-_See code: [src/commands/profiler/retrieve.ts](https://github.com/jterrats/profiler/blob/v2.1.1/src/commands/profiler/retrieve.ts)_
+_See code: [src/commands/profiler/retrieve.ts](https://github.com/jterrats/profiler/blob/v2.1.2/src/commands/profiler/retrieve.ts)_
 
 <!-- commandsstop -->

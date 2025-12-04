@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.2] - 2024-12-04
+
+### Fixed
+
+- **CI/CD**: Updated all GitHub workflows to use Node.js 24 (was 18/20), resolving incompatibility with `glob@11.1.0` that prevented npm publishing.
+
+### Changed
+
+- **Documentation**: Automated README version updates using `oclif readme` hook. Version badge now dynamically pulls from npm, and code reference links auto-update on version bumps.
+
 ## [2.1.1] - 2024-12-04
 
 ### Fixed
