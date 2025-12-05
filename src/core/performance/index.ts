@@ -4,4 +4,5 @@
 
 export * from './worker-pool.js';
 export * from './guardrails.js';
+export * from './config.js';
 

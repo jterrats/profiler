@@ -1,0 +1,316 @@
+/*
+ * Copyright (c) 2024, Jorge Terrats
+ * All rights reserved.
+ * Licensed under the BSD 3-Clause license.
+ * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+ */
+
+/**
+ * Performance Configuration - Flexible Guardrails
+ *
+ * Allows users to customize safety limits via flags:
+ * - --max-profiles: Override max profiles per operation
+ * - --max-api-calls: Override API calls per minute limit
+ * - --max-memory: Override memory limit
+ * - --operation-timeout: Override operation timeout
+ * - --no-guardrails: Disable all guardrails (dangerous!)
+ *
+ * Follows Error-Driven Development (EDD) principles.
+ */
+
+import { SAFETY_LIMITS } from './guardrails.js';
+
+/**
+ * Performance configuration options
+ */
+export type PerformanceConfig = {
+  /** Maximum profiles to process (default: 50) */
+  maxProfiles?: number;
+  
+  /** Warning threshold for profiles (default: 20) */
+  profilesWarningThreshold?: number;
+  
+  /** Maximum API calls per minute (default: 100) */
+  maxApiCallsPerMinute?: number;
+  
+  /** Maximum memory usage in MB (default: 512) */
+  maxMemoryMB?: number;
+  
+  /** Maximum operation duration in ms (default: 300000 = 5 min) */
+  operationTimeoutMs?: number;
+  
+  /** Number of concurrent workers (default: auto-detect) */
+  concurrentWorkers?: number;
+  
+  /** Disable all guardrails (default: false) */
+  noGuardrails?: boolean;
+  
+  /** Show verbose performance metrics (default: false) */
+  verbose?: boolean;
+};
+
+/**
+ * Resolved performance configuration with applied overrides
+ */
+export type ResolvedConfig = {
+  maxProfiles: number;
+  profilesWarningThreshold: number;
+  maxApiCallsPerMinute: number;
+  maxMemoryMB: number;
+  operationTimeoutMs: number;
+  concurrentWorkers: number | undefined;
+  guardrailsEnabled: boolean;
+  verbose: boolean;
+  warnings: string[];
+};
+
+/**
+ * Validates and resolves performance configuration
+ * 
+ * @param userConfig - User-provided configuration
+ * @returns Resolved configuration with warnings
+ */
+export function resolvePerformanceConfig(userConfig: PerformanceConfig = {}): ResolvedConfig {
+  const warnings: string[] = [];
+  
+  // Handle --no-guardrails flag
+  if (userConfig.noGuardrails) {
+    warnings.push(
+      '⚠️  DANGER: All guardrails disabled! This can lead to:',
+      '   - Excessive API calls to Salesforce',
+      '   - Memory exhaustion',
+      '   - Timeout errors',
+      '   - Poor performance',
+      '   Use at your own risk!'
+    );
+    
+    return {
+      maxProfiles: Number.MAX_SAFE_INTEGER,
+      profilesWarningThreshold: Number.MAX_SAFE_INTEGER,
+      maxApiCallsPerMinute: Number.MAX_SAFE_INTEGER,
+      maxMemoryMB: Number.MAX_SAFE_INTEGER,
+      operationTimeoutMs: Number.MAX_SAFE_INTEGER,
+      concurrentWorkers: userConfig.concurrentWorkers,
+      guardrailsEnabled: false,
+      verbose: userConfig.verbose ?? false,
+      warnings,
+    };
+  }
+  
+  // Resolve max profiles
+  const maxProfiles = userConfig.maxProfiles ?? SAFETY_LIMITS.MAX_PROFILES_PER_OPERATION;
+  if (userConfig.maxProfiles && userConfig.maxProfiles > SAFETY_LIMITS.MAX_PROFILES_PER_OPERATION) {
+    warnings.push(
+      `📈 Increased max profiles to ${userConfig.maxProfiles} (default: ${SAFETY_LIMITS.MAX_PROFILES_PER_OPERATION})`,
+      '   This may result in longer processing times and more API calls'
+    );
+  }
+  
+  // Resolve warning threshold
+  const profilesWarningThreshold = userConfig.profilesWarningThreshold ?? SAFETY_LIMITS.PROFILES_WARNING_THRESHOLD;
+  
+  // Resolve max API calls
+  const maxApiCallsPerMinute = userConfig.maxApiCallsPerMinute ?? SAFETY_LIMITS.MAX_API_CALLS_PER_MINUTE;
+  if (userConfig.maxApiCallsPerMinute && userConfig.maxApiCallsPerMinute > SAFETY_LIMITS.MAX_API_CALLS_PER_MINUTE) {
+    warnings.push(
+      `📈 Increased API calls limit to ${userConfig.maxApiCallsPerMinute}/min (default: ${SAFETY_LIMITS.MAX_API_CALLS_PER_MINUTE})`,
+      '   Be careful not to exceed Salesforce org limits!'
+    );
+  }
+  
+  // Resolve max memory
+  const maxMemoryMB = userConfig.maxMemoryMB ?? SAFETY_LIMITS.MAX_MEMORY_MB;
+  if (userConfig.maxMemoryMB && userConfig.maxMemoryMB > SAFETY_LIMITS.MAX_MEMORY_MB) {
+    warnings.push(
+      `📈 Increased memory limit to ${userConfig.maxMemoryMB}MB (default: ${SAFETY_LIMITS.MAX_MEMORY_MB}MB)`,
+      '   Ensure your system has enough available memory'
+    );
+  }
+  
+  // Resolve operation timeout
+  const operationTimeoutMs = userConfig.operationTimeoutMs ?? SAFETY_LIMITS.MAX_OPERATION_DURATION_MS;
+  if (userConfig.operationTimeoutMs && userConfig.operationTimeoutMs > SAFETY_LIMITS.MAX_OPERATION_DURATION_MS) {
+    const timeoutMinutes = Math.round(userConfig.operationTimeoutMs / 60_000);
+    const defaultMinutes = Math.round(SAFETY_LIMITS.MAX_OPERATION_DURATION_MS / 60_000);
+    warnings.push(
+      `📈 Increased timeout to ${timeoutMinutes} min (default: ${defaultMinutes} min)`,
+      '   Long operations may tie up resources'
+    );
+  }
+  
+  // Resolve concurrent workers
+  const concurrentWorkers = userConfig.concurrentWorkers;
+  if (concurrentWorkers) {
+    const maxSafe = 25; // Salesforce limit
+    if (concurrentWorkers > maxSafe) {
+      warnings.push(
+        `⚠️  Worker count ${concurrentWorkers} exceeds Salesforce API limit (${maxSafe})`,
+        '   This will be capped at the safe limit'
+      );
+    }
+  }
+  
+  return {
+    maxProfiles,
+    profilesWarningThreshold,
+    maxApiCallsPerMinute,
+    maxMemoryMB,
+    operationTimeoutMs,
+    concurrentWorkers,
+    guardrailsEnabled: true,
+    verbose: userConfig.verbose ?? false,
+    warnings,
+  };
+}
+
+/**
+ * Displays configuration warnings to user
+ * 
+ * @param config - Resolved configuration
+ */
+export function displayConfigWarnings(config: ResolvedConfig): void {
+  if (config.warnings.length === 0) return;
+  
+  /* eslint-disable no-console */
+  console.log('\n⚙️  Performance Configuration:\n');
+  
+  for (const warning of config.warnings) {
+    console.log(warning);
+  }
+  
+  console.log('');
+  /* eslint-enable no-console */
+}
+
+/**
+ * Creates a summary of current configuration
+ * 
+ * @param config - Resolved configuration
+ * @returns Configuration summary string
+ */
+export function getConfigSummary(config: ResolvedConfig): string {
+  const lines = [
+    '⚙️  Performance Configuration:',
+    `   Max Profiles: ${config.maxProfiles}`,
+    `   API Calls/min: ${config.maxApiCallsPerMinute}`,
+    `   Memory Limit: ${config.maxMemoryMB}MB`,
+    `   Timeout: ${Math.round(config.operationTimeoutMs / 60_000)} min`,
+  ];
+  
+  if (config.concurrentWorkers) {
+    lines.push(`   Workers: ${config.concurrentWorkers}`);
+  }
+  
+  if (!config.guardrailsEnabled) {
+    lines.push('   ⚠️  GUARDRAILS DISABLED');
+  }
+  
+  return lines.join('\n');
+}
+
+/**
+ * Parses performance flags from command arguments
+ * 
+ * Helper for CLI commands to extract performance config from flags
+ * 
+ * @param flags - Command flags object
+ * @returns Performance configuration
+ * 
+ * @example
+ * ```typescript
+ * const perfConfig = parsePerformanceFlags({
+ *   'max-profiles': 100,
+ *   'max-api-calls': 200,
+ *   'operation-timeout': 600000, // 10 min
+ *   'no-guardrails': false,
+ *   'verbose': true
+ * });
+ * 
+ * const config = resolvePerformanceConfig(perfConfig);
+ * displayConfigWarnings(config);
+ * ```
+ */
+export function parsePerformanceFlags(flags: Record<string, unknown>): PerformanceConfig {
+  return {
+    maxProfiles: typeof flags['max-profiles'] === 'number' ? flags['max-profiles'] : undefined,
+    profilesWarningThreshold: typeof flags['profiles-warning-threshold'] === 'number' 
+      ? flags['profiles-warning-threshold'] 
+      : undefined,
+    maxApiCallsPerMinute: typeof flags['max-api-calls'] === 'number' ? flags['max-api-calls'] : undefined,
+    maxMemoryMB: typeof flags['max-memory'] === 'number' ? flags['max-memory'] : undefined,
+    operationTimeoutMs: typeof flags['operation-timeout'] === 'number' ? flags['operation-timeout'] : undefined,
+    concurrentWorkers: typeof flags['concurrent-workers'] === 'number' ? flags['concurrent-workers'] : undefined,
+    noGuardrails: typeof flags['no-guardrails'] === 'boolean' ? flags['no-guardrails'] : false,
+    verbose: typeof flags['verbose-performance'] === 'boolean' ? flags['verbose-performance'] : false,
+  };
+}
+
+/**
+ * Standard performance flag definitions for Oclif commands
+ * 
+ * Import this in your command files and spread into flags object:
+ * 
+ * @example
+ * ```typescript
+ * import { PERFORMANCE_FLAGS } from '../core/performance/config.js';
+ * 
+ * export default class MyCommand extends SfCommand {
+ *   public static readonly flags = {
+ *     ...PERFORMANCE_FLAGS,
+ *     // ... other flags
+ *   };
+ * }
+ * ```
+ */
+export const PERFORMANCE_FLAGS = {
+  'max-profiles': {
+    summary: 'Maximum number of profiles to process in a single operation',
+    description: `Overrides the default limit of ${SAFETY_LIMITS.MAX_PROFILES_PER_OPERATION} profiles. Use with caution as higher values may result in longer processing times and more API calls.`,
+    type: 'option',
+    char: undefined,
+    default: undefined,
+  },
+  'max-api-calls': {
+    summary: 'Maximum API calls per minute',
+    description: `Overrides the default limit of ${SAFETY_LIMITS.MAX_API_CALLS_PER_MINUTE} API calls per minute. Ensure your Salesforce org can handle the increased load.`,
+    type: 'option',
+    char: undefined,
+    default: undefined,
+  },
+  'max-memory': {
+    summary: 'Maximum memory usage in MB',
+    description: `Overrides the default limit of ${SAFETY_LIMITS.MAX_MEMORY_MB}MB. Ensure your system has enough available memory.`,
+    type: 'option',
+    char: undefined,
+    default: undefined,
+  },
+  'operation-timeout': {
+    summary: 'Operation timeout in milliseconds',
+    description: `Overrides the default timeout of ${SAFETY_LIMITS.MAX_OPERATION_DURATION_MS}ms (${Math.round(SAFETY_LIMITS.MAX_OPERATION_DURATION_MS / 60_000)} minutes).`,
+    type: 'option',
+    char: undefined,
+    default: undefined,
+  },
+  'concurrent-workers': {
+    summary: 'Number of concurrent workers for parallel operations',
+    description: 'Overrides the auto-detected worker count. Max recommended: 5 for metadata operations, 10 for API operations.',
+    type: 'option',
+    char: undefined,
+    default: undefined,
+  },
+  'no-guardrails': {
+    summary: 'Disable all safety guardrails (USE WITH EXTREME CAUTION)',
+    description: 'Removes all safety limits. This can lead to excessive API calls, memory issues, and poor performance. Only use if you know what you are doing.',
+    type: 'boolean',
+    char: undefined,
+    default: false,
+  },
+  'verbose-performance': {
+    summary: 'Show detailed performance metrics',
+    description: 'Displays detailed information about worker pool configuration, API calls, memory usage, and operation timings.',
+    type: 'boolean',
+    char: undefined,
+    default: false,
+  },
+} as const;
+
