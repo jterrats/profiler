@@ -50,3 +50,15 @@ export {
   type MergeConflict,
   type MergedProfile,
 } from './merge-operation.js';
+
+// Validate Operation
+export {
+  validateProfileOperation,
+  readProfileXml as readProfileXmlForValidation,
+  detectDuplicates,
+  detectInvalidPermissions,
+  detectMissingReferences,
+  type ValidateInput,
+  type ValidationResult,
+  type ValidationIssue,
+} from './validate-operation.js';

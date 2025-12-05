@@ -459,3 +459,4 @@ Track error frequency to improve UX:
 - Most common errors → better docs
 - Recoverable errors → auto-recovery
 - System errors → better error messages
+

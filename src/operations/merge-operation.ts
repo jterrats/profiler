@@ -403,7 +403,7 @@ export function writeMergedProfile(
  */
 export function mergeProfileOperation(input: MergeInput): ProfilerMonad<MergeResult> {
   const isDryRun = input.dryRun ?? false;
-  
+
   // For now, return a placeholder implementation
   // Full implementation would integrate with compare and retrieve operations
   return validateMergeStrategy(input.strategy)
