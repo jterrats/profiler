@@ -21,30 +21,58 @@
 import { SAFETY_LIMITS } from './guardrails.js';
 
 /**
+ * Salesforce hard limits (CANNOT be overridden)
+ * Source: https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta
+ */
+export const SALESFORCE_HARD_LIMITS = {
+  /** Absolute max concurrent API requests per org */
+  MAX_CONCURRENT_API_REQUESTS: 25,
+
+  /** Max API requests per 24 hours (depends on license type) */
+  MAX_API_REQUESTS_PER_DAY: {
+    ENTERPRISE: 1_000_000,
+    UNLIMITED: 5_000_000,
+    DEVELOPER: 15_000, // Developer Edition/Sandbox
+  },
+
+  /** Max retrieve size (uncompressed) */
+  MAX_RETRIEVE_SIZE_MB: 39,
+
+  /** Max package.xml file size */
+  MAX_PACKAGE_XML_SIZE_MB: 4,
+
+  /** Max metadata items per retrieve */
+  MAX_METADATA_ITEMS_PER_RETRIEVE: 10_000,
+
+  /** API timeout (Salesforce enforced) */
+  API_TIMEOUT_MS: 120_000, // 2 minutes
+} as const;
+
+/**
  * Performance configuration options
  */
 export type PerformanceConfig = {
   /** Maximum profiles to process (default: 50) */
   maxProfiles?: number;
-  
+
   /** Warning threshold for profiles (default: 20) */
   profilesWarningThreshold?: number;
-  
+
   /** Maximum API calls per minute (default: 100) */
   maxApiCallsPerMinute?: number;
-  
+
   /** Maximum memory usage in MB (default: 512) */
   maxMemoryMB?: number;
-  
+
   /** Maximum operation duration in ms (default: 300000 = 5 min) */
   operationTimeoutMs?: number;
-  
+
   /** Number of concurrent workers (default: auto-detect) */
   concurrentWorkers?: number;
-  
+
   /** Disable all guardrails (default: false) */
   noGuardrails?: boolean;
-  
+
   /** Show verbose performance metrics (default: false) */
   verbose?: boolean;
 };
@@ -66,13 +94,13 @@ export type ResolvedConfig = {
 
 /**
  * Validates and resolves performance configuration
- * 
+ *
  * @param userConfig - User-provided configuration
  * @returns Resolved configuration with warnings
  */
 export function resolvePerformanceConfig(userConfig: PerformanceConfig = {}): ResolvedConfig {
   const warnings: string[] = [];
-  
+
   // Handle --no-guardrails flag
   if (userConfig.noGuardrails) {
     warnings.push(
@@ -83,7 +111,7 @@ export function resolvePerformanceConfig(userConfig: PerformanceConfig = {}): Re
       '   - Poor performance',
       '   Use at your own risk!'
     );
-    
+
     return {
       maxProfiles: Number.MAX_SAFE_INTEGER,
       profilesWarningThreshold: Number.MAX_SAFE_INTEGER,
@@ -96,7 +124,7 @@ export function resolvePerformanceConfig(userConfig: PerformanceConfig = {}): Re
       warnings,
     };
   }
-  
+
   // Resolve max profiles
   const maxProfiles = userConfig.maxProfiles ?? SAFETY_LIMITS.MAX_PROFILES_PER_OPERATION;
   if (userConfig.maxProfiles && userConfig.maxProfiles > SAFETY_LIMITS.MAX_PROFILES_PER_OPERATION) {
@@ -105,19 +133,26 @@ export function resolvePerformanceConfig(userConfig: PerformanceConfig = {}): Re
       '   This may result in longer processing times and more API calls'
     );
   }
-  
+
   // Resolve warning threshold
   const profilesWarningThreshold = userConfig.profilesWarningThreshold ?? SAFETY_LIMITS.PROFILES_WARNING_THRESHOLD;
-  
+
   // Resolve max API calls
   const maxApiCallsPerMinute = userConfig.maxApiCallsPerMinute ?? SAFETY_LIMITS.MAX_API_CALLS_PER_MINUTE;
   if (userConfig.maxApiCallsPerMinute && userConfig.maxApiCallsPerMinute > SAFETY_LIMITS.MAX_API_CALLS_PER_MINUTE) {
+    const perMinute = userConfig.maxApiCallsPerMinute;
+    const perDay = perMinute * 60 * 24; // Extrapolate to daily
+
     warnings.push(
-      `📈 Increased API calls limit to ${userConfig.maxApiCallsPerMinute}/min (default: ${SAFETY_LIMITS.MAX_API_CALLS_PER_MINUTE})`,
-      '   Be careful not to exceed Salesforce org limits!'
+      `📈 Increased API calls limit to ${perMinute}/min (default: ${SAFETY_LIMITS.MAX_API_CALLS_PER_MINUTE})`,
+      '   ⚠️  SALESFORCE HARD LIMITS (CANNOT OVERRIDE):',
+      `      - Max concurrent requests: ${SALESFORCE_HARD_LIMITS.MAX_CONCURRENT_API_REQUESTS}`,
+      `      - Max requests/day (Dev): ${SALESFORCE_HARD_LIMITS.MAX_API_REQUESTS_PER_DAY.DEVELOPER.toLocaleString()}`,
+      `      - Max requests/day (Enterprise): ${SALESFORCE_HARD_LIMITS.MAX_API_REQUESTS_PER_DAY.ENTERPRISE.toLocaleString()}`,
+      `   💡 At ${perMinute}/min, you would use ${perDay.toLocaleString()} calls/day`
     );
   }
-  
+
   // Resolve max memory
   const maxMemoryMB = userConfig.maxMemoryMB ?? SAFETY_LIMITS.MAX_MEMORY_MB;
   if (userConfig.maxMemoryMB && userConfig.maxMemoryMB > SAFETY_LIMITS.MAX_MEMORY_MB) {
@@ -126,7 +161,7 @@ export function resolvePerformanceConfig(userConfig: PerformanceConfig = {}): Re
       '   Ensure your system has enough available memory'
     );
   }
-  
+
   // Resolve operation timeout
   const operationTimeoutMs = userConfig.operationTimeoutMs ?? SAFETY_LIMITS.MAX_OPERATION_DURATION_MS;
   if (userConfig.operationTimeoutMs && userConfig.operationTimeoutMs > SAFETY_LIMITS.MAX_OPERATION_DURATION_MS) {
@@ -137,19 +172,26 @@ export function resolvePerformanceConfig(userConfig: PerformanceConfig = {}): Re
       '   Long operations may tie up resources'
     );
   }
-  
+
   // Resolve concurrent workers
   const concurrentWorkers = userConfig.concurrentWorkers;
   if (concurrentWorkers) {
-    const maxSafe = 25; // Salesforce limit
-    if (concurrentWorkers > maxSafe) {
+    if (concurrentWorkers > SALESFORCE_HARD_LIMITS.MAX_CONCURRENT_API_REQUESTS) {
       warnings.push(
-        `⚠️  Worker count ${concurrentWorkers} exceeds Salesforce API limit (${maxSafe})`,
-        '   This will be capped at the safe limit'
+        `⚠️  Worker count ${concurrentWorkers} exceeds Salesforce HARD LIMIT`,
+        `   ⚠️  SALESFORCE HARD LIMIT: ${SALESFORCE_HARD_LIMITS.MAX_CONCURRENT_API_REQUESTS} concurrent API requests`,
+        `   🔧 Will be capped at ${SALESFORCE_HARD_LIMITS.MAX_CONCURRENT_API_REQUESTS} to prevent API errors`,
+        '   📚 See: https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta'
+      );
+    } else if (concurrentWorkers > 10) {
+      warnings.push(
+        `📈 Using ${concurrentWorkers} workers (high concurrency)`,
+        `   💡 Salesforce allows max ${SALESFORCE_HARD_LIMITS.MAX_CONCURRENT_API_REQUESTS} concurrent requests`,
+        '   ⚡ Monitor for API throttling or "Request limit exceeded" errors'
       );
     }
   }
-  
+
   return {
     maxProfiles,
     profilesWarningThreshold,
@@ -165,26 +207,26 @@ export function resolvePerformanceConfig(userConfig: PerformanceConfig = {}): Re
 
 /**
  * Displays configuration warnings to user
- * 
+ *
  * @param config - Resolved configuration
  */
 export function displayConfigWarnings(config: ResolvedConfig): void {
   if (config.warnings.length === 0) return;
-  
+
   /* eslint-disable no-console */
   console.log('\n⚙️  Performance Configuration:\n');
-  
+
   for (const warning of config.warnings) {
     console.log(warning);
   }
-  
+
   console.log('');
   /* eslint-enable no-console */
 }
 
 /**
  * Creates a summary of current configuration
- * 
+ *
  * @param config - Resolved configuration
  * @returns Configuration summary string
  */
@@ -196,26 +238,26 @@ export function getConfigSummary(config: ResolvedConfig): string {
     `   Memory Limit: ${config.maxMemoryMB}MB`,
     `   Timeout: ${Math.round(config.operationTimeoutMs / 60_000)} min`,
   ];
-  
+
   if (config.concurrentWorkers) {
     lines.push(`   Workers: ${config.concurrentWorkers}`);
   }
-  
+
   if (!config.guardrailsEnabled) {
     lines.push('   ⚠️  GUARDRAILS DISABLED');
   }
-  
+
   return lines.join('\n');
 }
 
 /**
  * Parses performance flags from command arguments
- * 
+ *
  * Helper for CLI commands to extract performance config from flags
- * 
+ *
  * @param flags - Command flags object
  * @returns Performance configuration
- * 
+ *
  * @example
  * ```typescript
  * const perfConfig = parsePerformanceFlags({
@@ -225,7 +267,7 @@ export function getConfigSummary(config: ResolvedConfig): string {
  *   'no-guardrails': false,
  *   'verbose': true
  * });
- * 
+ *
  * const config = resolvePerformanceConfig(perfConfig);
  * displayConfigWarnings(config);
  * ```
@@ -233,8 +275,8 @@ export function getConfigSummary(config: ResolvedConfig): string {
 export function parsePerformanceFlags(flags: Record<string, unknown>): PerformanceConfig {
   return {
     maxProfiles: typeof flags['max-profiles'] === 'number' ? flags['max-profiles'] : undefined,
-    profilesWarningThreshold: typeof flags['profiles-warning-threshold'] === 'number' 
-      ? flags['profiles-warning-threshold'] 
+    profilesWarningThreshold: typeof flags['profiles-warning-threshold'] === 'number'
+      ? flags['profiles-warning-threshold']
       : undefined,
     maxApiCallsPerMinute: typeof flags['max-api-calls'] === 'number' ? flags['max-api-calls'] : undefined,
     maxMemoryMB: typeof flags['max-memory'] === 'number' ? flags['max-memory'] : undefined,
@@ -247,13 +289,13 @@ export function parsePerformanceFlags(flags: Record<string, unknown>): Performan
 
 /**
  * Standard performance flag definitions for Oclif commands
- * 
+ *
  * Import this in your command files and spread into flags object:
- * 
+ *
  * @example
  * ```typescript
  * import { PERFORMANCE_FLAGS } from '../core/performance/config.js';
- * 
+ *
  * export default class MyCommand extends SfCommand {
  *   public static readonly flags = {
  *     ...PERFORMANCE_FLAGS,
