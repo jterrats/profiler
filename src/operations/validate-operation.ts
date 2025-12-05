@@ -205,7 +205,7 @@ export function detectInvalidPermissions(
         // Editable requires readable (handle both boolean and string values from XML)
         const isEditable = editable === true || editable === 'true';
         const isNotReadable = readable === false || readable === 'false';
-        
+
         if (isEditable && isNotReadable) {
           invalidPermissions.push({
             object: `fieldPermissions: ${fieldName as string}`,
@@ -246,7 +246,7 @@ export function detectInvalidPermissions(
         const hasRead = allowRead === true || allowRead === 'true';
         const hasModifyAll = modifyAllRecords === true || modifyAllRecords === 'true';
         const hasViewAll = viewAllRecords === true || viewAllRecords === 'true';
-        
+
         if ((hasCreate || hasEdit || hasDelete) && !hasRead) {
           invalidPermissions.push({
             object: `objectPermissions: ${objName as string}`,
@@ -440,7 +440,7 @@ export function validateProfileOperation(input: ValidateInput): ProfilerMonad<Va
       );
     })
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    .recover((error): ValidationResult => 
+    .recover((error): ValidationResult =>
       // If validation fails (e.g., can't read file), return error as issue
       ({
         profileName: input.profileName,
