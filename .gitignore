@@ -59,3 +59,6 @@ node_modules
 # os specific files
 .DS_Store
 .idea
+
+# act local configuration (Docker image for local CI testing)
+.act/
