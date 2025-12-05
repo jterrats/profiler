@@ -21,10 +21,10 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
 
-import { parseString } from 'xml2js';
+import { type ParserOptions, parseString } from 'xml2js';
 import { Org } from '@salesforce/core';
 
-const parseXmlAsync = promisify(parseString);
+const parseXmlAsync = promisify<string, ParserOptions, unknown>(parseString);
 
 import { ProfilerMonad, success, failure } from '../core/monad/index.js';
 import {
@@ -89,18 +89,17 @@ export function readProfileXml(profileName: string, projectPath: string): Profil
 
     try {
       const content = await fs.readFile(profilePath, 'utf-8');
-      
+
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-      const parsed = await parseXmlAsync(content, {
+      const parsed = (await parseXmlAsync(content, {
         explicitArray: false,
         mergeAttrs: false,
-      });
+      })) as { Profile?: unknown };
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (!parsed?.Profile) {
-        const err = new Error('Invalid profile XML: missing Profile root element');
+        const errMsg = 'Invalid profile XML: missing Profile root element';
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-        return failure(new InvalidXmlError(profilePath, err));
+        return failure(new InvalidXmlError(profilePath, errMsg));
       }
 
       // XML parser returns any type - we cast to Record<string, unknown> for safety
@@ -109,7 +108,7 @@ export function readProfileXml(profileName: string, projectPath: string): Profil
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-      return failure(new InvalidXmlError(profilePath, err));
+      return failure(new InvalidXmlError(profilePath, err.message));
     }
   });
 }
@@ -124,10 +123,10 @@ export function readProfileXml(profileName: string, projectPath: string): Profil
 export function detectDuplicates(
   profileName: string,
   profileData: Record<string, unknown>
-): ProfilerMonad<string[]> {
+): ProfilerMonad<Array<{ type: string; name: string }>> {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return new ProfilerMonad(() => {
-    const duplicates: string[] = [];
+    const duplicates: Array<{ type: string; name: string }> = [];
 
     // Check common profile elements for duplicates
     const elementsToCheck = [
@@ -155,7 +154,7 @@ export function detectDuplicates(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         const name = element.field || element.object || element.apexClass || element.apexPage || element.application;
         if (name && seen.has(name as string)) {
-          duplicates.push(`${elementType}: ${name as string}`);
+          duplicates.push({ type: elementType, name: name as string });
         }
         if (name) seen.add(name as string);
       }
@@ -182,10 +181,10 @@ export function detectDuplicates(
 export function detectInvalidPermissions(
   profileName: string,
   profileData: Record<string, unknown>
-): ProfilerMonad<Array<{ permission: string; issue: string }>> {
+): ProfilerMonad<Array<{ object: string; issue: string }>> {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return new ProfilerMonad(() => {
-    const invalidPermissions: Array<{ permission: string; issue: string }> = [];
+    const invalidPermissions: Array<{ object: string; issue: string }> = [];
 
     // Check fieldPermissions for invalid combinations
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -203,10 +202,13 @@ export function detectInvalidPermissions(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         const editable = field.editable;
 
-        // Editable requires readable
-        if (editable === true && readable === false) {
+        // Editable requires readable (handle both boolean and string values from XML)
+        const isEditable = editable === true || editable === 'true';
+        const isNotReadable = readable === false || readable === 'false';
+        
+        if (isEditable && isNotReadable) {
           invalidPermissions.push({
-            permission: `fieldPermissions: ${fieldName as string}`,
+            object: `fieldPermissions: ${fieldName as string}`,
             issue: 'editable=true requires readable=true',
           });
         }
@@ -237,18 +239,25 @@ export function detectInvalidPermissions(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         const viewAllRecords = obj.viewAllRecords;
 
-        // Create/Edit/Delete require Read
-        if ((allowCreate === true || allowEdit === true || allowDelete === true) && allowRead === false) {
+        // Create/Edit/Delete require Read (handle both boolean and string values from XML)
+        const hasCreate = allowCreate === true || allowCreate === 'true';
+        const hasEdit = allowEdit === true || allowEdit === 'true';
+        const hasDelete = allowDelete === true || allowDelete === 'true';
+        const hasRead = allowRead === true || allowRead === 'true';
+        const hasModifyAll = modifyAllRecords === true || modifyAllRecords === 'true';
+        const hasViewAll = viewAllRecords === true || viewAllRecords === 'true';
+        
+        if ((hasCreate || hasEdit || hasDelete) && !hasRead) {
           invalidPermissions.push({
-            permission: `objectPermissions: ${objName as string}`,
+            object: `objectPermissions: ${objName as string}`,
             issue: 'allowCreate/Edit/Delete requires allowRead=true',
           });
         }
 
         // ModifyAll requires Edit and ViewAll
-        if (modifyAllRecords === true && (allowEdit === false || viewAllRecords === false)) {
+        if (hasModifyAll && (!hasEdit || !hasViewAll)) {
           invalidPermissions.push({
-            permission: `objectPermissions: ${objName as string}`,
+            object: `objectPermissions: ${objName as string}`,
             issue: 'modifyAllRecords requires allowEdit=true and viewAllRecords=true',
           });
         }
@@ -281,7 +290,7 @@ export function detectMissingReferences(
   org?: Org,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _apiVersion = '60.0'
-): ProfilerMonad<string[]> {
+): ProfilerMonad<Array<{ type: string; name: string }>> {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return new ProfilerMonad(() => {
     // If no org provided, skip reference validation
@@ -290,7 +299,7 @@ export function detectMissingReferences(
       return Promise.resolve(success([]));
     }
 
-    const missingReferences: string[] = [];
+    const missingReferences: Array<{ type: string; name: string }> = [];
 
     // TODO: Implement actual metadata verification against org
     // For now, this is a placeholder that would:
@@ -357,38 +366,35 @@ export function validateProfileOperation(input: ValidateInput): ProfilerMonad<Va
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   return readProfileXml(input.profileName, input.projectPath)
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    .chain((profileData) => {
+    .chain((profileData: Record<string, unknown>) => {
       // Run all validations in parallel and collect results
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      const duplicatesMonad = detectDuplicates(input.profileName, profileData).recover(() => 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-        success([])
-      );
+      const duplicatesMonad = detectDuplicates(input.profileName, profileData).recover(() => []);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      const invalidPermsMonad = detectInvalidPermissions(input.profileName, profileData).recover(() => 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-        success([])
-      );
+      const invalidPermsMonad = detectInvalidPermissions(input.profileName, profileData).recover(() => []);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      const missingRefsMonad = detectMissingReferences(input.profileName, profileData, input.org, input.apiVersion).recover(() =>
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-        success([])
-      );
+      const missingRefsMonad = detectMissingReferences(input.profileName, profileData, input.org, input.apiVersion).recover(() => []);
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       return ProfilerMonad.all([duplicatesMonad, invalidPermsMonad, missingRefsMonad]).map(
-        ([duplicates, invalidPerms, missingRefs]) => {
+        ([
+          duplicates,
+          invalidPerms,
+          missingRefs,
+        ]: [
+          Array<{ type: string; name: string }>,
+          Array<{ object: string; issue: string }>,
+          Array<{ type: string; name: string }>
+        ]) => {
           const issues: ValidationIssue[] = [];
 
           // Collect duplicate issues
           if (Array.isArray(duplicates) && duplicates.length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             for (const dup of duplicates) {
               issues.push({
                 type: 'duplicate',
                 severity: 'error',
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                element: dup,
+                element: `${dup.type}: ${dup.name}`,
                 message: 'Duplicate entry found',
                 suggestion: 'Remove duplicate entries',
               });
@@ -397,14 +403,11 @@ export function validateProfileOperation(input: ValidateInput): ProfilerMonad<Va
 
           // Collect invalid permission issues
           if (Array.isArray(invalidPerms) && invalidPerms.length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             for (const perm of invalidPerms) {
               issues.push({
                 type: 'invalid-permission',
                 severity: 'error',
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-                element: perm.permission,
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+                element: perm.object,
                 message: perm.issue,
                 suggestion: 'Fix permission combination',
               });
@@ -413,13 +416,11 @@ export function validateProfileOperation(input: ValidateInput): ProfilerMonad<Va
 
           // Collect missing reference issues
           if (Array.isArray(missingRefs) && missingRefs.length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             for (const ref of missingRefs) {
               issues.push({
                 type: 'missing-reference',
                 severity: 'warning',
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                element: ref,
+                element: `${ref.type}: ${ref.name}`,
                 message: 'Referenced metadata not found in org',
                 suggestion: 'Deploy referenced metadata or remove reference',
               });
@@ -439,10 +440,9 @@ export function validateProfileOperation(input: ValidateInput): ProfilerMonad<Va
       );
     })
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    .recover((error) =>
+    .recover((error): ValidationResult => 
       // If validation fails (e.g., can't read file), return error as issue
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-      success({
+      ({
         profileName: input.profileName,
         valid: false,
         issues: [
@@ -450,10 +450,8 @@ export function validateProfileOperation(input: ValidateInput): ProfilerMonad<Va
             type: 'xml-error',
             severity: 'error',
             element: 'Profile',
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             message: error.message,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            suggestion: error.recoveryActions?.[0] ?? 'Fix XML structure',
+            suggestion: 'Fix XML structure',
           },
         ],
         fixable: false,

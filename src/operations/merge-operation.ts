@@ -407,25 +407,25 @@ export function mergeProfileOperation(input: MergeInput): ProfilerMonad<MergeRes
   // For now, return a placeholder implementation
   // Full implementation would integrate with compare and retrieve operations
   return validateMergeStrategy(input.strategy)
-    .chain((strategy) => {
+    .chain((strategy): ProfilerMonad<{ strategy: MergeStrategy; backupPath: string | undefined }> => {
       // Skip backup in dry-run mode or if explicitly skipped
       if (isDryRun || input.skipBackup) {
         return new ProfilerMonad(() =>
           Promise.resolve(
             success({
               strategy,
-              backupPath: undefined,
+              backupPath: undefined as string | undefined,
             })
           )
         );
       }
-      return createBackup(input.profileName, input.projectPath).map((backupPath) => ({
+      return createBackup(input.profileName, input.projectPath).map((backupPath): { strategy: MergeStrategy; backupPath: string | undefined } => ({
         strategy,
         backupPath,
       }));
     })
     .map(
-      ({ strategy, backupPath }: { strategy: MergeStrategy; backupPath: string | undefined }): MergeResult => {
+      ({ strategy, backupPath }): MergeResult => {
         // In dry-run mode, generate preview of changes
         const previewChanges = isDryRun
           ? [

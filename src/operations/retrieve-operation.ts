@@ -9,13 +9,9 @@
  */
 
 import type { Connection, Org } from '@salesforce/core';
-import { ProfilerMonad } from '../core/monad/profiler-monad.js';
-import { success, failure } from '../core/monad/result.js';
+import { ProfilerMonad, success, failure } from '../core/monad/index.js';
 import {
   ProfileNotFoundError,
-  MetadataListError,
-  PackageXmlGenerationError,
-  EmptyRetrieveError,
 } from '../core/errors/operation-errors.js';
 
 /**
@@ -124,8 +120,7 @@ export function listMetadataType(
       return success(members);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-      const listError = new MetadataListError(metadataType, err);
+      const listError = new Error(`Failed to list metadata type '${metadataType}': ${err.message}`);
       return failure(listError);
     }
   });
@@ -214,8 +209,7 @@ export function generatePackageXml(
   return new ProfilerMonad(() => {
     try {
       if (metadataList.metadataTypes.length === 0) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-        const emptyError = new EmptyRetrieveError();
+        const emptyError = new Error('No metadata found to retrieve');
         return Promise.resolve(failure(emptyError));
       }
 
@@ -243,8 +237,7 @@ export function generatePackageXml(
       );
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-      const pkgError = new PackageXmlGenerationError(err);
+      const pkgError = new Error(`Failed to generate package.xml: ${err.message}`);
       return Promise.resolve(failure(pkgError));
     }
   });
