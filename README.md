@@ -51,6 +51,7 @@ Complete documentation is available in the [`docs/`](docs/) directory:
 
 - **[Quick Start Guide](docs/user-guide/quick-start.md)** - Get started in 5 minutes
 - **[Usage Guide](docs/user-guide/usage.md)** - Complete command documentation
+- **[Performance Guide](docs/PERFORMANCE.md)** - Performance flags, warnings, and best practices
 - **[Developer Guide](docs/development/testing-and-publishing.md)** - Local testing and publishing
 - **[Contributing](CONTRIBUTING.md)** - How to contribute
 - **[Full Documentation Index](docs/README.md)** - Complete documentation map
@@ -59,6 +60,7 @@ Complete documentation is available in the [`docs/`](docs/) directory:
 
 - [Installation Guide](docs/user-guide/quick-start.md#1-build--link-the-plugin)
 - [Command Examples](docs/user-guide/usage.md#examples)
+- [Performance Flags](docs/PERFORMANCE.md#-performance-flags)
 - [Testing Locally](docs/development/testing-and-publishing.md#-local-testing-before-publishing)
 - [Publishing to npm](docs/development/testing-and-publishing.md#-publishing-to-npm)
 

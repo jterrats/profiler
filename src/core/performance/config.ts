@@ -28,7 +28,7 @@ export const SALESFORCE_HARD_LIMITS = {
   /** Absolute max concurrent API requests per org */
   MAX_CONCURRENT_API_REQUESTS: 25,
 
-  /** 
+  /**
    * Max API requests per 24 hours (BASE + per-license scaling)
    * Formula: Base + (licenses × per_license)
    */
@@ -96,9 +96,6 @@ export type PerformanceConfig = {
   /** Number of concurrent workers (default: auto-detect) */
   concurrentWorkers?: number;
 
-  /** Disable all guardrails (default: false) */
-  noGuardrails?: boolean;
-
   /** Show verbose performance metrics (default: false) */
   verbose?: boolean;
 };
@@ -126,30 +123,6 @@ export type ResolvedConfig = {
  */
 export function resolvePerformanceConfig(userConfig: PerformanceConfig = {}): ResolvedConfig {
   const warnings: string[] = [];
-
-  // Handle --no-guardrails flag
-  if (userConfig.noGuardrails) {
-    warnings.push(
-      '⚠️  DANGER: All guardrails disabled! This can lead to:',
-      '   - Excessive API calls to Salesforce',
-      '   - Memory exhaustion',
-      '   - Timeout errors',
-      '   - Poor performance',
-      '   Use at your own risk!'
-    );
-
-    return {
-      maxProfiles: Number.MAX_SAFE_INTEGER,
-      profilesWarningThreshold: Number.MAX_SAFE_INTEGER,
-      maxApiCallsPerMinute: Number.MAX_SAFE_INTEGER,
-      maxMemoryMB: Number.MAX_SAFE_INTEGER,
-      operationTimeoutMs: Number.MAX_SAFE_INTEGER,
-      concurrentWorkers: userConfig.concurrentWorkers,
-      guardrailsEnabled: false,
-      verbose: userConfig.verbose ?? false,
-      warnings,
-    };
-  }
 
   // Resolve max profiles
   const maxProfiles = userConfig.maxProfiles ?? SAFETY_LIMITS.MAX_PROFILES_PER_OPERATION;
@@ -312,7 +285,6 @@ export function parsePerformanceFlags(flags: Record<string, unknown>): Performan
     maxMemoryMB: typeof flags['max-memory'] === 'number' ? flags['max-memory'] : undefined,
     operationTimeoutMs: typeof flags['operation-timeout'] === 'number' ? flags['operation-timeout'] : undefined,
     concurrentWorkers: typeof flags['concurrent-workers'] === 'number' ? flags['concurrent-workers'] : undefined,
-    noGuardrails: typeof flags['no-guardrails'] === 'boolean' ? flags['no-guardrails'] : false,
     verbose: typeof flags['verbose-performance'] === 'boolean' ? flags['verbose-performance'] : false,
   };
 }
@@ -369,13 +341,6 @@ export const PERFORMANCE_FLAGS = {
     type: 'option',
     char: undefined,
     default: undefined,
-  },
-  'no-guardrails': {
-    summary: 'Disable all safety guardrails (USE WITH EXTREME CAUTION)',
-    description: 'Removes all safety limits. This can lead to excessive API calls, memory issues, and poor performance. Only use if you know what you are doing.',
-    type: 'boolean',
-    char: undefined,
-    default: false,
   },
   'verbose-performance': {
     summary: 'Show detailed performance metrics',

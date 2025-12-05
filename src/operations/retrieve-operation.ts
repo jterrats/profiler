@@ -108,10 +108,10 @@ export function listMetadataType(
       // Import cache dynamically
       const { getMetadataCache } = await import('../core/performance/cache.js');
       const cache = getMetadataCache();
-      
+
       // Try cache first
       const cached = cache.get<string[]>(orgId, `${metadataType}:excludeManaged=${excludeManaged}`, apiVersion);
-      
+
       if (cached !== null) {
         return success(cached);
       }
@@ -159,17 +159,17 @@ export function listAllMetadata(input: RetrieveInput, metadataTypes: string[]): 
     // Import performance utilities
     const { createWorkerPool, PerformanceTracker } = await import('../core/performance/worker-pool.js');
     const { validateProfileCount, displayWarnings, canContinueOperation, RateLimiter, CircuitBreaker } = await import('../core/performance/guardrails.js');
-    
+
     const connection = input.org.getConnection(input.apiVersion);
     const excludeManaged = input.excludeManaged ?? false;
     const orgId = input.org.getOrgId();
-    
+
     // Validate profile count first
     if (input.profileNames && input.profileNames.length > 0) {
       const profileWarnings = validateProfileCount(input.profileNames.length);
       if (profileWarnings.length > 0) {
         displayWarnings(profileWarnings);
-        
+
         if (!canContinueOperation(profileWarnings)) {
           return failure(new Error(`Too many profiles requested: ${input.profileNames.length}. Maximum allowed: 50`));
         }
@@ -181,7 +181,7 @@ export function listAllMetadata(input: RetrieveInput, metadataTypes: string[]): 
       operationType: 'metadata',
       verbose: false,
     });
-    
+
     const tracker = new PerformanceTracker();
     const rateLimiter = new RateLimiter();
     const circuitBreaker = new CircuitBreaker();
@@ -191,11 +191,11 @@ export function listAllMetadata(input: RetrieveInput, metadataTypes: string[]): 
       try {
         // Check circuit breaker
         circuitBreaker.allowRequest();
-        
+
         // Check rate limit
         rateLimiter.recordCall();
         tracker.recordApiCall();
-        
+
         const monad = listMetadataType(connection, orgId, type, input.apiVersion, excludeManaged);
         const result = await monad.run();
 

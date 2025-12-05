@@ -109,18 +109,18 @@ export function retrieveOrgProfile(profileName: string, org: Org, apiVersion: st
     try {
       const connection = org.getConnection(apiVersion);
       const orgId = org.getOrgId();
-      
+
       // Import cache and performance utilities
       const { getMetadataCache } = await import('../core/performance/cache.js');
       const { RateLimiter, CircuitBreaker } = await import('../core/performance/guardrails.js');
-      
+
       const cache = getMetadataCache();
       const rateLimiter = new RateLimiter();
       const circuitBreaker = new CircuitBreaker();
-      
+
       // Check circuit breaker
       circuitBreaker.allowRequest();
-      
+
       // Try to get from cache first
       const cacheKey = `profile-content:${profileName}`;
       const cached = cache.get<string>(orgId, cacheKey, apiVersion);
@@ -128,10 +128,10 @@ export function retrieveOrgProfile(profileName: string, org: Org, apiVersion: st
         circuitBreaker.recordSuccess();
         return success(cached);
       }
-      
+
       // Cache miss - make API call with rate limiting
       rateLimiter.recordCall();
-      
+
       const metadata = await connection.metadata.list({ type: 'Profile' }, apiVersion);
 
       if (!metadata) {
@@ -152,14 +152,14 @@ export function retrieveOrgProfile(profileName: string, org: Org, apiVersion: st
       }
 
       circuitBreaker.recordSuccess();
-      
+
       // For now, return a placeholder
       // In a full implementation, this would use metadata.read() or retrieve()
       const profileContent = '<?xml version="1.0" encoding="UTF-8"?>\n<Profile xmlns="http://soap.sforce.com/2006/04/metadata">\n</Profile>';
-      
+
       // Cache the result
       cache.set(orgId, cacheKey, apiVersion, profileContent);
-      
+
       return success(profileContent);
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
