@@ -172,6 +172,75 @@ export function detectDuplicates(
 }
 
 /**
+ * Helper: Validates field permission
+ */
+function validateFieldPermission(field: unknown): { object: string; issue: string } | null {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const fieldName = (field as any).field;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const readable = (field as any).readable;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const editable = (field as any).editable;
+
+  const isEditable = editable === true || editable === 'true';
+  const isNotReadable = readable === false || readable === 'false';
+
+  if (isEditable && isNotReadable) {
+    return {
+      object: `fieldPermissions: ${fieldName as string}`,
+      issue: 'editable=true requires readable=true',
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Helper: Validates object permission
+ */
+function validateObjectPermission(obj: unknown): Array<{ object: string; issue: string }> {
+  const issues: Array<{ object: string; issue: string }> = [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const objName = (obj as any).object;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const allowCreate = (obj as any).allowCreate;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const allowRead = (obj as any).allowRead;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const allowEdit = (obj as any).allowEdit;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const allowDelete = (obj as any).allowDelete;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const modifyAllRecords = (obj as any).modifyAllRecords;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const viewAllRecords = (obj as any).viewAllRecords;
+
+  const hasCreate = allowCreate === true || allowCreate === 'true';
+  const hasEdit = allowEdit === true || allowEdit === 'true';
+  const hasDelete = allowDelete === true || allowDelete === 'true';
+  const hasRead = allowRead === true || allowRead === 'true';
+  const hasModifyAll = modifyAllRecords === true || modifyAllRecords === 'true';
+  const hasViewAll = viewAllRecords === true || viewAllRecords === 'true';
+
+  if ((hasCreate || hasEdit || hasDelete) && !hasRead) {
+    issues.push({
+      object: `objectPermissions: ${objName as string}`,
+      issue: 'allowCreate/Edit/Delete requires allowRead=true',
+    });
+  }
+
+  if (hasModifyAll && (!hasEdit || !hasViewAll)) {
+    issues.push({
+      object: `objectPermissions: ${objName as string}`,
+      issue: 'modifyAllRecords requires allowEdit=true and viewAllRecords=true',
+    });
+  }
+
+  return issues;
+}
+
+/**
  * Detects invalid permissions in profile
  *
  * @param profileName - Name of the profile
@@ -186,7 +255,7 @@ export function detectInvalidPermissions(
   return new ProfilerMonad(() => {
     const invalidPermissions: Array<{ object: string; issue: string }> = [];
 
-    // Check fieldPermissions for invalid combinations
+    // Check fieldPermissions
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const fieldPermissions = profileData.fieldPermissions;
     if (fieldPermissions) {
@@ -195,27 +264,14 @@ export function detectInvalidPermissions(
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       for (const field of fieldArray) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const fieldName = field.field;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const readable = field.readable;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const editable = field.editable;
-
-        // Editable requires readable (handle both boolean and string values from XML)
-        const isEditable = editable === true || editable === 'true';
-        const isNotReadable = readable === false || readable === 'false';
-
-        if (isEditable && isNotReadable) {
-          invalidPermissions.push({
-            object: `fieldPermissions: ${fieldName as string}`,
-            issue: 'editable=true requires readable=true',
-          });
+        const issue = validateFieldPermission(field);
+        if (issue) {
+          invalidPermissions.push(issue);
         }
       }
     }
 
-    // Check objectPermissions for invalid combinations
+    // Check objectPermissions
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const objectPermissions = profileData.objectPermissions;
     if (objectPermissions) {
@@ -224,43 +280,8 @@ export function detectInvalidPermissions(
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       for (const obj of objectArray) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const objName = obj.object;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const allowCreate = obj.allowCreate;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const allowRead = obj.allowRead;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const allowEdit = obj.allowEdit;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const allowDelete = obj.allowDelete;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const modifyAllRecords = obj.modifyAllRecords;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const viewAllRecords = obj.viewAllRecords;
-
-        // Create/Edit/Delete require Read (handle both boolean and string values from XML)
-        const hasCreate = allowCreate === true || allowCreate === 'true';
-        const hasEdit = allowEdit === true || allowEdit === 'true';
-        const hasDelete = allowDelete === true || allowDelete === 'true';
-        const hasRead = allowRead === true || allowRead === 'true';
-        const hasModifyAll = modifyAllRecords === true || modifyAllRecords === 'true';
-        const hasViewAll = viewAllRecords === true || viewAllRecords === 'true';
-
-        if ((hasCreate || hasEdit || hasDelete) && !hasRead) {
-          invalidPermissions.push({
-            object: `objectPermissions: ${objName as string}`,
-            issue: 'allowCreate/Edit/Delete requires allowRead=true',
-          });
-        }
-
-        // ModifyAll requires Edit and ViewAll
-        if (hasModifyAll && (!hasEdit || !hasViewAll)) {
-          invalidPermissions.push({
-            object: `objectPermissions: ${objName as string}`,
-            issue: 'modifyAllRecords requires allowEdit=true and viewAllRecords=true',
-          });
-        }
+        const issues = validateObjectPermission(obj);
+        invalidPermissions.push(...issues);
       }
     }
 

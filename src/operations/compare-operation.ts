@@ -108,9 +108,34 @@ export function retrieveOrgProfile(profileName: string, org: Org, apiVersion: st
   return new ProfilerMonad(async () => {
     try {
       const connection = org.getConnection(apiVersion);
+      const orgId = org.getOrgId();
+      
+      // Import cache and performance utilities
+      const { getMetadataCache } = await import('../core/performance/cache.js');
+      const { RateLimiter, CircuitBreaker } = await import('../core/performance/guardrails.js');
+      
+      const cache = getMetadataCache();
+      const rateLimiter = new RateLimiter();
+      const circuitBreaker = new CircuitBreaker();
+      
+      // Check circuit breaker
+      circuitBreaker.allowRequest();
+      
+      // Try to get from cache first
+      const cacheKey = `profile-content:${profileName}`;
+      const cached = cache.get<string>(orgId, cacheKey, apiVersion);
+      if (cached !== null) {
+        circuitBreaker.recordSuccess();
+        return success(cached);
+      }
+      
+      // Cache miss - make API call with rate limiting
+      rateLimiter.recordCall();
+      
       const metadata = await connection.metadata.list({ type: 'Profile' }, apiVersion);
 
       if (!metadata) {
+        circuitBreaker.recordFailure();
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         const orgError = new NoOrgProfileError(profileName, org.getUsername() ?? org.getOrgId());
         return failure(orgError);
@@ -120,16 +145,22 @@ export function retrieveOrgProfile(profileName: string, org: Org, apiVersion: st
       const profileExists = metadataArray.some((m) => m.fullName === profileName);
 
       if (!profileExists) {
+        circuitBreaker.recordFailure();
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         const orgError = new NoOrgProfileError(profileName, org.getUsername() ?? org.getOrgId());
         return failure(orgError);
       }
 
+      circuitBreaker.recordSuccess();
+      
       // For now, return a placeholder
       // In a full implementation, this would use metadata.read() or retrieve()
-      return success(
-        '<?xml version="1.0" encoding="UTF-8"?>\n<Profile xmlns="http://soap.sforce.com/2006/04/metadata">\n</Profile>'
-      );
+      const profileContent = '<?xml version="1.0" encoding="UTF-8"?>\n<Profile xmlns="http://soap.sforce.com/2006/04/metadata">\n</Profile>';
+      
+      // Cache the result
+      cache.set(orgId, cacheKey, apiVersion, profileContent);
+      
+      return success(profileContent);
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       const orgError = new NoOrgProfileError(profileName, org.getUsername() ?? org.getOrgId());

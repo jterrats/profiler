@@ -85,9 +85,10 @@ export function validateProfileNames(profileNames?: string[]): ProfilerMonad<str
 }
 
 /**
- * Lists all metadata of a specific type from the org
+ * Lists all metadata of a specific type from the org with caching
  *
  * @param connection - Salesforce connection
+ * @param orgId - Org ID for cache key
  * @param metadataType - Type of metadata to list
  * @param apiVersion - API version to use
  * @param excludeManaged - Whether to exclude managed package metadata
@@ -97,16 +98,31 @@ export function validateProfileNames(profileNames?: string[]): ProfilerMonad<str
  */
 export function listMetadataType(
   connection: Connection,
+  orgId: string,
   metadataType: string,
   apiVersion: string,
   excludeManaged: boolean
 ): ProfilerMonad<string[]> {
   return new ProfilerMonad(async () => {
     try {
+      // Import cache dynamically
+      const { getMetadataCache } = await import('../core/performance/cache.js');
+      const cache = getMetadataCache();
+      
+      // Try cache first
+      const cached = cache.get<string[]>(orgId, `${metadataType}:excludeManaged=${excludeManaged}`, apiVersion);
+      
+      if (cached !== null) {
+        return success(cached);
+      }
+
+      // Cache miss - make API call
       const metadata = await connection.metadata.list({ type: metadataType }, apiVersion);
 
       if (!metadata) {
-        return success<string[]>([]);
+        const emptyResult: string[] = [];
+        cache.set(orgId, `${metadataType}:excludeManaged=${excludeManaged}`, apiVersion, emptyResult);
+        return success(emptyResult);
       }
 
       const metadataArray = Array.isArray(metadata) ? metadata : [metadata];
@@ -116,6 +132,9 @@ export function listMetadataType(
       if (excludeManaged) {
         members = members.filter((member) => !member.includes('__') || member.endsWith('__c'));
       }
+
+      // Store in cache
+      cache.set(orgId, `${metadataType}:excludeManaged=${excludeManaged}`, apiVersion, members);
 
       return success(members);
     } catch (error) {
@@ -137,41 +156,80 @@ export function listMetadataType(
  */
 export function listAllMetadata(input: RetrieveInput, metadataTypes: string[]): ProfilerMonad<MetadataListResult> {
   return new ProfilerMonad(async () => {
+    // Import performance utilities
+    const { createWorkerPool, PerformanceTracker } = await import('../core/performance/worker-pool.js');
+    const { validateProfileCount, displayWarnings, canContinueOperation, RateLimiter, CircuitBreaker } = await import('../core/performance/guardrails.js');
+    
     const connection = input.org.getConnection(input.apiVersion);
     const excludeManaged = input.excludeManaged ?? false;
-
-    // List all metadata types in parallel
-    const metadataPromises = metadataTypes.map(async (type): Promise<MetadataTypeMembers | null> => {
-      const monad = listMetadataType(connection, type, input.apiVersion, excludeManaged);
-      const result = await monad.run();
-
-      if (result.isFailure()) {
-        // Log warning but don't fail the entire operation
-        return null;
+    const orgId = input.org.getOrgId();
+    
+    // Validate profile count first
+    if (input.profileNames && input.profileNames.length > 0) {
+      const profileWarnings = validateProfileCount(input.profileNames.length);
+      if (profileWarnings.length > 0) {
+        displayWarnings(profileWarnings);
+        
+        if (!canContinueOperation(profileWarnings)) {
+          return failure(new Error(`Too many profiles requested: ${input.profileNames.length}. Maximum allowed: 50`));
+        }
       }
+    }
 
-      const members = result.value;
+    // Create worker pool for controlled concurrency
+    const pool = createWorkerPool({
+      operationType: 'metadata',
+      verbose: false,
+    });
+    
+    const tracker = new PerformanceTracker();
+    const rateLimiter = new RateLimiter();
+    const circuitBreaker = new CircuitBreaker();
 
-      // Filter profiles if profile names are specified
-      if (type === 'Profile' && input.profileNames && input.profileNames.length > 0) {
-        const filteredMembers = members.filter((member) => input.profileNames!.includes(member));
+    // Create tasks with guardrails
+    const tasks = metadataTypes.map((type) => async (): Promise<MetadataTypeMembers | null> => {
+      try {
+        // Check circuit breaker
+        circuitBreaker.allowRequest();
+        
+        // Check rate limit
+        rateLimiter.recordCall();
+        tracker.recordApiCall();
+        
+        const monad = listMetadataType(connection, orgId, type, input.apiVersion, excludeManaged);
+        const result = await monad.run();
 
-        if (filteredMembers.length === 0) {
-          // Return null to indicate this metadata type couldn't be retrieved
-          // The error will be caught at a higher level
+        if (result.isFailure()) {
+          circuitBreaker.recordFailure();
           return null;
         }
 
-        return {
-          type,
-          members: filteredMembers,
-        };
-      }
+        circuitBreaker.recordSuccess();
+        const members = result.value;
 
-      return members.length > 0 ? { type, members } : null;
+        // Filter profiles if profile names are specified
+        if (type === 'Profile' && input.profileNames && input.profileNames.length > 0) {
+          const filteredMembers = members.filter((member) => input.profileNames!.includes(member));
+
+          if (filteredMembers.length === 0) {
+            return null;
+          }
+
+          return {
+            type,
+            members: filteredMembers,
+          };
+        }
+
+        return members.length > 0 ? { type, members } : null;
+      } catch (error) {
+        circuitBreaker.recordFailure();
+        throw error;
+      }
     });
 
-    const results = await Promise.all(metadataPromises);
+    // Execute with controlled concurrency
+    const results = await pool.executeAll(tasks);
     const metadataTypeMembers = results.filter((r): r is MetadataTypeMembers => r !== null);
 
     // Check if we have any Profile metadata when profiles were requested

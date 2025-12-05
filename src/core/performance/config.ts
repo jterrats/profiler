@@ -28,11 +28,37 @@ export const SALESFORCE_HARD_LIMITS = {
   /** Absolute max concurrent API requests per org */
   MAX_CONCURRENT_API_REQUESTS: 25,
 
-  /** Max API requests per 24 hours (depends on license type) */
+  /** 
+   * Max API requests per 24 hours (BASE + per-license scaling)
+   * Formula: Base + (licenses × per_license)
+   */
   MAX_API_REQUESTS_PER_DAY: {
-    ENTERPRISE: 1_000_000,
-    UNLIMITED: 5_000_000,
-    DEVELOPER: 15_000, // Developer Edition/Sandbox
+    // Developer Edition / Sandbox
+    DEVELOPER: {
+      BASE: 15_000,
+      PER_LICENSE: 0, // Fixed limit, no scaling
+      EXAMPLE: 15_000,
+    },
+    // Enterprise Edition
+    ENTERPRISE: {
+      BASE: 0,
+      PER_LICENSE: 1000, // Scales with user licenses
+      EXAMPLE_100_LICENSES: 100_000,
+      EXAMPLE_1000_LICENSES: 1_000_000,
+    },
+    // Unlimited Edition
+    UNLIMITED: {
+      BASE: 0,
+      PER_LICENSE: 5000, // Scales with user licenses
+      EXAMPLE_100_LICENSES: 500_000,
+      EXAMPLE_1000_LICENSES: 5_000_000,
+    },
+    // Performance Edition
+    PERFORMANCE: {
+      BASE: 0,
+      PER_LICENSE: 5000,
+      EXAMPLE_1000_LICENSES: 5_000_000,
+    },
   },
 
   /** Max retrieve size (uncompressed) */
@@ -145,11 +171,15 @@ export function resolvePerformanceConfig(userConfig: PerformanceConfig = {}): Re
 
     warnings.push(
       `📈 Increased API calls limit to ${perMinute}/min (default: ${SAFETY_LIMITS.MAX_API_CALLS_PER_MINUTE})`,
-      '   ⚠️  SALESFORCE HARD LIMITS (CANNOT OVERRIDE):',
+      '   ⚠️  SALESFORCE HARD LIMITS (CANNOT OVERRIDE, SCALE WITH LICENSES):',
       `      - Max concurrent requests: ${SALESFORCE_HARD_LIMITS.MAX_CONCURRENT_API_REQUESTS}`,
-      `      - Max requests/day (Dev): ${SALESFORCE_HARD_LIMITS.MAX_API_REQUESTS_PER_DAY.DEVELOPER.toLocaleString()}`,
-      `      - Max requests/day (Enterprise): ${SALESFORCE_HARD_LIMITS.MAX_API_REQUESTS_PER_DAY.ENTERPRISE.toLocaleString()}`,
-      `   💡 At ${perMinute}/min, you would use ${perDay.toLocaleString()} calls/day`
+      `      - Developer/Sandbox: ${SALESFORCE_HARD_LIMITS.MAX_API_REQUESTS_PER_DAY.DEVELOPER.BASE.toLocaleString()}/day (fixed)`,
+      `      - Enterprise: ${SALESFORCE_HARD_LIMITS.MAX_API_REQUESTS_PER_DAY.ENTERPRISE.PER_LICENSE.toLocaleString()} per license/day`,
+      `        Example: 100 licenses = ${SALESFORCE_HARD_LIMITS.MAX_API_REQUESTS_PER_DAY.ENTERPRISE.EXAMPLE_100_LICENSES.toLocaleString()}/day`,
+      `      - Unlimited: ${SALESFORCE_HARD_LIMITS.MAX_API_REQUESTS_PER_DAY.UNLIMITED.PER_LICENSE.toLocaleString()} per license/day`,
+      `        Example: 1000 licenses = ${SALESFORCE_HARD_LIMITS.MAX_API_REQUESTS_PER_DAY.UNLIMITED.EXAMPLE_1000_LICENSES.toLocaleString()}/day`,
+      `   💡 At ${perMinute}/min continuously, you would use ${perDay.toLocaleString()} calls/day`,
+      '   📚 See: https://help.salesforce.com/s/articleView?id=sf.integrate_api_rate_limiting.htm'
     );
   }
 
