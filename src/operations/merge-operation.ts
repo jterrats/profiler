@@ -59,6 +59,8 @@ export type MergeInput = {
   apiVersion: string;
   /** Whether to skip backup */
   skipBackup?: boolean;
+  /** Dry run mode - preview changes without applying */
+  dryRun?: boolean;
 };
 
 /**
@@ -89,6 +91,8 @@ export type MergeResult = {
   backupPath?: string;
   conflicts: number;
   strategy: MergeStrategy;
+  dryRun: boolean;
+  previewChanges?: string[]; // Changes that would be applied (only in dry-run)
 };
 
 /**
@@ -315,9 +319,15 @@ export function validateMergedProfile(mergedProfile: MergedProfile, profileName:
  * @param profileName - Name of the profile
  * @param projectPath - Path to the project
  * @param content - Merged content to write
- * @returns ProfilerMonad<string> - Path to written file
+ * @param dryRun - If true, skip writing (preview only)
+ * @returns ProfilerMonad<string> - Path to written file (or would-be path in dry-run)
  */
-export function writeMergedProfile(profileName: string, projectPath: string, content: string): ProfilerMonad<string> {
+export function writeMergedProfile(
+  profileName: string,
+  projectPath: string,
+  content: string,
+  dryRun = false
+): ProfilerMonad<string> {
   return new ProfilerMonad(async () => {
     const profilePath = path.join(
       projectPath,
@@ -327,6 +337,11 @@ export function writeMergedProfile(profileName: string, projectPath: string, con
       'profiles',
       `${profileName}.profile-meta.xml`
     );
+
+    if (dryRun) {
+      // Dry run - don't write, just return the path
+      return success(profilePath);
+    }
 
     try {
       await fs.writeFile(profilePath, content, 'utf-8');
@@ -355,13 +370,28 @@ export function writeMergedProfile(profileName: string, projectPath: string, con
  *
  * @example
  * ```typescript
+ * // Dry run - preview changes without applying
+ * const preview = await mergeProfileOperation({
+ *   org,
+ *   profileName: 'Admin',
+ *   projectPath: '/path/to/project',
+ *   strategy: 'local-wins',
+ *   apiVersion: '58.0',
+ *   dryRun: true
+ * }).run();
+ *
+ * if (preview.isSuccess() && preview.value.previewChanges) {
+ *   console.log('Would apply:', preview.value.previewChanges);
+ * }
+ *
+ * // Actual merge
  * const result = await mergeProfileOperation({
  *   org,
  *   profileName: 'Admin',
  *   projectPath: '/path/to/project',
- *   strategy: 'auto',
+ *   strategy: 'local-wins',
  *   apiVersion: '58.0',
- *   skipBackup: false
+ *   dryRun: false
  * }).run();
  *
  * if (result.isSuccess()) {
@@ -372,11 +402,14 @@ export function writeMergedProfile(profileName: string, projectPath: string, con
  * ```
  */
 export function mergeProfileOperation(input: MergeInput): ProfilerMonad<MergeResult> {
+  const isDryRun = input.dryRun ?? false;
+  
   // For now, return a placeholder implementation
   // Full implementation would integrate with compare and retrieve operations
   return validateMergeStrategy(input.strategy)
     .chain((strategy) => {
-      if (input.skipBackup) {
+      // Skip backup in dry-run mode or if explicitly skipped
+      if (isDryRun || input.skipBackup) {
         return new ProfilerMonad(() =>
           Promise.resolve(
             success({
@@ -392,12 +425,27 @@ export function mergeProfileOperation(input: MergeInput): ProfilerMonad<MergeRes
       }));
     })
     .map(
-      ({ strategy, backupPath }: { strategy: MergeStrategy; backupPath: string | undefined }): MergeResult => ({
-        profileName: input.profileName,
-        merged: true,
-        backupPath,
-        conflicts: 0,
-        strategy,
-      })
+      ({ strategy, backupPath }: { strategy: MergeStrategy; backupPath: string | undefined }): MergeResult => {
+        // In dry-run mode, generate preview of changes
+        const previewChanges = isDryRun
+          ? [
+              `Would merge profile '${input.profileName}' using strategy: ${strategy}`,
+              'Changes would include:',
+              '- Add new permissions from org',
+              '- Resolve conflicts based on strategy',
+              '- Update local profile file',
+            ]
+          : undefined;
+
+        return {
+          profileName: input.profileName,
+          merged: !isDryRun, // Only true if actually merged
+          backupPath,
+          conflicts: 0,
+          strategy,
+          dryRun: isDryRun,
+          previewChanges,
+        };
+      }
     );
 }
