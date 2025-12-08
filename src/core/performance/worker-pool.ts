@@ -27,10 +27,10 @@ import pLimit from 'p-limit';
 const SALESFORCE_LIMITS = {
   // Maximum concurrent API requests per org
   MAX_CONCURRENT_REQUESTS: 25,
-  
+
   // Recommended safe limit (to leave room for other operations)
   SAFE_CONCURRENT_REQUESTS: 10,
-  
+
   // Conservative limit for metadata operations (they're heavier)
   METADATA_CONCURRENT_REQUESTS: 5,
 } as const;
@@ -41,10 +41,10 @@ const SALESFORCE_LIMITS = {
 export type WorkerPoolConfig = {
   /** Maximum concurrent workers (overrides auto-detection) */
   maxWorkers?: number;
-  
+
   /** Operation type (affects limits) */
   operationType?: 'metadata' | 'api' | 'file';
-  
+
   /** Whether to log performance metrics */
   verbose?: boolean;
 };
@@ -55,16 +55,16 @@ export type WorkerPoolConfig = {
 export type SystemCapabilities = {
   /** Number of CPU cores */
   cpuCores: number;
-  
+
   /** Available memory in MB */
   availableMemoryMB: number;
-  
+
   /** Total memory in MB */
   totalMemoryMB: number;
-  
+
   /** Recommended worker count */
   recommendedWorkers: number;
-  
+
   /** Maximum safe worker count */
   maxSafeWorkers: number;
 };
@@ -78,17 +78,17 @@ export function detectSystemCapabilities(): SystemCapabilities {
   const cpuCores = os.cpus().length;
   const totalMemoryMB = Math.round(os.totalmem() / 1024 / 1024);
   const freeMemoryMB = Math.round(os.freemem() / 1024 / 1024);
-  
+
   // Calculate recommended workers based on CPU cores
   // Rule: Use 50-75% of cores to leave room for other processes
   const recommendedWorkers = Math.max(1, Math.floor(cpuCores * 0.75));
-  
+
   // Max safe workers: Don't exceed Salesforce API limits
   const maxSafeWorkers = Math.min(
     cpuCores, // Don't exceed CPU cores
     SALESFORCE_LIMITS.SAFE_CONCURRENT_REQUESTS // Don't exceed SF limits
   );
-  
+
   return {
     cpuCores,
     availableMemoryMB: freeMemoryMB,
@@ -114,9 +114,9 @@ export function calculateOptimalWorkers(
     const capabilities = detectSystemCapabilities();
     return Math.min(userOverride, capabilities.maxSafeWorkers);
   }
-  
+
   const capabilities = detectSystemCapabilities();
-  
+
   // Adjust based on operation type
   switch (operationType) {
     case 'metadata':
@@ -125,18 +125,18 @@ export function calculateOptimalWorkers(
         capabilities.recommendedWorkers,
         SALESFORCE_LIMITS.METADATA_CONCURRENT_REQUESTS
       );
-      
+
     case 'api':
       // Regular API operations
       return Math.min(
         capabilities.recommendedWorkers,
         SALESFORCE_LIMITS.SAFE_CONCURRENT_REQUESTS
       );
-      
+
     case 'file':
       // File operations are CPU/disk bound, can use more workers
       return capabilities.recommendedWorkers;
-      
+
     default:
       return capabilities.recommendedWorkers;
   }
@@ -151,10 +151,10 @@ export function calculateOptimalWorkers(
  * @example
  * ```typescript
  * const pool = createWorkerPool({ operationType: 'metadata', verbose: true });
- * 
+ *
  * console.log(`Using ${pool.workerCount} workers`);
  * console.log(`System: ${pool.capabilities.cpuCores} cores, ${pool.capabilities.availableMemoryMB}MB free`);
- * 
+ *
  * // Use the limiter for parallel operations
  * const results = await Promise.all(
  *   items.map(item => pool.limit(() => processItem(item)))
@@ -175,9 +175,9 @@ export function createWorkerPool(config: WorkerPoolConfig = {}): {
     config.operationType ?? 'metadata',
     config.maxWorkers
   );
-  
+
   const limit = pLimit(workerCount);
-  
+
   if (config.verbose) {
     // eslint-disable-next-line no-console
     console.log('\n🔧 Worker Pool Configuration:');
@@ -192,37 +192,37 @@ export function createWorkerPool(config: WorkerPoolConfig = {}): {
     // eslint-disable-next-line no-console
     console.log('');
   }
-  
+
   return {
     /** Concurrency limiter function */
     limit,
-    
+
     /** Number of workers in the pool */
     workerCount,
-    
+
     /** System capabilities */
     capabilities,
-    
+
     /** Salesforce API limits */
     salesforceLimits: SALESFORCE_LIMITS,
-    
+
     /**
      * Executes an array of tasks with concurrency limit
-     * 
+     *
      * @param tasks - Array of async functions to execute
      * @returns Promise of results array
      */
     async executeAll<T>(tasks: Array<() => Promise<T>>): Promise<T[]> {
       return Promise.all(tasks.map((task) => limit(task)));
     },
-    
+
     /**
      * Clears all pending tasks
      */
     clearPending(): void {
       limit.clearQueue();
     },
-    
+
     /**
      * Gets current pool stats
      */
@@ -243,21 +243,21 @@ export class PerformanceTracker {
   private startTime: number;
   private apiCalls: number = 0;
   private operations: Map<string, { count: number; totalMs: number }> = new Map();
-  
+
   public constructor() {
     this.startTime = Date.now();
   }
-  
+
   /**
    * Records an API call
    */
   public recordApiCall(): void {
     this.apiCalls += 1;
   }
-  
+
   /**
    * Records an operation with timing
-   * 
+   *
    * @param operationName - Name of the operation
    * @param durationMs - Duration in milliseconds
    */
@@ -268,7 +268,7 @@ export class PerformanceTracker {
       totalMs: existing.totalMs + durationMs,
     });
   }
-  
+
   /**
    * Gets performance summary
    */
@@ -286,7 +286,7 @@ export class PerformanceTracker {
       totalMs: stats.totalMs,
       avgMs: Math.round(stats.totalMs / stats.count),
     }));
-    
+
     return {
       totalMs,
       totalSeconds: (totalMs / 1000).toFixed(2),
@@ -295,18 +295,18 @@ export class PerformanceTracker {
       apiCallsPerSecond: totalMs > 0 ? (this.apiCalls / (totalMs / 1000)).toFixed(2) : '0',
     };
   }
-  
+
   /**
    * Logs performance summary
    */
   public logSummary(): void {
     const summary = this.getSummary();
-    
+
     /* eslint-disable no-console */
     console.log('\n📊 Performance Summary:');
     console.log(`   Total Time: ${summary.totalSeconds}s`);
     console.log(`   API Calls: ${summary.apiCalls} (${summary.apiCallsPerSecond}/s)`);
-    
+
     if (summary.operations.length > 0) {
       console.log('   Operations:');
       for (const op of summary.operations) {
@@ -320,7 +320,7 @@ export class PerformanceTracker {
 
 /**
  * Wraps an async function with performance tracking
- * 
+ *
  * @param fn - Async function to wrap
  * @param operationName - Name for tracking
  * @param tracker - Performance tracker instance
