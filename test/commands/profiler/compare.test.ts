@@ -30,12 +30,15 @@ describe('profiler compare', () => {
   });
 
   it('has correct flags defined', () => {
+    /* eslint-disable @typescript-eslint/no-unsafe-member-access */
     expect(ProfilerCompare.flags['target-org']).to.exist;
     expect(ProfilerCompare.flags.name).to.exist;
     expect(ProfilerCompare.flags['api-version']).to.exist;
+    /* eslint-enable @typescript-eslint/no-unsafe-member-access */
   });
 
   it('name flag has correct aliases', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(ProfilerCompare.flags.name.char).to.equal('n');
   });
 
