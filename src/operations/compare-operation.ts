@@ -19,6 +19,7 @@ import {
   InvalidXmlError,
   ComparisonTimeoutError,
 } from '../core/errors/operation-errors.js';
+import type { PerformanceConfig } from '../core/performance/config.js';
 
 /**
  * Input parameters for compare operation
@@ -34,6 +35,8 @@ export type CompareInput = {
   apiVersion: string;
   /** Optional timeout in milliseconds */
   timeoutMs?: number;
+  /** Performance configuration options */
+  performanceConfig?: PerformanceConfig;
 };
 
 /**
