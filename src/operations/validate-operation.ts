@@ -30,7 +30,6 @@ import { ProfilerMonad, success, failure } from '../core/monad/index.js';
 import {
   MissingMetadataReferenceError,
   DuplicateEntryError,
-  InvalidPermissionError,
   InvalidXmlError,
 } from '../core/errors/operation-errors.js';
 
@@ -285,12 +284,8 @@ export function detectInvalidPermissions(
       }
     }
 
-    if (invalidPermissions.length > 0) {
-      const err = new InvalidPermissionError(profileName, invalidPermissions);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-      return Promise.resolve(failure(err));
-    }
-
+    // Always return success with the array of invalid permissions
+    // Let the caller decide how to handle them
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
     return Promise.resolve(success(invalidPermissions));
   });
