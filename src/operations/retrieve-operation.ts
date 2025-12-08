@@ -9,10 +9,11 @@
  */
 
 import type { Connection, Org } from '@salesforce/core';
-import { ProfilerMonad, success, failure } from '../core/monad/index.js';
+import { ProfilerMonad, success, failure, liftAsync } from '../core/monad/index.js';
 import {
   ProfileNotFoundError,
 } from '../core/errors/operation-errors.js';
+import type { PerformanceConfig } from '../core/performance/config.js';
 
 /**
  * Input parameters for retrieve operation
@@ -26,6 +27,14 @@ export type RetrieveInput = {
   apiVersion: string;
   /** Whether to exclude managed package metadata */
   excludeManaged?: boolean;
+  /** Path to Salesforce project */
+  projectPath: string;
+  /** Whether to include field-level security (FLS) */
+  includeAllFields?: boolean;
+  /** Whether to build package.xml from local project files instead of org metadata */
+  fromProject?: boolean;
+  /** Performance configuration options */
+  performanceConfig?: PerformanceConfig;
 };
 
 /**
@@ -329,6 +338,217 @@ export function generatePackageXml(
  * }
  * ```
  */
+/**
+ * Builds package.xml from local project files instead of org metadata
+ *
+ * @param projectPath - Path to project root
+ * @param metadataTypes - Array of metadata types to include
+ * @param apiVersion - API version
+ * @param profileNames - Optional profile name filter
+ * @param excludeManaged - Whether to exclude managed packages
+ * @returns ProfilerMonad<MetadataListResult>
+ */
+export function buildMetadataFromProject(
+  projectPath: string,
+  metadataTypes: string[],
+  apiVersion: string,
+  profileNames?: string[],
+  excludeManaged = false
+): ProfilerMonad<MetadataListResult> {
+  return new ProfilerMonad(async () => {
+    try {
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+
+      const metadataTypeMap: Record<string, { folder: string; extension: string }> = {
+        ApexClass: { folder: 'classes', extension: '.cls' },
+        ApexPage: { folder: 'pages', extension: '.page' },
+        ConnectedApp: { folder: 'connectedApps', extension: '.connectedApp-meta.xml' },
+        CustomApplication: { folder: 'applications', extension: '.app-meta.xml' },
+        CustomObject: { folder: 'objects', extension: '' },
+        CustomPermission: { folder: 'customPermissions', extension: '.customPermission-meta.xml' },
+        CustomTab: { folder: 'tabs', extension: '.tab-meta.xml' },
+        Flow: { folder: 'flows', extension: '.flow-meta.xml' },
+        Layout: { folder: 'layouts', extension: '.layout-meta.xml' },
+        Profile: { folder: 'profiles', extension: '.profile-meta.xml' },
+      };
+
+      const metadataTypeMembers: MetadataTypeMembers[] = [];
+      let totalMembers = 0;
+
+      // Process metadata types in parallel
+      const results = await Promise.all(
+        metadataTypes.map(async (metadataType) => {
+          const config = metadataTypeMap[metadataType];
+          if (!config) return null;
+
+          const metadataDir = path.join(projectPath, 'force-app', 'main', 'default', config.folder);
+
+          try {
+            const files = await fs.readdir(metadataDir);
+            let members: string[] = [];
+
+            if (metadataType === 'CustomObject') {
+              // For objects, check which entries are directories
+              const statResults = await Promise.all(
+                files.map(async (file) => ({
+                  file,
+                  isDir: (await fs.stat(path.join(metadataDir, file))).isDirectory(),
+                }))
+              );
+              members = statResults.filter((r) => r.isDir).map((r) => r.file);
+            } else if (config.extension) {
+              // For other types, filter files by extension
+              members = files
+                .filter((file) => file.endsWith(config.extension))
+                .map((file) => file.replace(config.extension, ''));
+            }
+
+            // Filter managed packages
+            if (excludeManaged) {
+              members = members.filter((member) => !member.includes('__') || member.endsWith('__c'));
+            }
+
+            // Filter profiles if specified
+            if (metadataType === 'Profile' && profileNames && profileNames.length > 0) {
+              members = members.filter((member) => profileNames.includes(member));
+              if (members.length === 0) {
+                // Return special error marker
+                return { error: profileNames.join(', '), type: '', members: [] };
+              }
+            }
+
+            if (members.length > 0) {
+              return {
+                type: metadataType,
+                members: members.sort(),
+              };
+            }
+            return null;
+          } catch {
+            // Directory doesn't exist - skip
+            return null;
+          }
+        })
+      );
+
+      // Check for profile not found errors
+      const errorResult = results.find((r) => r && 'error' in r && r.error);
+      if (errorResult && 'error' in errorResult && errorResult.error) {
+        return failure(new ProfileNotFoundError(errorResult.error));
+      }
+
+      // Collect successful results
+      for (const result of results) {
+        if (result?.type && result?.members) {
+          metadataTypeMembers.push({ type: result.type, members: result.members });
+          totalMembers += result.members.length;
+        }
+      }
+
+      return success({
+        metadataTypes: metadataTypeMembers,
+        totalMembers,
+      });
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      return failure(err);
+    }
+  });
+}
+
+/**
+ * Executes sf project retrieve command with package.xml
+ *
+ * @param org - Salesforce org
+ * @param packageXmlPath - Path to package.xml file
+ * @param projectPath - Path to project root
+ * @returns ProfilerMonad<void>
+ */
+export function executeRetrieve(org: Org, packageXmlPath: string, projectPath: string): ProfilerMonad<void> {
+  return new ProfilerMonad(async () => {
+    try {
+      const { exec } = await import('node:child_process');
+      const { promisify } = await import('node:util');
+      const execAsync = promisify(exec);
+
+      const username = org.getUsername() ?? org.getOrgId();
+      const retrieveCmd = `sf project retrieve start --manifest "${packageXmlPath}" --target-org ${username}`;
+
+      await execAsync(retrieveCmd, {
+        cwd: projectPath,
+        maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+      });
+
+      return success(undefined);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      return failure(new Error(`Retrieve failed: ${err.message}`));
+    }
+  });
+}
+
+/**
+ * Removes field-level security from profile XML
+ *
+ * @param profileContent - Profile XML content
+ * @returns ProfilerMonad<string> - Profile without FLS
+ */
+export function removeFieldLevelSecurity(profileContent: string): ProfilerMonad<string> {
+  return new ProfilerMonad(() => {
+    const withoutFls = profileContent.replace(/<fieldPermissions>[\s\S]*?<\/fieldPermissions>\n?/g, '');
+    return Promise.resolve(success(withoutFls));
+  });
+}
+
+/**
+ * Copies profiles from project to final destination
+ *
+ * @param projectPath - Path to project root
+ * @param includeAllFields - Whether to keep field permissions
+ * @returns ProfilerMonad<number> - Number of profiles copied
+ */
+export function copyProfiles(projectPath: string, includeAllFields: boolean): ProfilerMonad<number> {
+  return new ProfilerMonad(async () => {
+    try {
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+
+      const profilesDir = path.join(projectPath, 'force-app', 'main', 'default', 'profiles');
+
+      // Check if profiles directory exists
+      try {
+        await fs.access(profilesDir);
+      } catch {
+        return success(0);
+      }
+
+      const files = await fs.readdir(profilesDir);
+      const profileFiles = files.filter((f) => f.endsWith('.profile-meta.xml'));
+
+      // If not including all fields, remove FLS
+      if (!includeAllFields) {
+        await Promise.all(
+          profileFiles.map(async (file) => {
+            const filePath = path.join(profilesDir, file);
+            const content = await fs.readFile(filePath, 'utf-8');
+            const flsResult = await removeFieldLevelSecurity(content).run();
+
+            if (flsResult.isSuccess()) {
+              await fs.writeFile(filePath, flsResult.value);
+            }
+          })
+        );
+      }
+
+      return success(profileFiles.length);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      return failure(err);
+    }
+  });
+}
+
 export function retrieveProfiles(input: RetrieveInput): ProfilerMonad<RetrieveResult> {
   const metadataTypes = [
     'ApexClass',
@@ -343,14 +563,49 @@ export function retrieveProfiles(input: RetrieveInput): ProfilerMonad<RetrieveRe
     'Profile',
   ];
 
+  // Choose metadata source: project files or org API
+  const metadataSource = input.fromProject
+    ? buildMetadataFromProject(input.projectPath, metadataTypes, input.apiVersion, input.profileNames, input.excludeManaged)
+    : listAllMetadata(input, metadataTypes);
+
   return validateProfileNames(input.profileNames)
-    .chain(() => listAllMetadata(input, metadataTypes))
+    .chain(() => metadataSource)
     .chain((metadataList) => generatePackageXml(metadataList, input.apiVersion))
-    .map((packageXml) => ({
-      // For now, return a result with the package XML info
-      // In the next step, we'll add the actual retrieve and file operations
-      profilesRetrieved: input.profileNames ?? [],
-      metadataTypes: packageXml.metadataTypes,
-      totalComponents: packageXml.totalMembers,
-    }));
+    .chain((packageXmlResult: PackageXmlResult) =>
+      liftAsync(async () => {
+        // Write package.xml to temp directory
+        const fs = await import('node:fs/promises');
+        const path = await import('node:path');
+        const os = await import('node:os');
+
+        const tempDir = path.join(os.tmpdir(), `profiler-${Date.now()}`);
+        await fs.mkdir(tempDir, { recursive: true });
+
+        const packageXmlPath = path.join(tempDir, 'package.xml');
+        await fs.writeFile(packageXmlPath, packageXmlResult.content);
+
+        return { tempDir, packageXmlPath, packageXmlResult };
+      })
+        .chain(
+          (context: { tempDir: string; packageXmlPath: string; packageXmlResult: PackageXmlResult }) =>
+            executeRetrieve(input.org, context.packageXmlPath, input.projectPath)
+              .chain(() =>
+                liftAsync(async () => {
+                  const fs = await import('node:fs/promises');
+                  // Clean up temp dir
+                  await fs.rm(context.tempDir, { recursive: true, force: true });
+                  return undefined;
+                })
+              )
+              .chain(() =>
+                copyProfiles(input.projectPath, input.includeAllFields ?? false).map(
+                  (): RetrieveResult => ({
+                    profilesRetrieved: input.profileNames ?? [],
+                    metadataTypes: context.packageXmlResult.metadataTypes,
+                    totalComponents: context.packageXmlResult.totalMembers,
+                  })
+                )
+              )
+        )
+    );
 }
