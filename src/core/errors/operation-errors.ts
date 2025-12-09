@@ -8,7 +8,7 @@
 import { UserError, SystemError } from './base-errors.js';
 
 // ============================================================================
-// RETRIEVE OPERATION ERRORS (8 total)
+// RETRIEVE OPERATION ERRORS (11 total)
 // ============================================================================
 
 /**
@@ -149,6 +149,75 @@ export class ManagedPackageError extends UserError {
       'Managed package metadata cannot be retrieved or modified',
       'Example: profiler retrieve --exclude-managed',
     ]);
+  }
+}
+
+/**
+ * LocalMetadataReadError - Cannot read local metadata files
+ * When: Error reading local force-app directory or profile files
+ * Recoverable: Yes (fallback to full retrieve)
+ */
+export class LocalMetadataReadError extends SystemError {
+  public constructor(path: string, cause?: Error) {
+    super(
+      `Failed to read local metadata from '${path}'`,
+      'LOCAL_METADATA_READ_ERROR',
+      [
+        'Check file permissions on your project directory',
+        'Ensure force-app directory exists and is readable',
+        'Will fallback to full retrieve for safety',
+      ],
+      true // recoverable - fallback to full retrieve
+    );
+    if (cause) {
+      this.cause = cause;
+    }
+  }
+}
+
+/**
+ * MetadataComparisonError - Error comparing local vs org metadata
+ * When: Diff/comparison logic fails
+ * Recoverable: Yes (fallback to full retrieve)
+ */
+export class MetadataComparisonError extends SystemError {
+  public constructor(message: string, cause?: Error) {
+    super(
+      `Metadata comparison failed: ${message}`,
+      'METADATA_COMPARISON_ERROR',
+      [
+        'Could not determine changed metadata',
+        'Will fallback to full retrieve for safety',
+        'This ensures all metadata is up to date',
+      ],
+      true // recoverable - fallback to full retrieve
+    );
+    if (cause) {
+      this.cause = cause;
+    }
+  }
+}
+
+/**
+ * IncrementalRetrieveError - Incremental retrieve logic failed
+ * When: Any error during incremental retrieve process
+ * Recoverable: Yes (fallback to full retrieve)
+ */
+export class IncrementalRetrieveError extends SystemError {
+  public constructor(reason: string, cause?: Error) {
+    super(
+      `Incremental retrieve failed: ${reason}`,
+      'INCREMENTAL_RETRIEVE_ERROR',
+      [
+        'Incremental retrieve strategy failed',
+        'Falling back to full retrieve for safety',
+        'Use --force flag to always perform full retrieve',
+      ],
+      true // recoverable - fallback to full retrieve
+    );
+    if (cause) {
+      this.cause = cause;
+    }
   }
 }
 

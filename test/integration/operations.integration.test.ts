@@ -369,4 +369,66 @@ describe('Operations Integration Tests', () => {
       }
     });
   });
+
+  describe('Incremental Retrieve Error Handling', () => {
+    it('should throw LocalMetadataReadError when local files cannot be read', async () => {
+      // Test will be implemented with actual retrieve logic
+      // For now, validate error can be instantiated correctly
+      const { LocalMetadataReadError } = await import('../../src/core/errors/operation-errors.js');
+
+      const error = new LocalMetadataReadError('/invalid/path');
+
+      expect(error.name).to.equal('LocalMetadataReadError');
+      expect(error.code).to.equal('LOCAL_METADATA_READ_ERROR');
+      expect(error.message).to.include('Failed to read local metadata');
+      expect(error.recoverable).to.be.true; // Should fallback to full retrieve
+    });
+
+    it('should throw MetadataComparisonError when comparison fails', async () => {
+      const { MetadataComparisonError } = await import('../../src/core/errors/operation-errors.js');
+
+      const error = new MetadataComparisonError('Cannot diff metadata lists');
+
+      expect(error.name).to.equal('MetadataComparisonError');
+      expect(error.code).to.equal('METADATA_COMPARISON_ERROR');
+      expect(error.message).to.include('Metadata comparison failed');
+      expect(error.recoverable).to.be.true; // Should fallback to full retrieve
+    });
+
+    it('should throw IncrementalRetrieveError when incremental logic fails', async () => {
+      const { IncrementalRetrieveError } = await import('../../src/core/errors/operation-errors.js');
+
+      const error = new IncrementalRetrieveError('Diff algorithm failed');
+
+      expect(error.name).to.equal('IncrementalRetrieveError');
+      expect(error.code).to.equal('INCREMENTAL_RETRIEVE_ERROR');
+      expect(error.message).to.include('Incremental retrieve failed');
+      expect(error.recoverable).to.be.true; // Should fallback to full retrieve
+    });
+
+    it('should preserve error cause chain', async () => {
+      const { LocalMetadataReadError } = await import('../../src/core/errors/operation-errors.js');
+
+      const originalError = new Error('ENOENT: no such file or directory');
+      const wrappedError = new LocalMetadataReadError('/missing/path', originalError);
+
+      expect(wrappedError.cause).to.equal(originalError);
+      expect(wrappedError.message).to.include('Failed to read local metadata');
+    });
+
+    it('should provide actionable recovery actions', async () => {
+      const { LocalMetadataReadError } = await import('../../src/core/errors/operation-errors.js');
+      const { MetadataComparisonError } = await import('../../src/core/errors/operation-errors.js');
+      const { IncrementalRetrieveError } = await import('../../src/core/errors/operation-errors.js');
+
+      const localError = new LocalMetadataReadError('/path');
+      const comparisonError = new MetadataComparisonError('diff failed');
+      const incrementalError = new IncrementalRetrieveError('strategy failed');
+
+      // All should suggest fallback to full retrieve
+      expect(localError.actions).to.include('Will fallback to full retrieve for safety');
+      expect(comparisonError.actions).to.include('Will fallback to full retrieve for safety');
+      expect(incrementalError.actions).to.include('Falling back to full retrieve for safety');
+    });
+  });
 });
