@@ -54,6 +54,14 @@ title: Home
 
 ---
 
+## ⚠️ Important Context: Profiles vs Permission Sets
+
+Yes, I'm aware of Salesforce's best practice to use **Permission Sets** instead of Profiles. However, this tool is specifically designed for environments with **significant Technical Debt** and legacy dependencies on Profiles.
+
+For many enterprise organizations, **Profiles remain critical** during the migration period. **`sf profiler` is the bridge** to stabilize existing profile configurations while long-term migration strategies are executed.
+
+---
+
 ## ⚡ Quick Start
 
 ### Install from npm
@@ -143,15 +151,16 @@ sf profiler docs --name Admin --output-dir docs/profiles
 
 ## 🆚 vs Native Salesforce CLI
 
-| Feature                   | Native `sf` CLI   | `@jterrats/profiler` |
-| ------------------------- | ----------------- | -------------------- |
-| **Safe Retrieval**        | ⚠️ Overwrites all | ✅ Only profiles     |
-| **Profile Comparison**    | ❌ No             | ✅ Yes               |
-| **Documentation Gen**     | ❌ No             | ✅ Yes               |
-| **Managed Pkg Filtering** | ❌ No             | ✅ Yes               |
-| **Performance Tuning**    | ❌ No             | ✅ Yes               |
-| **Type-Safe**             | ⚠️ Partial        | ✅ Full              |
-| **Data Loss Risk**        | ⚠️ Medium         | ✅ Zero              |
+| Feature                   | Native `sf` CLI                           | `@jterrats/profiler`                     |
+| ------------------------- | ----------------------------------------- | ---------------------------------------- |
+| **Profile Retrieval**     | ⚠️ Requires manual package.xml creation   | ✅ Auto-generates package.xml (optional) |
+| **Safe Retrieval**        | ⚠️ Overwrites all metadata in package.xml | ✅ Only profiles modified                |
+| **Profile Comparison**    | ❌ No                                     | ✅ Yes                                   |
+| **Documentation Gen**     | ❌ No                                     | ✅ Yes                                   |
+| **Managed Pkg Filtering** | ❌ No                                     | ✅ Yes                                   |
+| **Performance Tuning**    | ❌ No                                     | ✅ Yes (workers, cache, guardrails)      |
+| **Type-Safe**             | ⚠️ Partial                                | ✅ Full (Result monad)                   |
+| **Data Loss Risk**        | ⚠️ High (overwrites local files)          | ✅ Zero (isolated temp directory)        |
 
 ---
 
@@ -228,14 +237,6 @@ Automating profile deployment in CI/CD pipelines with safe, non-destructive oper
 
 ---
 
-## ⚠️ Important Context: Profiles vs Permission Sets
-
-Yes, I'm aware of Salesforce's best practice to use **Permission Sets** instead of Profiles. However, this tool is specifically designed for environments with **significant Technical Debt** and legacy dependencies on Profiles.
-
-For many enterprise organizations, **Profiles remain critical** during the migration period. **`sf profiler` is the bridge** to stabilize existing profile configurations while long-term migration strategies are executed.
-
----
-
 ## 🔥 Latest Release: v2.3.0
 
 ### 🔴 Critical Security Fix
@@ -245,27 +246,6 @@ Fixed bug where `retrieve` was overwriting ALL local metadata, not just profiles
 **Solution:** Now executes retrieve in isolated temporary SFDX project. Only copies profiles to your project.
 
 [📋 View Release Notes →](https://github.com/jterrats/profiler/releases/tag/v2.3.0) | [📜 Full Changelog →](CHANGELOG)
-
----
-
-## 🤝 Contributing
-
-We welcome contributions!
-
-1. Read our [Contributing Guide](docs/development/contributing)
-2. Check [Open Issues](https://github.com/jterrats/profiler/issues)
-3. Review [Code Standards](CODE_STANDARDS)
-4. Learn about [EDD Methodology](docs/development/ERROR_DRIVEN_DEVELOPMENT)
-
----
-
-## 🔗 Links
-
-- **npm**: [npmjs.com/package/@jterrats/profiler](https://www.npmjs.com/package/@jterrats/profiler)
-- **GitHub**: [github.com/jterrats/profiler](https://github.com/jterrats/profiler)
-- **Issues**: [github.com/jterrats/profiler/issues](https://github.com/jterrats/profiler/issues)
-- **Releases**: [github.com/jterrats/profiler/releases](https://github.com/jterrats/profiler/releases)
-- **Documentation**: [jterrats.github.io/profiler](https://jterrats.github.io/profiler)
 
 ---
 
