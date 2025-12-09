@@ -49,6 +49,7 @@ exclude:
   - CODE_OF_CONDUCT.md
   - Dockerfile
   - act
+  - docs/project/ISSUES_V2.2.0.md
 
 # Include files that start with underscore
 include:
