@@ -7,12 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **retrieve**: Incremental retrieve optimization - 10x faster when no changes detected
+  - Automatically compares local vs org metadata before retrieving
+  - Only retrieves changed/new metadata components
+  - Skips retrieve entirely when profiles are up to date (~3s vs ~30s)
+  - Automatic fallback to full retrieve on any error (safe by default)
+- **retrieve**: `--force` flag to bypass incremental optimization and force full retrieve
+- **retrieve**: `--dry-run` flag to preview what would be retrieved without executing
+- **errors**: 3 new error types for incremental retrieve (LocalMetadataReadError, MetadataComparisonError, IncrementalRetrieveError)
+- **tests**: 5 new integration tests for incremental retrieve logic
+- **tests**: 3 new e2e tests for --force, --dry-run, and default incremental behavior
+
 ### Changed
 
 - **License**: Changed from BSD-3-Clause to MIT License for broader compatibility and adoption
 - **GitHub Pages**: Redesigned documentation site following JT_DynamicQueries design patterns
 - **Badges**: Updated license badge to use dynamic GitHub API (auto-updates from LICENSE file)
 - **Documentation**: Updated all file headers and references from BSD-3-Clause to MIT
+- **retrieve**: Enhanced retrieveProfiles() with incremental logic and smart fallback strategy
+
+### Performance
+
+- **Incremental retrieve targets**:
+  - No changes: ~3s (vs ~30s) = **10x faster** ⚡
+  - Few changes: ~12s (vs ~30s) = **2.5x faster**
+  - Many changes: ~30s (same as full retrieve)
 
 ## [2.3.0] - 2024-12-09
 

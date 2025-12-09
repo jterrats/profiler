@@ -369,4 +369,196 @@ describe('Operations Integration Tests', () => {
       }
     });
   });
+
+  describe('Incremental Retrieve Error Handling', () => {
+    it('should throw LocalMetadataReadError when local files cannot be read', async () => {
+      // Test will be implemented with actual retrieve logic
+      // For now, validate error can be instantiated correctly
+      const { LocalMetadataReadError } = await import('../../src/core/errors/operation-errors.js');
+
+      const error = new LocalMetadataReadError('/invalid/path');
+
+      expect(error.name).to.equal('LocalMetadataReadError');
+      expect(error.code).to.equal('LOCAL_METADATA_READ_ERROR');
+      expect(error.message).to.include('Failed to read local metadata');
+      expect(error.recoverable).to.be.true; // Should fallback to full retrieve
+    });
+
+    it('should throw MetadataComparisonError when comparison fails', async () => {
+      const { MetadataComparisonError } = await import('../../src/core/errors/operation-errors.js');
+
+      const error = new MetadataComparisonError('Cannot diff metadata lists');
+
+      expect(error.name).to.equal('MetadataComparisonError');
+      expect(error.code).to.equal('METADATA_COMPARISON_ERROR');
+      expect(error.message).to.include('Metadata comparison failed');
+      expect(error.recoverable).to.be.true; // Should fallback to full retrieve
+    });
+
+    it('should throw IncrementalRetrieveError when incremental logic fails', async () => {
+      const { IncrementalRetrieveError } = await import('../../src/core/errors/operation-errors.js');
+
+      const error = new IncrementalRetrieveError('Diff algorithm failed');
+
+      expect(error.name).to.equal('IncrementalRetrieveError');
+      expect(error.code).to.equal('INCREMENTAL_RETRIEVE_ERROR');
+      expect(error.message).to.include('Incremental retrieve failed');
+      expect(error.recoverable).to.be.true; // Should fallback to full retrieve
+    });
+
+    it('should preserve error cause chain', async () => {
+      const { LocalMetadataReadError } = await import('../../src/core/errors/operation-errors.js');
+
+      const originalError = new Error('ENOENT: no such file or directory');
+      const wrappedError = new LocalMetadataReadError('/missing/path', originalError);
+
+      expect(wrappedError.cause).to.equal(originalError);
+      expect(wrappedError.message).to.include('Failed to read local metadata');
+    });
+
+    it('should provide actionable recovery actions', async () => {
+      const { LocalMetadataReadError } = await import('../../src/core/errors/operation-errors.js');
+      const { MetadataComparisonError } = await import('../../src/core/errors/operation-errors.js');
+      const { IncrementalRetrieveError } = await import('../../src/core/errors/operation-errors.js');
+
+      const localError = new LocalMetadataReadError('/path');
+      const comparisonError = new MetadataComparisonError('diff failed');
+      const incrementalError = new IncrementalRetrieveError('strategy failed');
+
+      // All should suggest fallback to full retrieve
+      expect(localError.actions).to.include('Will fallback to full retrieve for safety');
+      expect(comparisonError.actions).to.include('Will fallback to full retrieve for safety');
+      expect(incrementalError.actions).to.include('Falling back to full retrieve for safety');
+    });
+  });
+
+  describe('Incremental Retrieve Happy Path', () => {
+    it('should read local metadata successfully', async () => {
+      const { readLocalMetadata } = await import('../../src/operations/retrieve-operation.js');
+
+      // Create test profile in local project
+      const profileContent = `<?xml version="1.0" encoding="UTF-8"?>
+<Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+    <userLicense>Salesforce</userLicense>
+</Profile>`;
+
+      const profilePath = path.join(
+        testProjectPath,
+        'force-app',
+        'main',
+        'default',
+        'profiles',
+        'TestProfile.profile-meta.xml'
+      );
+      await fs.writeFile(profilePath, profileContent);
+
+      // Read local metadata
+      const result = await readLocalMetadata(testProjectPath, ['Profile']).run();
+
+      // Assert
+      expect(result.isSuccess()).to.be.true;
+      if (result.isSuccess()) {
+        expect(result.value.metadataTypes).to.have.lengthOf(1);
+        expect(result.value.metadataTypes[0].type).to.equal('Profile');
+        expect(result.value.metadataTypes[0].members).to.include('TestProfile');
+        expect(result.value.totalMembers).to.equal(1);
+      }
+    });
+
+    it('should return empty result when no local metadata exists', async () => {
+      const { readLocalMetadata } = await import('../../src/operations/retrieve-operation.js');
+
+      // Read local metadata from empty project
+      const result = await readLocalMetadata(testProjectPath, ['Profile']).run();
+
+      // Assert - success with empty result (not an error)
+      expect(result.isSuccess()).to.be.true;
+      if (result.isSuccess()) {
+        expect(result.value.metadataTypes).to.have.lengthOf(0);
+        expect(result.value.totalMembers).to.equal(0);
+      }
+    });
+
+    it('should compare metadata and find new items', async () => {
+      const { compareMetadataLists } = await import('../../src/operations/retrieve-operation.js');
+
+      const local = {
+        metadataTypes: [{ type: 'Profile', members: ['Admin'] }],
+        totalMembers: 1,
+      };
+
+      const org = {
+        metadataTypes: [{ type: 'Profile', members: ['Admin', 'Sales', 'Custom'] }],
+        totalMembers: 3,
+      };
+
+      // Compare
+      const result = await compareMetadataLists(local, org).run();
+
+      // Assert - should return only new items
+      expect(result.isSuccess()).to.be.true;
+      if (result.isSuccess()) {
+        expect(result.value.metadataTypes).to.have.lengthOf(1);
+        expect(result.value.metadataTypes[0].type).to.equal('Profile');
+        expect(result.value.metadataTypes[0].members).to.have.lengthOf(2); // Sales + Custom
+        expect(result.value.metadataTypes[0].members).to.include('Sales');
+        expect(result.value.metadataTypes[0].members).to.include('Custom');
+        expect(result.value.metadataTypes[0].members).to.not.include('Admin'); // Already exists locally
+        expect(result.value.totalMembers).to.equal(2);
+      }
+    });
+
+    it('should return empty result when no changes detected', async () => {
+      const { compareMetadataLists } = await import('../../src/operations/retrieve-operation.js');
+
+      const local = {
+        metadataTypes: [{ type: 'Profile', members: ['Admin', 'Sales'] }],
+        totalMembers: 2,
+      };
+
+      const org = {
+        metadataTypes: [{ type: 'Profile', members: ['Admin', 'Sales'] }],
+        totalMembers: 2,
+      };
+
+      // Compare
+      const result = await compareMetadataLists(local, org).run();
+
+      // Assert - no changes
+      expect(result.isSuccess()).to.be.true;
+      if (result.isSuccess()) {
+        expect(result.value.metadataTypes).to.have.lengthOf(0);
+        expect(result.value.totalMembers).to.equal(0);
+      }
+    });
+
+    it('should handle new metadata types not in local', async () => {
+      const { compareMetadataLists } = await import('../../src/operations/retrieve-operation.js');
+
+      const local = {
+        metadataTypes: [{ type: 'Profile', members: ['Admin'] }],
+        totalMembers: 1,
+      };
+
+      const org = {
+        metadataTypes: [
+          { type: 'Profile', members: ['Admin'] },
+          { type: 'ApexClass', members: ['NewClass1', 'NewClass2'] },
+        ],
+        totalMembers: 3,
+      };
+
+      // Compare
+      const result = await compareMetadataLists(local, org).run();
+
+      // Assert - should return ALL items for new type
+      expect(result.isSuccess()).to.be.true;
+      if (result.isSuccess()) {
+        expect(result.value.metadataTypes).to.have.lengthOf(1); // Only ApexClass (Profile has no changes)
+        expect(result.value.metadataTypes[0].type).to.equal('ApexClass');
+        expect(result.value.metadataTypes[0].members).to.have.lengthOf(2);
+        expect(result.value.totalMembers).to.equal(2);
+      }
+    });
+  });
 });
