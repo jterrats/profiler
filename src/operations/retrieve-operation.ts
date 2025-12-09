@@ -655,115 +655,209 @@ export function retrieveProfiles(input: RetrieveInput): ProfilerMonad<RetrieveRe
     'Profile',
   ];
 
-  // Choose metadata source: project files or org API
-  const metadataSource = input.fromProject
-    ? buildMetadataFromProject(
-        input.projectPath,
-        metadataTypes,
-        input.apiVersion,
-        input.profileNames,
-        input.excludeManaged
-      )
-    : listAllMetadata(input, metadataTypes);
+  // Step 1: ALWAYS validate input first (UserError - NO fallback)
+  return validateProfileNames(input.profileNames).chain(() => {
+    // Step 2: Determine metadata source strategy
+    let metadataSource: ProfilerMonad<MetadataListResult>;
 
-  return validateProfileNames(input.profileNames)
-    .chain(() => metadataSource)
-    .chain((metadataList) => generatePackageXml(metadataList, input.apiVersion))
-    .chain((packageXmlResult: PackageXmlResult) =>
-      liftAsync(async () => {
-        const fs = await import('node:fs/promises');
-        const path = await import('node:path');
-        const os = await import('node:os');
-
-        // Create isolated temp directory for retrieve operation
-        const timestamp = Date.now();
-        const tempDir = path.join(os.tmpdir(), `profiler-${timestamp}`);
-        const tempRetrieveDir = path.join(tempDir, 'retrieve');
-
-        // Create temp retrieve directory with minimal SFDX project structure
-        await fs.mkdir(tempRetrieveDir, { recursive: true });
-
-        // Create minimal sfdx-project.json in temp directory
-        const sfdxProjectJson = {
-          packageDirectories: [{ path: 'force-app', default: true }],
-          namespace: '',
-          sfdcLoginUrl: 'https://login.salesforce.com',
-          sourceApiVersion: input.apiVersion,
-        };
-        await fs.writeFile(path.join(tempRetrieveDir, 'sfdx-project.json'), JSON.stringify(sfdxProjectJson, null, 2));
-
-        // Write package.xml to temp directory
-        const packageXmlPath = path.join(tempDir, 'package.xml');
-        await fs.writeFile(packageXmlPath, packageXmlResult.content);
-
-        return { tempDir, tempRetrieveDir, packageXmlPath, packageXmlResult };
-      }).chain(
-        (context: {
-          tempDir: string;
-          tempRetrieveDir: string;
-          packageXmlPath: string;
-          packageXmlResult: PackageXmlResult;
-        }) =>
-          // Execute retrieve in temp directory (NOT in user's project)
-          executeRetrieve(input.org, context.packageXmlPath, context.tempRetrieveDir)
-            .chain(() =>
-              liftAsync(async () => {
-                const fs = await import('node:fs/promises');
-                const path = await import('node:path');
-
-                // Copy ONLY profiles from temp to user's project
-                const tempProfilesDir = path.join(context.tempRetrieveDir, 'force-app', 'main', 'default', 'profiles');
-                const userProfilesDir = path.join(input.projectPath, 'force-app', 'main', 'default', 'profiles');
-
-                // Ensure user's profiles directory exists
-                await fs.mkdir(userProfilesDir, { recursive: true });
-
-                // Read profiles from temp directory
-                let profileFiles: string[] = [];
-                try {
-                  profileFiles = await fs.readdir(tempProfilesDir);
-                  profileFiles = profileFiles.filter((file) => file.endsWith('.profile-meta.xml'));
-                } catch (error) {
-                  // Profiles directory doesn't exist in temp - no profiles retrieved
-                  return { profileCount: 0, retrieveContext: context };
-                }
-
-                // Copy each profile to user's project (with optional FLS removal)
-                await Promise.all(
-                  profileFiles.map(async (profileFile) => {
-                    const tempProfilePath = path.join(tempProfilesDir, profileFile);
-                    const userProfilePath = path.join(userProfilesDir, profileFile);
-
-                    let profileContent = await fs.readFile(tempProfilePath, 'utf-8');
-
-                    // Remove FLS if requested
-                    if (!input.includeAllFields) {
-                      profileContent = profileContent.replace(/<fieldPermissions>[\s\S]*?<\/fieldPermissions>\n?/g, '');
-                    }
-
-                    await fs.writeFile(userProfilePath, profileContent, 'utf-8');
-                  })
-                );
-
-                return { profileCount: profileFiles.length, retrieveContext: context };
-              })
+    // Force full retrieve OR fromProject → skip incremental
+    if ((input.forceFullRetrieve ?? false) || (input.fromProject ?? false)) {
+      metadataSource =
+        input.fromProject ?? false
+          ? buildMetadataFromProject(
+              input.projectPath,
+              metadataTypes,
+              input.apiVersion,
+              input.profileNames,
+              input.excludeManaged
             )
-            .chain(({ profileCount, retrieveContext }) =>
-              liftAsync(async () => {
-                const fs = await import('node:fs/promises');
-                // Clean up entire temp directory
-                await fs.rm(retrieveContext.tempDir, { recursive: true, force: true });
-                return { profileCount, retrieveContext };
-              })
-            )
-            .map(
-              ({ profileCount, retrieveContext }): RetrieveResult => ({
-                profilesRetrieved: input.profileNames ?? [],
-                metadataTypes: retrieveContext.packageXmlResult.metadataTypes,
-                totalComponents: retrieveContext.packageXmlResult.totalMembers,
-                profileCount,
-              })
-            )
-      )
-    );
+          : listAllMetadata(input, metadataTypes);
+    } else {
+      // Step 3: Try incremental with automatic fallback
+      metadataSource = new ProfilerMonad(async () => {
+        // Try incremental path
+        const localResult = await readLocalMetadata(input.projectPath, metadataTypes).run();
+
+        if (!localResult.isSuccess()) {
+          // Local read failed → fallback to full
+          // eslint-disable-next-line no-console
+          console.log(`⚠️  Incremental retrieve failed (local read): ${localResult.error.message}`);
+          // eslint-disable-next-line no-console
+          console.log('   Falling back to full retrieve for safety...');
+          const fullResult = await listAllMetadata(input, metadataTypes).run();
+          return fullResult;
+        }
+
+        const orgResult = await listAllMetadata(input, metadataTypes).run();
+        if (!orgResult.isSuccess()) {
+          // Org listing failed → return error (this is UserError)
+          return orgResult;
+        }
+
+        const compareResult = await compareMetadataLists(localResult.value, orgResult.value).run();
+        if (!compareResult.isSuccess()) {
+          // Comparison failed → fallback to full
+          // eslint-disable-next-line no-console
+          console.log(`⚠️  Incremental retrieve failed (comparison): ${compareResult.error.message}`);
+          // eslint-disable-next-line no-console
+          console.log('   Falling back to full retrieve for safety...');
+          const fullResult2 = await listAllMetadata(input, metadataTypes).run();
+          return fullResult2;
+        }
+
+        // Success - return only changed metadata
+        return compareResult;
+      });
+    }
+
+    // Step 4: Process metadata and execute retrieve
+    return metadataSource.chain((metadataList) => {
+      // Check if there's anything to retrieve
+      if (metadataList.totalMembers === 0) {
+        // eslint-disable-next-line no-console
+        console.log('✨ No changes detected. Profiles are up to date!');
+        return new ProfilerMonad(() =>
+          Promise.resolve(
+            success({
+              profilesRetrieved: input.profileNames ?? [],
+              metadataTypes: [],
+              totalComponents: 0,
+              profileCount: 0,
+            })
+          )
+        );
+      }
+
+      // Dry run mode - preview without executing
+      if (input.dryRun ?? false) {
+        // eslint-disable-next-line no-console
+        console.log('\n🔍 Dry Run Mode - Would retrieve:');
+        for (const item of metadataList.metadataTypes) {
+          // eslint-disable-next-line no-console
+          console.log(`   ${item.type}: ${item.members.length} items`);
+        }
+        // eslint-disable-next-line no-console
+        console.log(`\n   Total: ${metadataList.totalMembers} components\n`);
+
+        return new ProfilerMonad(() =>
+          Promise.resolve(
+            success({
+              profilesRetrieved: input.profileNames ?? [],
+              metadataTypes: metadataList.metadataTypes.map((m) => m.type),
+              totalComponents: metadataList.totalMembers,
+              profileCount: 0,
+            })
+          )
+        );
+      }
+
+      // Execute actual retrieve
+      return generatePackageXml(metadataList, input.apiVersion).chain((packageXmlResult: PackageXmlResult) =>
+        liftAsync(async () => {
+          const fs = await import('node:fs/promises');
+          const path = await import('node:path');
+          const os = await import('node:os');
+
+          // Create isolated temp directory for retrieve operation
+          const timestamp = Date.now();
+          const tempDir = path.join(os.tmpdir(), `profiler-${timestamp}`);
+          const tempRetrieveDir = path.join(tempDir, 'retrieve');
+
+          // Create temp retrieve directory with minimal SFDX project structure
+          await fs.mkdir(tempRetrieveDir, { recursive: true });
+
+          // Create minimal sfdx-project.json in temp directory
+          const sfdxProjectJson = {
+            packageDirectories: [{ path: 'force-app', default: true }],
+            namespace: '',
+            sfdcLoginUrl: 'https://login.salesforce.com',
+            sourceApiVersion: input.apiVersion,
+          };
+          await fs.writeFile(path.join(tempRetrieveDir, 'sfdx-project.json'), JSON.stringify(sfdxProjectJson, null, 2));
+
+          // Write package.xml to temp directory
+          const packageXmlPath = path.join(tempDir, 'package.xml');
+          await fs.writeFile(packageXmlPath, packageXmlResult.content);
+
+          return { tempDir, tempRetrieveDir, packageXmlPath, packageXmlResult };
+        }).chain(
+          (context: {
+            tempDir: string;
+            tempRetrieveDir: string;
+            packageXmlPath: string;
+            packageXmlResult: PackageXmlResult;
+          }) =>
+            // Execute retrieve in temp directory (NOT in user's project)
+            executeRetrieve(input.org, context.packageXmlPath, context.tempRetrieveDir)
+              .chain(() =>
+                liftAsync(async () => {
+                  const fs = await import('node:fs/promises');
+                  const path = await import('node:path');
+
+                  // Copy ONLY profiles from temp to user's project
+                  const tempProfilesDir = path.join(
+                    context.tempRetrieveDir,
+                    'force-app',
+                    'main',
+                    'default',
+                    'profiles'
+                  );
+                  const userProfilesDir = path.join(input.projectPath, 'force-app', 'main', 'default', 'profiles');
+
+                  // Ensure user's profiles directory exists
+                  await fs.mkdir(userProfilesDir, { recursive: true });
+
+                  // Read profiles from temp directory
+                  let profileFiles: string[] = [];
+                  try {
+                    profileFiles = await fs.readdir(tempProfilesDir);
+                    profileFiles = profileFiles.filter((file) => file.endsWith('.profile-meta.xml'));
+                  } catch (error) {
+                    // Profiles directory doesn't exist in temp - no profiles retrieved
+                    return { profileCount: 0, retrieveContext: context };
+                  }
+
+                  // Copy each profile to user's project (with optional FLS removal)
+                  await Promise.all(
+                    profileFiles.map(async (profileFile) => {
+                      const tempProfilePath = path.join(tempProfilesDir, profileFile);
+                      const userProfilePath = path.join(userProfilesDir, profileFile);
+
+                      let profileContent = await fs.readFile(tempProfilePath, 'utf-8');
+
+                      // Remove FLS if requested
+                      if (!input.includeAllFields) {
+                        profileContent = profileContent.replace(
+                          /<fieldPermissions>[\s\S]*?<\/fieldPermissions>\n?/g,
+                          ''
+                        );
+                      }
+
+                      await fs.writeFile(userProfilePath, profileContent, 'utf-8');
+                    })
+                  );
+
+                  return { profileCount: profileFiles.length, retrieveContext: context };
+                })
+              )
+              .chain(({ profileCount, retrieveContext }) =>
+                liftAsync(async () => {
+                  const fs = await import('node:fs/promises');
+                  // Clean up entire temp directory
+                  await fs.rm(retrieveContext.tempDir, { recursive: true, force: true });
+                  return { profileCount, retrieveContext };
+                })
+              )
+              .map(
+                ({ profileCount, retrieveContext }): RetrieveResult => ({
+                  profilesRetrieved: input.profileNames ?? [],
+                  metadataTypes: retrieveContext.packageXmlResult.metadataTypes,
+                  totalComponents: retrieveContext.packageXmlResult.totalMembers,
+                  profileCount,
+                })
+              )
+        )
+      );
+    });
+  });
 }
