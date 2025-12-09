@@ -16,7 +16,7 @@ function retrieveProfile(name: string) {
   // Implement happy path
   const profile = fetch(name);
   return profile;
-  
+
   // TODO: Add error handling later (often forgotten)
 }
 ```
@@ -30,18 +30,18 @@ function retrieveProfile(name: string): Result<Profile, ProfileError> {
   if (!name) {
     return failure(new InvalidInputError('Profile name required'));
   }
-  
+
   if (!isAuthenticated()) {
     return failure(new OrgNotAuthenticatedError('Org not authenticated'));
   }
-  
+
   try {
     const profile = fetch(name);
-    
+
     if (!profile) {
       return failure(new ProfileNotFoundError(name));
     }
-    
+
     return success(profile);
   } catch (error) {
     return failure(new MetadataApiError(error));
@@ -54,16 +54,19 @@ function retrieveProfile(name: string): Result<Profile, ProfileError> {
 ### 1. **Define Errors Before Implementation**
 
 Before writing ANY code, define:
+
 - What can go wrong?
 - What are ALL possible failure modes?
 - How should each error be handled?
 - What information does the user need?
 
 **Example:**
+
 ```markdown
 Feature: Retrieve Profile
 
 Errors to handle:
+
 1. Profile not found
 2. Org not authenticated
 3. Metadata API failure
@@ -82,36 +85,36 @@ Write tests for error cases BEFORE happy path:
 describe('retrieveProfile', () => {
   it('should fail when profile does not exist', async () => {
     const result = await retrieveProfile('NonExistent');
-    
+
     expect(result.isFailure()).toBe(true);
     expect(result.error).toBeInstanceOf(ProfileNotFoundError);
     expect(result.error.code).toBe('PROFILE_NOT_FOUND');
     expect(result.error.actions).toContain('Run sf profiler list');
   });
-  
+
   it('should fail when org is not authenticated', async () => {
     const result = await retrieveProfile('Admin');
-    
+
     expect(result.isFailure()).toBe(true);
     expect(result.error).toBeInstanceOf(OrgNotAuthenticatedError);
     expect(result.error.exitCode).toBe(1);
   });
-  
+
   it('should fail when metadata API returns error', async () => {
     // Mock API error
     mockMetadataApi.throwError('INVALID_SESSION_ID');
-    
+
     const result = await retrieveProfile('Admin');
-    
+
     expect(result.isFailure()).toBe(true);
     expect(result.error).toBeInstanceOf(MetadataApiError);
     expect(result.error.recoverable).toBe(true);
   });
-  
+
   // NOW write happy path test
   it('should retrieve profile successfully', async () => {
     const result = await retrieveProfile('Admin');
-    
+
     expect(result.isSuccess()).toBe(true);
     expect(result.value.name).toBe('Admin');
   });
@@ -133,16 +136,13 @@ export abstract class RetrieveError extends ProfilerError {
 export class ProfileNotFoundError extends RetrieveError {
   readonly category = 'user';
   readonly code = 'PROFILE_NOT_FOUND';
-  
+
   constructor(profileName: string, orgAlias: string) {
-    super(
-      `Profile '${profileName}' not found in org '${orgAlias}'`,
-      [
-        `Run 'sf profiler list --target-org ${orgAlias}' to see available profiles`,
-        'Check spelling of profile name (case-sensitive)',
-        'Verify you\'re connected to the correct org',
-      ]
-    );
+    super(`Profile '${profileName}' not found in org '${orgAlias}'`, [
+      `Run 'sf profiler list --target-org ${orgAlias}' to see available profiles`,
+      'Check spelling of profile name (case-sensitive)',
+      "Verify you're connected to the correct org",
+    ]);
   }
 }
 ```
@@ -153,10 +153,10 @@ Use Result/Either types to make errors explicit:
 
 ```typescript
 // ❌ Implicit errors (can throw anything)
-async function retrieveProfile(name: string): Promise<Profile>
+async function retrieveProfile(name: string): Promise<Profile>;
 
 // ✅ Explicit errors (compiler enforces handling)
-async function retrieveProfile(name: string): Promise<Result<Profile, RetrieveError>>
+async function retrieveProfile(name: string): Promise<Result<Profile, RetrieveError>>;
 
 // Usage
 const result = await retrieveProfile('Admin');
@@ -175,6 +175,7 @@ console.log(result.value.name);
 ### 5. **Actionable Error Messages**
 
 Every error must tell the user:
+
 1. **What went wrong** (clear description)
 2. **Why it happened** (context)
 3. **How to fix it** (specific actions)
@@ -184,14 +185,13 @@ Every error must tell the user:
 throw new Error('Failed to retrieve');
 
 // ✅ Good error message
-return failure(new MetadataApiError(
-  'Metadata API request failed: INVALID_SESSION_ID',
-  [
+return failure(
+  new MetadataApiError('Metadata API request failed: INVALID_SESSION_ID', [
     'Your session has expired',
     'Run: sf org login web --alias production',
     'Then retry your command',
-  ]
-));
+  ])
+);
 ```
 
 ## EDD Workflow
@@ -202,11 +202,12 @@ Create `ERROR_CATALOG.md` with ALL possible errors:
 
 ```markdown
 ## ProfileNotFoundError
+
 - **When**: Profile name doesn't exist in org
 - **Category**: User Error
 - **Recoverable**: No
 - **Exit Code**: 1
-- **Actions**: 
+- **Actions**:
   - List available profiles
   - Check spelling
   - Verify org connection
@@ -220,15 +221,11 @@ Create error classes:
 // src/core/errors/index.ts
 export class ProfileNotFoundError extends UserError {
   constructor(profileName: string, orgAlias: string) {
-    super(
-      `Profile '${profileName}' not found in org '${orgAlias}'`,
-      'PROFILE_NOT_FOUND',
-      [
-        `Run 'sf profiler list --target-org ${orgAlias}'`,
-        'Check profile name spelling',
-        'Verify org connection',
-      ]
-    );
+    super(`Profile '${profileName}' not found in org '${orgAlias}'`, 'PROFILE_NOT_FOUND', [
+      `Run 'sf profiler list --target-org ${orgAlias}'`,
+      'Check profile name spelling',
+      'Verify org connection',
+    ]);
   }
 }
 ```
@@ -241,11 +238,11 @@ describe('retrieveProfile errors', () => {
   it('throws ProfileNotFoundError when profile missing', async () => {
     // ...
   });
-  
+
   it('throws OrgNotAuthenticatedError when not logged in', async () => {
     // ...
   });
-  
+
   // ... all other errors
 });
 ```
@@ -255,26 +252,23 @@ describe('retrieveProfile errors', () => {
 Implement to make error tests pass:
 
 ```typescript
-export function retrieveProfile(
-  name: string,
-  org: Org
-): ProfilerMonad<Profile> {
+export function retrieveProfile(name: string, org: Org): ProfilerMonad<Profile> {
   return liftAsync(async () => {
     // Handle each error case
     if (!name) {
       throw new InvalidInputError('Profile name required');
     }
-    
+
     if (!org.isAuthenticated()) {
       throw new OrgNotAuthenticatedError(org.getAlias());
     }
-    
+
     const profile = await org.getConnection().metadata.read('Profile', name);
-    
+
     if (!profile) {
       throw new ProfileNotFoundError(name, org.getAlias());
     }
-    
+
     return profile;
   });
 }
@@ -287,7 +281,7 @@ Now that errors are handled, test success:
 ```typescript
 it('retrieves profile successfully', async () => {
   const result = await retrieveProfile('Admin', mockOrg).run();
-  
+
   expect(result.isSuccess()).toBe(true);
   expect(result.value.name).toBe('Admin');
 });
@@ -300,8 +294,8 @@ EDD pairs perfectly with Monads:
 ```typescript
 // Error handling is built into the monad
 const pipeline = retrieveProfile('Admin', org)
-  .flatMap(profile => validateProfile(profile))
-  .flatMap(validProfile => saveProfile(validProfile))
+  .flatMap((profile) => validateProfile(profile))
+  .flatMap((validProfile) => saveProfile(validProfile))
   .recover((error) => {
     // Centralized error recovery
     if (error instanceof ProfileNotFoundError) {
@@ -337,31 +331,37 @@ For EVERY feature implementation:
 ## Error Categories
 
 ### User Errors
+
 - Caused by incorrect usage
 - Not recoverable automatically
 - Need clear guidance
 
 **Examples:**
+
 - Invalid input
 - Profile not found
 - Not authenticated
 
 ### System Errors
+
 - Caused by external dependencies
 - Often recoverable (retry, fallback)
 - May be transient
 
 **Examples:**
+
 - Network timeout
 - API rate limit
 - Disk space
 
 ### Fatal Errors
+
 - Unexpected, severe failures
 - Cannot continue
 - Should never happen (bugs)
 
 **Examples:**
+
 - Null pointer exceptions
 - Corrupted data structures
 - Unhandled exceptions
@@ -382,7 +382,7 @@ function process(): Result<Output, ProcessError> {
   // Error handling first
   if (invalid) return failure(new InvalidError());
   if (notFound) return failure(new NotFoundError());
-  
+
   // Happy path last
   return success(result);
 }
@@ -405,10 +405,10 @@ throw new ProfileNotFoundError('Admin', 'production');
 throw new Error('Invalid input');
 
 // ✅ With context
-throw new InvalidInputError(
-  `Profile name '${name}' is invalid: must not be empty`,
-  ['Provide a valid profile name', 'Example: --name Admin']
-);
+throw new InvalidInputError(`Profile name '${name}' is invalid: must not be empty`, [
+  'Provide a valid profile name',
+  'Example: --name Admin',
+]);
 ```
 
 ### 4. Make Errors Testable
@@ -433,7 +433,7 @@ if (result.isFailure()) {
 ```typescript
 export class MetadataApiError extends SystemError {
   readonly recoverable = true;
-  
+
   recoverWith(): RecoveryStrategy {
     return {
       retry: { maxAttempts: 3, backoff: 'exponential' },
@@ -467,11 +467,9 @@ Monitor error frequency to improve:
 // src/core/errors/profile-not-found-error.ts
 export class ProfileNotFoundError extends UserError {
   constructor(name: string, org: string) {
-    super(
-      `Profile '${name}' not found in org '${org}'`,
-      'PROFILE_NOT_FOUND',
-      [`Run 'sf profiler list --target-org ${org}'`]
-    );
+    super(`Profile '${name}' not found in org '${org}'`, 'PROFILE_NOT_FOUND', [
+      `Run 'sf profiler list --target-org ${org}'`,
+    ]);
   }
 }
 
@@ -479,7 +477,7 @@ export class ProfileNotFoundError extends UserError {
 // test/retrieve.test.ts
 it('should return ProfileNotFoundError when profile missing', async () => {
   const result = await retrieveProfile('Fake', org).run();
-  
+
   expect(result.isFailure()).toBe(true);
   expect(result.error).toBeInstanceOf(ProfileNotFoundError);
   expect(result.error.code).toBe('PROFILE_NOT_FOUND');
@@ -490,11 +488,11 @@ it('should return ProfileNotFoundError when profile missing', async () => {
 export function retrieveProfile(name: string, org: Org): ProfilerMonad<Profile> {
   return liftAsync(async () => {
     const profile = await org.getConnection().metadata.read('Profile', name);
-    
+
     if (!profile) {
       throw new ProfileNotFoundError(name, org.getAlias());
     }
-    
+
     return profile;
   });
 }
@@ -504,14 +502,15 @@ export function retrieveProfile(name: string, org: Org): ProfilerMonad<Profile> 
 
 ## Comparison with Other Methodologies
 
-| Methodology | Focus | Errors |
-|-------------|-------|--------|
-| **TDD** | Tests first, then code | Added as tests fail |
-| **BDD** | Behavior specifications | Part of behavior |
-| **DDD** | Domain modeling | Part of domain |
-| **EDD** | **Errors first, always** | **PRIMARY CONCERN** |
+| Methodology | Focus                    | Errors              |
+| ----------- | ------------------------ | ------------------- |
+| **TDD**     | Tests first, then code   | Added as tests fail |
+| **BDD**     | Behavior specifications  | Part of behavior    |
+| **DDD**     | Domain modeling          | Part of domain      |
+| **EDD**     | **Errors first, always** | **PRIMARY CONCERN** |
 
 EDD combines all three:
+
 - **TDD**: Write error tests first
 - **BDD**: Errors are part of behavior specs
 - **DDD**: Errors are domain entities
@@ -526,9 +525,10 @@ EDD combines all three:
 
 ## Remember
 
-> "If you think about errors first, the happy path emerges naturally.  
-> If you think about the happy path first, errors become an afterthought."  
+> "If you think about errors first, the happy path emerges naturally.
+> If you think about the happy path first, errors become an afterthought."
 > — EDD Philosophy
 
 **Every feature starts with: "What can go wrong?"**
+
 

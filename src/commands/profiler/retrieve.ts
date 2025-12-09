@@ -1,13 +1,8 @@
-import { exec } from 'node:child_process';
-import * as fs from 'node:fs/promises';
-import * as os from 'node:os';
-import * as path from 'node:path';
-import { promisify } from 'node:util';
-
-import { Messages, Org, SfError, SfProject } from '@salesforce/core';
+import { Messages, SfError, SfProject } from '@salesforce/core';
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 
-const execAsync = promisify(exec);
+import { retrieveProfiles, type RetrieveInput } from '../../operations/index.js';
+import { PERFORMANCE_FLAGS, parsePerformanceFlags, resolvePerformanceConfig, displayConfigWarnings } from '../../core/performance/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.retrieve');
@@ -25,6 +20,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
   public static readonly examples = messages.getMessages('examples');
   public static readonly requiresProject = true;
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   public static readonly flags = {
     'target-org': Flags.requiredOrg({
       summary: messages.getMessage('flags.target-org.summary'),
@@ -55,12 +51,12 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       description: messages.getMessage('flags.exclude-managed.description'),
       default: false,
     }),
+    // Performance flags
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+    ...(PERFORMANCE_FLAGS as any),
   };
 
-  private tempDir = '';
-  private tempRetrieveDir = '';
-  private projectPath = '';
-
+  /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
   public async run(): Promise<ProfilerRetrieveResult> {
     const { flags } = await this.parse(ProfilerRetrieve);
     const org = flags['target-org'];
@@ -70,12 +66,17 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     const excludeManaged = flags['exclude-managed'];
     const apiVersion = flags['api-version'] ?? (await org.retrieveMaxApiVersion());
 
+    // Parse performance flags
+    const perfConfig = parsePerformanceFlags(flags);
+    const resolvedConfig = resolvePerformanceConfig(perfConfig);
+    displayConfigWarnings(resolvedConfig);
+
     // Parse profile names (comma-separated)
     const profileNames = profileName
       ? profileName
           .split(',')
-          .map((name) => name.trim())
-          .filter((name) => name.length > 0)
+          .map((name: string) => name.trim())
+          .filter((name: string) => name.length > 0)
       : undefined;
 
     if (profileNames && profileNames.length > 0) {
@@ -97,415 +98,38 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
 
     // Get project path
     const project = await SfProject.resolve();
-    this.projectPath = project.getPath();
+    const projectPath = project.getPath();
 
-    // Create temporary directories in system temp (not in project)
-    const timestamp = Date.now();
-    const baseTempDir = path.join(os.tmpdir(), `profiler-${timestamp}`);
-
-    // Directory for package.xml
-    this.tempDir = path.join(baseTempDir, 'package');
-    await fs.mkdir(this.tempDir, { recursive: true });
-
-    // Directory for metadata processing
-    this.tempRetrieveDir = path.join(baseTempDir, 'profiles');
-    await fs.mkdir(this.tempRetrieveDir, { recursive: true });
-
-    try {
-      // Define metadata types to retrieve
-      const metadataTypes = [
-        'ApexClass',
-        'ApexPage',
-        'ConnectedApp',
-        'CustomApplication',
-        'CustomObject',
-        'CustomPermission',
-        'CustomTab',
-        'Flow',
-        'Layout',
-        'Profile',
-      ];
-
-      // Collect all metadata
-      const packageXmlContent = fromProject
-        ? await this.buildPackageXmlFromProject(metadataTypes, apiVersion, profileNames, excludeManaged)
-        : await this.buildPackageXml(org, metadataTypes, apiVersion, profileNames, excludeManaged);
-
-      // Write package.xml
-      const packageXmlPath = path.join(this.tempDir, 'package.xml');
-      await fs.writeFile(packageXmlPath, packageXmlContent);
-
-      this.log(messages.getMessage('info.building-package', [metadataTypes.length.toString()]));
-
-      // Retrieve metadata to temp directory (non-destructive)
-      this.log(messages.getMessage('info.retrieving'));
-      await this.retrieveMetadataToTemp(org, packageXmlPath, includeAllFields);
-
-      // Copy only profiles to project (safe - only updates profiles)
-      this.log('Copying profiles to project...');
-      await this.copyProfilesFromTemp();
-
-      // Clean up temp directories
-      this.log(messages.getMessage('info.cleaning'));
-      await this.cleanup();
-
-      const result = {
-        success: true,
-        componentsRetrieved: 0,
-        metadataTypes,
-        profilesRetrieved: 0,
-      };
-
-      // Count retrieved profiles
-      try {
-        const profilesDir = path.join(this.projectPath, 'force-app', 'main', 'default', 'profiles');
-        const profiles = await fs.readdir(profilesDir);
-        result.profilesRetrieved = profiles.filter((f) => f.endsWith('.profile-meta.xml')).length;
-        result.componentsRetrieved = result.profilesRetrieved;
-      } catch (error) {
-        // Profiles directory might not exist yet
-        this.warn('Could not count profiles');
-      }
-
-      this.log(messages.getMessage('info.success'));
-      this.log(messages.getMessage('info.total-components', [result.componentsRetrieved.toString()]));
-
-      return result;
-    } catch (error) {
-      // Cleanup on error
-      await this.cleanup();
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new SfError(messages.getMessage('error.retrieve-failed', [errorMessage]));
-    }
-  }
-
-  private async buildPackageXml(
-    org: Org,
-    metadataTypes: string[],
-    apiVersion: string,
-    profileNames?: string[],
-    excludeManaged = false
-  ): Promise<string> {
-    let packageXml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    packageXml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
-
-    const connection = org.getConnection(apiVersion);
-
-    // Fetch all metadata types in parallel
-    const metadataPromises = metadataTypes.map(async (metadataType) => {
-      this.log(messages.getMessage('info.listing-metadata', [metadataType]));
-
-      try {
-        const metadata = await connection.metadata.list({ type: metadataType }, apiVersion);
-
-        if (metadata) {
-          const metadataArray = Array.isArray(metadata) ? metadata : [metadata];
-
-          if (metadataArray.length > 0) {
-            let sortedMembers = metadataArray.map((m) => m.fullName).sort();
-
-            // Filter out managed package metadata if excludeManaged is true
-            if (excludeManaged) {
-              const beforeCount = sortedMembers.length;
-              sortedMembers = sortedMembers.filter((member) => !member.includes('__') || member.endsWith('__c'));
-              const excludedCount = beforeCount - sortedMembers.length;
-              if (excludedCount > 0) {
-                this.log(`Excluded ${excludedCount} managed package ${metadataType}(s)`);
-              }
-            }
-
-            // Filter profiles if profileNames is specified
-            if (metadataType === 'Profile' && profileNames && profileNames.length > 0) {
-              sortedMembers = sortedMembers.filter((member) => profileNames.includes(member));
-              if (sortedMembers.length === 0) {
-                this.warn(messages.getMessage('warn.profiles-not-found', [profileNames.join(', ')]));
-                return null;
-              } else if (sortedMembers.length < profileNames.length) {
-                // Some profiles were not found
-                const notFound = profileNames.filter((name) => !sortedMembers.includes(name));
-                this.warn(messages.getMessage('warn.some-profiles-not-found', [notFound.join(', ')]));
-              }
-            }
-
-            return {
-              type: metadataType,
-              members: sortedMembers,
-            };
-          }
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        this.warn(messages.getMessage('error.metadata-list-failed', [metadataType, errorMessage]));
-      }
-      return null;
-    });
-
-    const results = await Promise.all(metadataPromises);
-
-    // Build package XML from results
-    for (const result of results) {
-      if (result) {
-        packageXml += '  <types>\n';
-        for (const member of result.members) {
-          packageXml += `    <members>${member}</members>\n`;
-        }
-        packageXml += `    <name>${result.type}</name>\n`;
-        packageXml += '  </types>\n';
-      }
-    }
-
-    packageXml += `  <version>${apiVersion}</version>\n`;
-    packageXml += '</Package>';
-
-    return packageXml;
-  }
-
-  private async buildPackageXmlFromProject(
-    metadataTypes: string[],
-    apiVersion: string,
-    profileNames?: string[],
-    excludeManaged = false
-  ): Promise<string> {
-    let packageXml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    packageXml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
-
-    const metadataTypeMap: Record<string, { folder: string; extension: string }> = {
-      ApexClass: { folder: 'classes', extension: '.cls' },
-      ApexPage: { folder: 'pages', extension: '.page' },
-      ConnectedApp: { folder: 'connectedApps', extension: '.connectedApp-meta.xml' },
-      CustomApplication: { folder: 'applications', extension: '.app-meta.xml' },
-      CustomObject: { folder: 'objects', extension: '' },
-      CustomPermission: { folder: 'customPermissions', extension: '.customPermission-meta.xml' },
-      CustomTab: { folder: 'tabs', extension: '.tab-meta.xml' },
-      Flow: { folder: 'flows', extension: '.flow-meta.xml' },
-      Layout: { folder: 'layouts', extension: '.layout-meta.xml' },
-      Profile: { folder: 'profiles', extension: '.profile-meta.xml' },
+    // Build input for monadic operation
+    const input: RetrieveInput = {
+      org,
+      profileNames,
+      apiVersion,
+      excludeManaged,
+      projectPath,
+      includeAllFields,
+      fromProject,
+      performanceConfig: perfConfig,
     };
 
-    // Process all metadata types in parallel
-    const metadataResults = await Promise.all(
-      metadataTypes.map(async (metadataType) => {
-        const config = metadataTypeMap[metadataType];
-        if (!config) return null;
+    // Execute monadic operation
+    this.log('Building package.xml...');
+    const result = await retrieveProfiles(input).run();
 
-        this.log(messages.getMessage('info.listing-metadata', [metadataType]));
-
-        const metadataDir = path.join(this.projectPath, 'force-app', 'main', 'default', config.folder);
-
-        try {
-          const files = await fs.readdir(metadataDir);
-          let members: string[] = [];
-
-          if (metadataType === 'CustomObject') {
-            // For objects, check which entries are directories (in parallel)
-            const statResults = await Promise.all(
-              files.map(async (file) => ({
-                file,
-                isDir: (await fs.stat(path.join(metadataDir, file))).isDirectory(),
-              }))
-            );
-            members = statResults.filter((r) => r.isDir).map((r) => r.file);
-          } else if (config.extension) {
-            // For other types, filter files by extension
-            members = files
-              .filter((file) => file.endsWith(config.extension))
-              .map((file) => file.replace(config.extension, ''));
-          }
-
-          // Filter out managed package metadata if excludeManaged is true
-          if (excludeManaged) {
-            const beforeCount = members.length;
-            members = members.filter((member) => !member.includes('__') || member.endsWith('__c'));
-            const excludedCount = beforeCount - members.length;
-            if (excludedCount > 0) {
-              this.log(`Excluded ${excludedCount} managed package ${metadataType}(s) from project`);
-            }
-          }
-
-          // Filter profiles if profileNames is specified
-          if (metadataType === 'Profile' && profileNames && profileNames.length > 0) {
-            members = members.filter((member) => profileNames.includes(member));
-            if (members.length === 0) {
-              this.warn(messages.getMessage('warn.profiles-not-found', [profileNames.join(', ')]));
-              return null;
-            } else if (members.length < profileNames.length) {
-              // Some profiles were not found
-              const notFound = profileNames.filter((name) => !members.includes(name));
-              this.warn(messages.getMessage('warn.some-profiles-not-found', [notFound.join(', ')]));
-            }
-          }
-
-          if (members.length > 0) {
-            return {
-              type: metadataType,
-              members: members.sort(),
-            };
-          }
-        } catch (error) {
-          // Directory doesn't exist or can't be read - skip this metadata type
-          this.warn(`Could not read ${metadataType} from project: ${config.folder} directory not found or empty`);
-        }
-        return null;
-      })
-    );
-
-    // Build package XML from results
-    for (const result of metadataResults) {
-      if (result) {
-        packageXml += '  <types>\n';
-        for (const member of result.members) {
-          packageXml += `    <members>${member}</members>\n`;
-        }
-        packageXml += `    <name>${result.type}</name>\n`;
-        packageXml += '  </types>\n';
-      }
+    if (result.isFailure()) {
+      throw new SfError(result.error.message, result.error.name);
     }
 
-    packageXml += `  <version>${apiVersion}</version>\n`;
-    packageXml += '</Package>';
+    const retrieveResult = result.value;
 
-    return packageXml;
-  }
+    this.log(`Successfully retrieved ${retrieveResult.profilesRetrieved.length} profile(s)`);
 
-  private async retrieveMetadataToTemp(org: Org, packageXmlPath: string, includeAllFields: boolean): Promise<void> {
-    const username = org.getUsername() ?? org.getOrgId();
-
-    // Retrieve to project (we'll extract profiles later)
-    const retrieveCmd = `sf project retrieve start --manifest "${packageXmlPath}" --target-org ${username}`;
-
-    try {
-      const { stdout, stderr } = await execAsync(retrieveCmd, {
-        cwd: this.projectPath,
-        maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-      });
-
-      if (stderr && !stderr.includes('Warning')) {
-        this.warn(stderr);
-      }
-
-      this.log(stdout);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new SfError(`Retrieve failed: ${errorMessage}`);
-    }
-
-    // Copy profiles to temp directory immediately
-    await this.copyProfilesToTemp();
-
-    // If not including all fields, remove FLS from temp profiles
-    if (!includeAllFields) {
-      await this.removeFieldLevelSecurityInTemp();
-    }
-  }
-
-  private async copyProfilesToTemp(): Promise<void> {
-    try {
-      const projectProfilesDir = path.join(this.projectPath, 'force-app', 'main', 'default', 'profiles');
-      const tempProfilesDir = path.join(this.tempRetrieveDir, 'profiles');
-
-      // Ensure temp directory exists
-      await fs.mkdir(tempProfilesDir, { recursive: true });
-
-      // Check if profiles directory exists in project
-      try {
-        await fs.access(projectProfilesDir);
-      } catch {
-        this.warn('No profiles directory found after retrieve');
-        return;
-      }
-
-      // Get all profiles from project
-      const profiles = await fs.readdir(projectProfilesDir);
-      const profileFiles = profiles.filter((f) => f.endsWith('.profile-meta.xml'));
-
-      if (profileFiles.length === 0) {
-        this.warn('No profiles found in retrieved metadata');
-        return;
-      }
-
-      // Copy all profiles to temp
-      await Promise.all(
-        profileFiles.map((profile) =>
-          fs.copyFile(path.join(projectProfilesDir, profile), path.join(tempProfilesDir, profile))
-        )
-      );
-
-      this.log(`Backed up ${profileFiles.length} profiles to temp directory`);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new SfError(`Failed to backup profiles to temp directory: ${errorMessage}`);
-    }
-  }
-
-  private async removeFieldLevelSecurityInTemp(): Promise<void> {
-    try {
-      const profilesDir = path.join(this.tempRetrieveDir, 'profiles');
-      const profiles = await fs.readdir(profilesDir);
-
-      const profileFiles = profiles.filter((p) => p.endsWith('.profile-meta.xml'));
-
-      if (profileFiles.length === 0) {
-        return;
-      }
-
-      // Process all profiles in parallel
-      await Promise.all(
-        profileFiles.map(async (profileFile) => {
-          const profilePath = path.join(profilesDir, profileFile);
-          let content = await fs.readFile(profilePath, 'utf-8');
-
-          // Remove fieldPermissions sections
-          content = content.replace(/<fieldPermissions>[\s\S]*?<\/fieldPermissions>\n?/g, '');
-
-          await fs.writeFile(profilePath, content);
-        })
-      );
-
-      this.log(`Removed FLS from ${profileFiles.length} profiles`);
-    } catch (error) {
-      // If we can't remove FLS, just warn
-      this.warn('Could not remove Field Level Security from profiles');
-    }
-  }
-
-  private async copyProfilesFromTemp(): Promise<void> {
-    try {
-      const tempProfilesDir = path.join(this.tempRetrieveDir, 'profiles');
-      const projectProfilesDir = path.join(this.projectPath, 'force-app', 'main', 'default', 'profiles');
-
-      // Ensure target directory exists
-      await fs.mkdir(projectProfilesDir, { recursive: true });
-
-      // Get all profiles from temp directory
-      const profiles = await fs.readdir(tempProfilesDir);
-      const profileFiles = profiles.filter((f) => f.endsWith('.profile-meta.xml'));
-
-      if (profileFiles.length === 0) {
-        this.warn('No profiles found in temp directory');
-        return;
-      }
-
-      // Copy all profiles in parallel
-      await Promise.all(
-        profileFiles.map((profile) =>
-          fs.copyFile(path.join(tempProfilesDir, profile), path.join(projectProfilesDir, profile))
-        )
-      );
-
-      this.log(`Copied ${profileFiles.length} profiles to project`);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new SfError(`Failed to copy profiles from temp directory: ${errorMessage}`);
-    }
-  }
-
-  private async cleanup(): Promise<void> {
-    // Clean up temp directory tree (includes package.xml and retrieved profiles)
-    try {
-      const baseTempDir = path.dirname(this.tempDir);
-      await fs.rm(baseTempDir, { recursive: true, force: true });
-    } catch (error) {
-      this.warn('Could not remove temporary directories');
-    }
+    return {
+      success: true,
+      componentsRetrieved: retrieveResult.totalComponents,
+      metadataTypes: retrieveResult.metadataTypes,
+      profilesRetrieved: retrieveResult.profilesRetrieved.length,
+    };
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
   }
 }

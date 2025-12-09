@@ -4,6 +4,9 @@ profile-docs/
 
 # E2E test project directory
 test-project/
+
+# SFDX local metadata cache
+.sfdx/
 # use yarn by default, so ignore npm
 package-lock.json
 
@@ -59,3 +62,6 @@ node_modules
 # os specific files
 .DS_Store
 .idea
+
+# act local configuration (Docker image for local CI testing)
+.act/
