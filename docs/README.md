@@ -15,6 +15,7 @@ Documentation for plugin users.
 
 - **[Quick Start](user-guide/quick-start.md)** - Get started in 5 minutes
 - **[Usage Guide](user-guide/usage.md)** - Complete usage documentation
+- **[Safety Guarantees](user-guide/SAFETY.md)** - How your code is protected 🔒
 - **[Compare Command](user-guide/compare-command.md)** - Detailed compare command guide
 
 ### 💻 Development
@@ -50,7 +51,8 @@ Project information and history.
 **Getting Started**:
 1. [Quick Start Guide](user-guide/quick-start.md)
 2. [Installation & Usage](user-guide/usage.md)
-3. [Command Examples](user-guide/compare-command.md)
+3. [Safety Guarantees](user-guide/SAFETY.md) 🔒
+4. [Command Examples](user-guide/compare-command.md)
 
 **Commands**:
 - `sf profiler retrieve` - Retrieve profiles with dependencies
@@ -83,6 +85,7 @@ Project information and history.
 #### Use the Plugin
 - ✅ [Install and get started](user-guide/quick-start.md)
 - ✅ [Learn all commands](user-guide/usage.md)
+- ✅ [Understand safety guarantees](user-guide/SAFETY.md) 🔒
 - ✅ [Compare profiles](user-guide/compare-command.md)
 
 #### Develop
@@ -112,8 +115,9 @@ Project information and history.
 ### Beginner Path
 1. Start: [Quick Start Guide](user-guide/quick-start.md)
 2. Learn: [Usage Guide](user-guide/usage.md)
-3. Try: Install and run commands
-4. Explore: [Compare Command](user-guide/compare-command.md)
+3. Safety: [Safety Guarantees](user-guide/SAFETY.md) 🔒
+4. Try: Install and run commands
+5. Explore: [Compare Command](user-guide/compare-command.md)
 
 ### Developer Path
 1. Setup: [Testing & Publishing](development/testing-and-publishing.md)
@@ -131,12 +135,12 @@ Project information and history.
 
 ## 📊 Documentation Stats
 
-- **Total Docs**: 17 files
-- **User Guides**: 3 files
-- **Development**: 4 files
+- **Total Docs**: 17+ files
+- **User Guides**: 4 files (includes SAFETY.md)
+- **Development**: 8+ files
 - **Technical**: 3 files
-- **Project**: 5 files
-- **Total Lines**: 4,000+ lines of documentation
+- **Project**: 7+ files
+- **Total Lines**: 5,000+ lines of documentation
 
 ---
 

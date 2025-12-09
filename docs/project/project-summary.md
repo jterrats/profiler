@@ -42,7 +42,7 @@ The main command that:
 - ✅ Automatically fetches all profile dependencies (ApexClass, CustomObject, etc.)
 - ✅ Generates dynamic package.xml based on org metadata
 - ✅ Supports Field Level Security (FLS) control via `--all-fields` flag
-- ✅ Includes smart Git integration to restore unchanged metadata
+- ✅ Uses isolated temporary project to prevent modifying non-profile metadata
 - ✅ Provides comprehensive error handling and logging
 - ✅ Supports JSON output for automation
 
@@ -321,7 +321,7 @@ git diff force-app/main/default/profiles/
    - Profile filtering
    - Selective metadata types
    - Incremental retrieval
-   - Backup/restore features
+   - Enhanced safety with merge/validate operations
 
 3. **Publishing**:
    - Publish to npm

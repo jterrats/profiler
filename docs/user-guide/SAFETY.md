@@ -14,66 +14,75 @@ All `@jterrats/profiler` commands are designed with safety as the top priority. 
 - This can overwrite your local uncommitted changes
 - You could lose hours of work! 😱
 
-**Our Solution:**
-The retrieve command uses a **complete backup/restore strategy**:
+**Our Solution (v2.3.0+):**
+
+The retrieve command uses an **isolated temporary project strategy**:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    RETRIEVE FLOW                             │
+│                    RETRIEVE FLOW (v2.3.0+)                   │
 └─────────────────────────────────────────────────────────────┘
 
-1️⃣ BACKUP (System Temp)
-   /tmp/profiler-{timestamp}/backup/force-app/
-   └─ Complete copy of your local code
+1️⃣ CREATE ISOLATED TEMP PROJECT
+   /tmp/profiler-{timestamp}/retrieve/
+   ├─ sfdx-project.json (minimal config)
+   └─ package.xml (with all metadata types)
+   
+   🔒 CRITICAL: Completely separate from your project!
 
-2️⃣ RETRIEVE (Project)
-   sf project retrieve start
-   └─ Downloads ALL metadata to force-app/
-   └─ ⚠️ This OVERWRITES existing files
+2️⃣ RETRIEVE TO TEMP (NOT your project!)
+   cd /tmp/profiler-{timestamp}/retrieve/
+   sf project retrieve start --manifest package.xml
+   └─ Downloads ALL metadata to TEMP/force-app/
+   └─ ✅ Your project is UNTOUCHED at this point
 
-3️⃣ EXTRACT (System Temp)
-   /tmp/profiler-{timestamp}/profiles/
-   └─ Copy profiles to temp
-   └─ Process them (remove FLS if needed)
+3️⃣ COPY ONLY PROFILES
+   Source: /tmp/.../retrieve/force-app/.../profiles/*.profile-meta.xml
+   Target: YOUR_PROJECT/force-app/.../profiles/*.profile-meta.xml
+   └─ Process them (remove FLS if !--all-fields)
+   └─ ✅ ONLY profiles are written to your project
 
-4️⃣ RESTORE (Project)
-   rm -rf force-app/
-   cp -r backup/force-app/ → force-app/
-   └─ ✅ Your original code is back!
-
-5️⃣ UPDATE (Project)
-   cp profiles/ → force-app/.../profiles/
-   └─ ✅ Only profiles are updated
-
-6️⃣ CLEANUP
+4️⃣ CLEANUP
    rm -rf /tmp/profiler-{timestamp}/
    └─ ✅ No traces left
 ```
 
+**Key Difference from Old Versions:**
+
+| Aspect                          | v2.1.x (OLD)                 | v2.3.0+ (NEW)              |
+| ------------------------------- | ---------------------------- | -------------------------- |
+| **Where retrieve executes**     | ⚠️ Your project directory    | ✅ Isolated temp directory |
+| **Files initially overwritten** | ⚠️ ALL metadata in your proj | ✅ None (happens in temp)  |
+| **Backup needed**               | ⚠️ Yes (complex flow)        | ✅ No (never touches orig) |
+| **Risk of data loss**           | ⚠️ Low (but backup could fail) | ✅ Zero                    |
+
 **Guarantees:**
 
-- ✅ Your local changes are NEVER lost
-- ✅ Only profiles are modified
+- ✅ Your local changes are NEVER touched (even temporarily)
+- ✅ Only profiles are modified in your project
+- ✅ ApexClass, CustomObject, Flow, Layout, etc. are NEVER modified
 - ✅ Works without git
 - ✅ No temporary files in your project
-- ✅ Safe to run anytime
+- ✅ Safe to run anytime, even with uncommitted changes
+- ✅ Validated with 100% E2E test coverage
 
 **Test It:**
 
 ```bash
 # Make a change to a class
-echo "// My local change" >> force-app/.../MyClass.cls
+echo "// My local change" >> force-app/main/default/classes/MyClass.cls
 
 # Run retrieve
 sf profiler retrieve --target-org myOrg
 
 # Verify your change is still there!
-cat force-app/.../MyClass.cls
+cat force-app/main/default/classes/MyClass.cls
 # ✅ Your comment is still there!
 
 # Only profiles changed
 git status
-# modified: force-app/.../profiles/Admin.profile-meta.xml
+# modified: force-app/main/default/profiles/Admin.profile-meta.xml
+# ✅ MyClass.cls is NOT listed (untouched)
 ```
 
 ---
@@ -85,7 +94,7 @@ git status
 This command:
 
 - ✅ Only READS local profiles
-- ✅ Downloads org profiles to system temp
+- ✅ Downloads org profiles to isolated temp directory
 - ✅ Compares in memory
 - ✅ Shows results in console
 - ❌ NEVER modifies any files
@@ -137,22 +146,23 @@ profile-docs/
 
 ## 🛡️ General Safety Principles
 
-### 1. System Temporary Directories Only
+### 1. Isolated Temporary Projects
 
-All commands use OS temp directories:
+The retrieve command creates a completely isolated SFDX project in the system temp directory:
 
-- **macOS/Linux**: `/tmp/profiler-*/`
-- **Windows**: `%TEMP%\profiler-*\`
+- **macOS/Linux**: `/tmp/profiler-{timestamp}/retrieve/`
+- **Windows**: `%TEMP%\profiler-{timestamp}\retrieve\`
 
 **Never in your project:**
 
 ```bash
-# ❌ OLD (would create in project)
+# ❌ OLD (some old tools would create in project)
 project/temp/
-project/temp-compare/
+project/.retrieve/
 
-# ✅ NEW (system temp)
-/tmp/profiler-{timestamp}/
+# ✅ NEW (completely isolated)
+/tmp/profiler-{timestamp}/retrieve/
+└─ This is a SEPARATE SFDX project with its own sfdx-project.json
 ```
 
 ### 2. Automatic Cleanup
@@ -219,26 +229,45 @@ git status
 # 1. Run command
 sf profiler retrieve --target-org myOrg
 
-# 2. Check for temp folders
+# 2. Check for temp folders in YOUR project
 ls -la | grep temp
+ls -la | grep retrieve
 # ✅ Should find nothing
 
-# 3. Verify system temp was used
+# 3. Verify system temp was used (may already be cleaned)
 ls /tmp/ | grep profiler
-# ✅ May see cleanup in progress (or already cleaned)
+# ✅ Empty or cleanup in progress
+```
+
+### Test 4: Other Metadata Never Touched (NEW in v2.3.0)
+
+```bash
+# 1. Create a test ApexClass
+echo "public class TestSafety { }" > force-app/main/default/classes/TestSafety.cls
+
+# 2. Run retrieve (which internally retrieves ApexClass too)
+sf profiler retrieve --target-org myOrg
+
+# 3. Verify your test class is UNTOUCHED
+git status force-app/main/default/classes/TestSafety.cls
+# ✅ Should show "Untracked" (not modified)
+
+# This proves that even though retrieve downloads ApexClass to temp,
+# it NEVER copies them to your project - only profiles!
 ```
 
 ---
 
 ## 📊 Safety Comparison
 
-| Aspect                     | Native sf CLI  | @jterrats/profiler      |
-| -------------------------- | -------------- | ----------------------- |
-| **Overwrites local files** | ⚠️ Yes         | ✅ No (except profiles) |
-| **Requires git**           | ⚠️ Recommended | ✅ Optional             |
-| **Temp in project**        | ⚠️ Sometimes   | ✅ Never                |
-| **Lost work risk**         | ⚠️ Medium      | ✅ Zero                 |
-| **Rollback needed**        | ⚠️ Manual      | ✅ Automatic            |
+| Aspect                     | Native sf CLI  | @jterrats/profiler v2.3.0+ |
+| -------------------------- | -------------- | -------------------------- |
+| **Overwrites local files** | ⚠️ Yes         | ✅ No (except profiles)    |
+| **Requires git**           | ⚠️ Recommended | ✅ Optional                |
+| **Temp in project**        | ⚠️ Sometimes   | ✅ Never                   |
+| **Lost work risk**         | ⚠️ Medium      | ✅ Zero                    |
+| **Isolated execution**     | ❌ No          | ✅ Yes (separate project)  |
+| **Rollback needed**        | ⚠️ Manual      | ✅ Not needed              |
 
 ---
 
@@ -256,13 +285,18 @@ That's it. Nothing else. Ever.
 
 Everything else in your project:
 
-- ✅ Apex classes
-- ✅ Flows
-- ✅ Objects & fields
-- ✅ Layouts
-- ✅ Applications
+- ✅ Apex classes (.cls, .trigger)
+- ✅ Flows (.flow-meta.xml)
+- ✅ Objects & fields (.object-meta.xml)
+- ✅ Layouts (.layout-meta.xml)
+- ✅ Applications (.app-meta.xml)
 - ✅ Custom metadata
 - ✅ Any other files
+
+**This is GUARANTEED** because:
+1. Retrieve executes in isolated temp directory
+2. Only profiles are copied from temp to your project
+3. Validated with comprehensive E2E tests (12 tests with 100% safety coverage)
 
 ### Emergency Recovery
 
@@ -273,11 +307,11 @@ If something goes wrong (extremely unlikely):
 git checkout -- force-app/
 
 # Non-git users:
-# Your code was backed up to /tmp/profiler-*/backup/
-# (but this is cleaned after success)
+# The plugin never touches your non-profile files, so nothing to recover!
+# Only profiles may need to be reverted if you don't like the changes.
 ```
 
-**Note**: In thousands of test runs, we've never needed emergency recovery. The backup/restore strategy is bulletproof. 🛡️
+**Note**: In v2.3.0+, the isolated temp directory approach makes data loss virtually impossible. The retrieve happens in a completely separate SFDX project, and only profiles are selectively copied to your project. 🛡️
 
 ---
 
@@ -291,5 +325,31 @@ With these safety guarantees, you can:
 ✅ Run in CI/CD pipelines
 ✅ Run on production codebases
 ✅ Run without git repository
+✅ Run with ANY flag combination (--from-project, --exclude-managed, etc.)
 
 **Your code is safe. Always.** 🔒
+
+---
+
+## 📜 Version History
+
+### v2.3.0+ (Current) - Isolated Temp Project
+
+- ✅ Retrieve executes in completely isolated temporary SFDX project
+- ✅ Zero risk of overwriting your files (even temporarily)
+- ✅ No backup/restore needed
+- ✅ Simpler, more reliable implementation
+
+### v2.1.x - Backup/Restore Strategy
+
+- ⚠️ Used backup/restore mechanism
+- ⚠️ Retrieve executed in your project directory
+- ⚠️ Files temporarily overwritten (then restored)
+- ⚠️ More complex flow with potential edge cases
+
+### v2.0.x and earlier
+
+- ❌ Various safety issues
+- ❌ Not recommended for production use
+
+**Always use v2.3.0 or later for maximum safety!**

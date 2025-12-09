@@ -31,7 +31,7 @@ sf plugins install @jterrats/profiler
 
 Retrieves Profile metadata along with all required dependencies from a Salesforce org.
 
-**🔒 SAFETY GUARANTEE**: This command uses a complete backup/restore strategy to ensure your local files are NEVER modified (except profiles). All operations happen in system temporary directories.
+**🔒 SAFETY GUARANTEE (v2.3.0+)**: This command retrieves metadata to an isolated temporary SFDX project, then copies ONLY profiles to your local project. Your other metadata (ApexClass, CustomObject, Flow, Layout, etc.) is NEVER modified. See [Safety Guarantees](SAFETY.md) for details.
 
 #### Basic Usage
 

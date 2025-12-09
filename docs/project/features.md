@@ -49,14 +49,16 @@ The plugin automatically identifies and retrieves all metadata types that profil
 - Generating documentation without third-party package clutter
 - Comparing profiles across orgs with different managed packages
 
-### 4. Smart Metadata Restoration
+### 4. Isolated Temporary Retrieval (v2.3.0+)
 
-Similar to the original script, the plugin includes smart restoration features:
+The plugin uses an isolated temporary project strategy for maximum safety:
 
-- Cleans untracked files in the force-app directory
-- Restores original versions of non-profile metadata from Git
-- Keeps your repository clean and focused on profile changes
-- Prevents accidental overwrites of existing metadata
+- Executes retrieve in completely separate SFDX project (in system temp)
+- Downloads ALL metadata to temp directory (NOT your project)
+- Copies ONLY profiles from temp to your project
+- Your other metadata (ApexClass, CustomObject, Flow, etc.) is NEVER touched
+- Zero risk of data loss or accidental overwrites
+- No backup/restore needed (because originals are never modified)
 
 ### 4. API Version Flexibility
 
@@ -188,9 +190,9 @@ git commit -m "Update profile permissions"
    - Retrieves metadata using Source API
 
 3. **Post-Processing**
-   - Removes FLS when not needed
-   - Restores original metadata from Git
-   - Cleans up temporary files
+   - Removes FLS when not needed (in-memory during copy)
+   - Copies only profiles to user's project
+   - Cleans up isolated temporary SFDX project
 
 4. **Error Handling**
    - Validates prerequisites
@@ -224,11 +226,7 @@ Potential features for future versions:
    - Generate reports on profile permissions
    - Identify security gaps or over-permissions
 
-5. **Backup and Restore**
-   - Create backups before retrieval
-   - Restore previous versions if needed
-
-6. **Interactive Mode**
+5. **Interactive Mode**
    - Prompt user for metadata types
    - Guide through retrieval process
 
