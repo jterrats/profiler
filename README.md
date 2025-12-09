@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@jterrats/profiler.svg?logo=npm)](https://www.npmjs.com/package/@jterrats/profiler)
 [![EDD CI Pipeline](https://github.com/jterrats/profiler/actions/workflows/edd-ci.yml/badge.svg)](https://github.com/jterrats/profiler/actions/workflows/edd-ci.yml)
-[![License](https://img.shields.io/badge/License-BSD%203--Clause-brightgreen.svg)](https://raw.githubusercontent.com/jterrats/profiler/main/LICENSE.txt)
+[![License](https://img.shields.io/github/license/jterrats/profiler)](https://raw.githubusercontent.com/jterrats/profiler/main/LICENSE)
 [![Node.js Version](https://img.shields.io/node/v/@jterrats/profiler?logo=node.js)](https://nodejs.org)
 
 ## About
@@ -157,9 +157,10 @@ For more details, see [Testing and Publishing Guide](docs/development/testing-an
 ## Commands
 
 <!-- commands -->
-* [`sf profiler compare`](#sf-profiler-compare)
-* [`sf profiler docs`](#sf-profiler-docs)
-* [`sf profiler retrieve`](#sf-profiler-retrieve)
+
+- [`sf profiler compare`](#sf-profiler-compare)
+- [`sf profiler docs`](#sf-profiler-docs)
+- [`sf profiler retrieve`](#sf-profiler-retrieve)
 
 ## `sf profiler compare`
 
@@ -477,4 +478,5 @@ FLAG DESCRIPTIONS
 ```
 
 _See code: [src/commands/profiler/retrieve.ts](https://github.com/jterrats/profiler/blob/v2.3.0/src/commands/profiler/retrieve.ts)_
+
 <!-- commandsstop -->

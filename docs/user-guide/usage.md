@@ -193,4 +193,4 @@ Jaime Terrats
 
 ## License
 
-BSD-3-Clause
+MIT

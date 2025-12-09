@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2024, Jorge Terrats
  * All rights reserved.
- * Licensed under the BSD 3-Clause license.
- * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+ * Licensed under the MIT License.
+ * For full license text, see LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
 /**
@@ -36,10 +36,7 @@ import {
   detectDuplicates,
   detectInvalidPermissions,
 } from '../../src/operations/validate-operation.js';
-import {
-  validateMergeStrategy,
-  type MergeStrategy,
-} from '../../src/operations/merge-operation.js';
+import { validateMergeStrategy, type MergeStrategy } from '../../src/operations/merge-operation.js';
 
 describe('Operations Integration Tests', () => {
   let testProjectPath: string;
@@ -185,13 +182,12 @@ describe('Operations Integration Tests', () => {
       // Compose operations: read -> detect duplicates -> detect invalid permissions
       const result = await readProfileXml('ChainTest', testProjectPath)
         .chain((profileData) =>
-          detectDuplicates('ChainTest', profileData)
-            .chain((duplicates) =>
-              detectInvalidPermissions('ChainTest', profileData).map((invalidPerms) => ({
-                duplicates,
-                invalidPerms,
-              }))
-            )
+          detectDuplicates('ChainTest', profileData).chain((duplicates) =>
+            detectInvalidPermissions('ChainTest', profileData).map((invalidPerms) => ({
+              duplicates,
+              invalidPerms,
+            }))
+          )
         )
         .run();
 
@@ -374,4 +370,3 @@ describe('Operations Integration Tests', () => {
     });
   });
 });
-

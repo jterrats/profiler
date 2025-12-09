@@ -38,6 +38,7 @@ profiler/
 ### 1. Core Command (`src/commands/profiler/retrieve.ts`)
 
 The main command that:
+
 - ✅ Retrieves Profile metadata from Salesforce orgs
 - ✅ Automatically fetches all profile dependencies (ApexClass, CustomObject, etc.)
 - ✅ Generates dynamic package.xml based on org metadata
@@ -47,6 +48,7 @@ The main command that:
 - ✅ Supports JSON output for automation
 
 **Key Features:**
+
 - Parallel metadata fetching for improved performance
 - Automatic FLS removal when not needed
 - Temporary file cleanup
@@ -56,6 +58,7 @@ The main command that:
 ### 2. Messages (`messages/profiler.retrieve.md`)
 
 Internationalization support with messages for:
+
 - Command summary and description
 - Flag descriptions
 - Examples
@@ -65,12 +68,14 @@ Internationalization support with messages for:
 ### 3. Tests
 
 #### Unit Tests (`test/commands/profiler/retrieve.test.ts`)
+
 - Command validation tests
 - Flag verification tests
 - Default value tests
 - Project requirement tests
 
 #### Integration Tests (`test/commands/profiler/retrieve.nut.ts`)
+
 - Help command tests
 - Error handling tests
 - Placeholder tests for real org integration
@@ -78,6 +83,7 @@ Internationalization support with messages for:
 ### 4. Documentation
 
 #### README.md
+
 - Project overview with badges
 - Installation instructions
 - Command documentation
@@ -85,6 +91,7 @@ Internationalization support with messages for:
 - Build instructions
 
 #### USAGE.md
+
 - Detailed usage guide
 - Installation methods
 - Command examples
@@ -93,6 +100,7 @@ Internationalization support with messages for:
 - Best practices
 
 #### FEATURES.md
+
 - Complete feature list
 - Comparison with original shell script
 - Use cases and examples
@@ -101,6 +109,7 @@ Internationalization support with messages for:
 - Performance considerations
 
 #### CONTRIBUTING.md
+
 - Contribution guidelines
 - Development setup
 - Coding standards
@@ -109,6 +118,7 @@ Internationalization support with messages for:
 - Bug reporting template
 
 #### CHANGELOG.md
+
 - Version history
 - Release notes
 - Migration guide from shell script
@@ -117,7 +127,9 @@ Internationalization support with messages for:
 ### 5. Examples
 
 #### CI/CD Example Script (`examples/ci-cd-example.sh`)
+
 A production-ready bash script showing:
+
 - Authentication handling
 - Configuration management
 - Result parsing
@@ -126,7 +138,9 @@ A production-ready bash script showing:
 - Error handling
 
 #### GitHub Actions Workflow (`examples/github-actions.yml`)
+
 A complete GitHub Actions workflow featuring:
+
 - Scheduled runs
 - Manual triggers
 - Automated PR creation
@@ -134,6 +148,7 @@ A complete GitHub Actions workflow featuring:
 - Summary generation
 
 #### Examples Documentation (`examples/README.md`)
+
 - Detailed example explanations
 - Jenkins pipeline example
 - GitLab CI/CD example
@@ -155,6 +170,7 @@ A complete GitHub Actions workflow featuring:
 Main command to retrieve profiles with dependencies.
 
 **Flags:**
+
 - `--target-org` (required) - Target org to retrieve from
 - `--all-fields` (optional) - Include Field Level Security
 - `--api-version` (optional) - Override API version
@@ -178,18 +194,18 @@ sf profiler retrieve --target-org dev-sandbox --json
 
 ## Key Improvements Over Shell Script
 
-| Feature | Shell Script | Plugin |
-|---------|-------------|--------|
-| Cross-platform | ❌ Unix only | ✅ All platforms |
-| Error handling | Basic | Advanced |
-| FLS control | ❌ | ✅ |
-| API version control | ❌ | ✅ |
-| JSON output | ❌ | ✅ |
-| Parallel processing | ❌ | ✅ |
-| Type safety | ❌ | ✅ TypeScript |
-| Test coverage | ❌ | ✅ Unit + Integration |
-| Documentation | Basic | Comprehensive |
-| CI/CD integration | Manual | Native |
+| Feature             | Shell Script | Plugin                |
+| ------------------- | ------------ | --------------------- |
+| Cross-platform      | ❌ Unix only | ✅ All platforms      |
+| Error handling      | Basic        | Advanced              |
+| FLS control         | ❌           | ✅                    |
+| API version control | ❌           | ✅                    |
+| JSON output         | ❌           | ✅                    |
+| Parallel processing | ❌           | ✅                    |
+| Type safety         | ❌           | ✅ TypeScript         |
+| Test coverage       | ❌           | ✅ Unit + Integration |
+| Documentation       | Basic        | Comprehensive         |
+| CI/CD integration   | Manual       | Native                |
 
 ## Installation & Setup
 
@@ -241,21 +257,25 @@ yarn build
 ## Usage Scenarios
 
 ### 1. Local Development
+
 ```bash
 sf profiler retrieve --target-org dev-sandbox
 ```
 
 ### 2. CI/CD Pipeline
+
 ```bash
 sf profiler retrieve --target-org integration --json > results.json
 ```
 
 ### 3. Production Deployment
+
 ```bash
 sf profiler retrieve --target-org production --all-fields
 ```
 
 ### 4. Security Audit
+
 ```bash
 sf profiler retrieve --target-org prod --all-fields
 git diff force-app/main/default/profiles/
@@ -266,11 +286,13 @@ git diff force-app/main/default/profiles/
 ### Dependencies
 
 **Production:**
+
 - `@oclif/core`: ^4 - CLI framework
 - `@salesforce/core`: ^8 - Salesforce core functionality
 - `@salesforce/sf-plugins-core`: ^12 - Plugin framework
 
 **Development:**
+
 - TypeScript: ^5.4.5
 - ESLint: For code linting
 - Mocha/Chai: For testing
@@ -295,12 +317,14 @@ git diff force-app/main/default/profiles/
 ### Immediate Actions
 
 1. **Test the plugin**:
+
    ```bash
    sf plugins link .
    sf profiler retrieve --target-org your-org
    ```
 
 2. **Review the code**:
+
    - Check `src/commands/profiler/retrieve.ts`
    - Review test files
    - Read documentation
@@ -313,11 +337,13 @@ git diff force-app/main/default/profiles/
 ### Optional Enhancements
 
 1. **Add more commands**:
+
    - `sf profiler compare` - Compare profiles between orgs
    - `sf profiler analyze` - Analyze profile permissions
    - `sf profiler validate` - Validate profile structure
 
 2. **Improve functionality**:
+
    - Profile filtering
    - Selective metadata types
    - Incremental retrieval
@@ -367,12 +393,13 @@ git diff force-app/main/default/profiles/
 ## Author
 
 **Jaime Terrats**
+
 - Original shell script author
 - Plugin conversion and development
 
 ## License
 
-BSD-3-Clause
+MIT
 
 ---
 
@@ -381,4 +408,3 @@ BSD-3-Clause
 **Version**: 1.0.0
 
 **Last Updated**: 2024
-

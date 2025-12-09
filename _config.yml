@@ -3,17 +3,13 @@
 # Site settings
 title: Profiler - Salesforce CLI Plugin
 description: >-
-  Essential Salesforce CLI plugin for complete Profile metadata retrieval and management.
-  Includes commands for retrieve, compare, and documentation generation.
-baseurl: "/profiler"
-url: "https://jterrats.github.io"
+  Safe Profile Management for Legacy Salesforce Environments. 
+  Built with Error-Driven Development (EDD) methodology.
+baseurl: '/profiler'
+url: 'https://jterrats.github.io'
 
 # Theme
 theme: jekyll-theme-cayman
-# Alternative themes you can try:
-# theme: jekyll-theme-slate
-# theme: jekyll-theme-minimal
-# theme: jekyll-theme-architect
 
 # Build settings
 markdown: kramdown
@@ -22,6 +18,7 @@ kramdown:
   syntax_highlighter: rouge
   syntax_highlighter_opts:
     default_lang: bash
+    css_class: 'highlight'
 
 # Exclude files from processing
 exclude:
@@ -45,10 +42,13 @@ exclude:
   - temp
   - temp-compare
   - profile-docs
-  - .github/workflows/test-on-push.yml
+  - .sfdx
+  - .github
   - CODEOWNERS
-  - LICENSE.txt
+  - LICENSE
   - CODE_OF_CONDUCT.md
+  - Dockerfile
+  - act
 
 # Include files that start with underscore
 include:
@@ -63,15 +63,15 @@ collections:
 # Defaults
 defaults:
   - scope:
-      path: ""
-      type: "pages"
+      path: ''
+      type: 'pages'
     values:
-      layout: "default"
+      layout: 'default'
   - scope:
-      path: "docs"
-      type: "pages"
+      path: 'docs'
+      type: 'pages'
     values:
-      layout: "default"
+      layout: 'default'
 
 # Navigation
 navigation:
@@ -81,6 +81,8 @@ navigation:
     url: /docs/user-guide/quick-start
   - title: Usage Guide
     url: /docs/user-guide/usage
+  - title: Safety
+    url: /docs/user-guide/SAFETY
   - title: Commands
     subitems:
       - title: Retrieve
@@ -89,6 +91,8 @@ navigation:
         url: /docs/user-guide/compare-command
       - title: Docs
         url: /docs/user-guide/docs-command
+  - title: EDD Methodology
+    url: /docs/development/ERROR_DRIVEN_DEVELOPMENT
   - title: Contributing
     url: /CONTRIBUTING
   - title: GitHub
@@ -98,9 +102,9 @@ navigation:
 author: jterrats
 twitter:
   username: jterrats
-  card: summary
+  card: summary_large_image
 
-# Plugins
+# Plugins (compatible with github-pages)
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
@@ -110,9 +114,7 @@ plugins:
 # GitHub metadata
 repository: jterrats/profiler
 
-# Google Analytics (optional - add your tracking ID)
-# google_analytics: UA-XXXXXXXX-X
-
 # Show downloads button
 show_downloads: true
-
+# Google Analytics (optional - add your tracking ID)
+# google_analytics: UA-XXXXXXXX-X

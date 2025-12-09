@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2024, Jorge Terrats
  * All rights reserved.
- * Licensed under the BSD 3-Clause license.
- * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+ * Licensed under the MIT License.
+ * For full license text, see LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
 /**
@@ -278,9 +278,8 @@ export function getConfigSummary(config: ResolvedConfig): string {
 export function parsePerformanceFlags(flags: Record<string, unknown>): PerformanceConfig {
   return {
     maxProfiles: typeof flags['max-profiles'] === 'number' ? flags['max-profiles'] : undefined,
-    profilesWarningThreshold: typeof flags['profiles-warning-threshold'] === 'number'
-      ? flags['profiles-warning-threshold']
-      : undefined,
+    profilesWarningThreshold:
+      typeof flags['profiles-warning-threshold'] === 'number' ? flags['profiles-warning-threshold'] : undefined,
     maxApiCallsPerMinute: typeof flags['max-api-calls'] === 'number' ? flags['max-api-calls'] : undefined,
     maxMemoryMB: typeof flags['max-memory'] === 'number' ? flags['max-memory'] : undefined,
     operationTimeoutMs: typeof flags['operation-timeout'] === 'number' ? flags['operation-timeout'] : undefined,
@@ -330,24 +329,27 @@ export const PERFORMANCE_FLAGS = {
   },
   'operation-timeout': {
     summary: 'Operation timeout in milliseconds',
-    description: `Overrides the default timeout of ${SAFETY_LIMITS.MAX_OPERATION_DURATION_MS}ms (${Math.round(SAFETY_LIMITS.MAX_OPERATION_DURATION_MS / 60_000)} minutes).`,
+    description: `Overrides the default timeout of ${SAFETY_LIMITS.MAX_OPERATION_DURATION_MS}ms (${Math.round(
+      SAFETY_LIMITS.MAX_OPERATION_DURATION_MS / 60_000
+    )} minutes).`,
     type: 'option',
     char: undefined,
     default: undefined,
   },
   'concurrent-workers': {
     summary: 'Number of concurrent workers for parallel operations',
-    description: 'Overrides the auto-detected worker count. Max recommended: 5 for metadata operations, 10 for API operations.',
+    description:
+      'Overrides the auto-detected worker count. Max recommended: 5 for metadata operations, 10 for API operations.',
     type: 'option',
     char: undefined,
     default: undefined,
   },
   'verbose-performance': {
     summary: 'Show detailed performance metrics',
-    description: 'Displays detailed information about worker pool configuration, API calls, memory usage, and operation timings.',
+    description:
+      'Displays detailed information about worker pool configuration, API calls, memory usage, and operation timings.',
     type: 'boolean',
     char: undefined,
     default: false,
   },
 } as const;
-

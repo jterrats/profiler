@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **License**: Changed from BSD-3-Clause to MIT License for broader compatibility and adoption
+- **GitHub Pages**: Redesigned documentation site following JT_DynamicQueries design patterns
+- **Badges**: Updated license badge to use dynamic GitHub API (auto-updates from LICENSE file)
+- **Documentation**: Updated all file headers and references from BSD-3-Clause to MIT
+
 ## [2.3.0] - 2024-12-09
 
 ### 🔴 CRITICAL FIX
@@ -20,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **e2e tests**: New Test 2.5 for `--all-fields` flag validation, comparing FLS removal vs preservation
-- **e2e tests**: Added "canary files" (DummyTest.cls, DummyObject__c) to detect unintended metadata modifications
+- **e2e tests**: Added "canary files" (DummyTest.cls, DummyObject\_\_c) to detect unintended metadata modifications
 - **e2e tests**: Added safety validation to all 12 tests - each test now verifies that only profiles are modified
 
 ### Changed
