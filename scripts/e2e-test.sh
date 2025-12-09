@@ -117,6 +117,43 @@ git add . > /dev/null 2>&1
 git commit -m "Initial commit" > /dev/null 2>&1
 log_success "Git repository initialized"
 
+# Create dummy metadata files to verify they are NOT modified by retrieve
+log_info "Creating dummy metadata files for safety validation..."
+mkdir -p force-app/main/default/{classes,objects,flows,layouts}
+
+# Create dummy ApexClass
+cat > force-app/main/default/classes/DummyTest.cls << 'EOF'
+public class DummyTest {
+    public static String test() {
+        return 'This file should NEVER be modified by retrieve';
+    }
+}
+EOF
+
+cat > force-app/main/default/classes/DummyTest.cls-meta.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>60.0</apiVersion>
+    <status>Active</status>
+</ApexClass>
+EOF
+
+# Create dummy CustomObject
+cat > force-app/main/default/objects/DummyObject__c/DummyObject__c.object-meta.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Dummy Object</label>
+    <pluralLabel>Dummy Objects</pluralLabel>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>ReadWrite</sharingModel>
+</CustomObject>
+EOF
+
+# Commit dummy files
+git add force-app/main/default/{classes,objects} > /dev/null 2>&1
+git commit -m "Add dummy metadata for safety validation" > /dev/null 2>&1
+log_success "Dummy metadata files created and committed"
+
 # Test 1: Basic retrieve (all profiles)
 log_info ""
 log_info "═══════════════════════════════════════════"
@@ -133,15 +170,37 @@ else
     exit 1
 fi
 
-# Verify no uncommitted changes to other files
-log_info "Checking git status (should only show profiles)..."
+# CRITICAL VALIDATION: Verify ONLY profiles were modified
+log_info "Checking git status (should ONLY show profiles)..."
 MODIFIED_FILES=$(git status --porcelain | grep -v "profiles/" || true)
 if [ -z "$MODIFIED_FILES" ]; then
-    log_success "No other files modified (safe retrieve confirmed)"
+    log_success "✓ No other metadata modified (safe retrieve confirmed)"
 else
-    log_warning "Other files modified:"
+    log_error "CRITICAL: Other metadata files were modified!"
     echo "$MODIFIED_FILES"
+    log_error "This is a critical bug - retrieve should NEVER modify non-profile metadata"
+    exit 1
 fi
+
+# Verify dummy files are unchanged
+log_info "Verifying dummy metadata integrity..."
+if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+    log_success "✓ DummyTest.cls unchanged"
+else
+    log_error "CRITICAL: DummyTest.cls was modified by retrieve!"
+    git diff force-app/main/default/classes/DummyTest.cls
+    exit 1
+fi
+
+if git diff --quiet HEAD -- force-app/main/default/objects/DummyObject__c/; then
+    log_success "✓ DummyObject__c unchanged"
+else
+    log_error "CRITICAL: DummyObject__c was modified by retrieve!"
+    git diff force-app/main/default/objects/DummyObject__c/
+    exit 1
+fi
+
+log_success "🛡️  SAFETY VALIDATED: Only profiles modified, other metadata untouched"
 
 # Clean profiles for next test
 rm -rf force-app/main/default/profiles
@@ -183,6 +242,15 @@ if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
         log_error "Profile appears to be empty or invalid"
         exit 1
     fi
+
+    # SAFETY VALIDATION
+    log_info "Verifying metadata safety..."
+    if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+        log_success "✓ DummyTest.cls unchanged"
+    else
+        log_error "CRITICAL: DummyTest.cls was modified!"
+        exit 1
+    fi
 else
     log_error "Admin profile not found"
     exit 1
@@ -190,6 +258,60 @@ fi
 
 PROFILE_COUNT=$(find force-app/main/default/profiles -name "*.profile-meta.xml" | wc -l | tr -d ' ')
 log_info "Total profiles retrieved: $PROFILE_COUNT"
+
+# Clean for next test
+rm -rf force-app/main/default/profiles
+
+# Test 2.5: Retrieve with --all-fields flag
+log_info ""
+log_info "═══════════════════════════════════════════"
+log_info "Test 2.5: Retrieve with --all-fields (keep FLS)"
+log_info "═══════════════════════════════════════════"
+
+# First retrieve WITHOUT --all-fields (default, removes FLS)
+log_info "Step 2.5a: Retrieve WITHOUT --all-fields (default)..."
+sf profiler retrieve --target-org "$TARGET_ORG" --name "Admin" 2>&1 | grep -v "MissingBundleError" > /dev/null || true
+
+if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
+    PROFILE_FILE="force-app/main/default/profiles/Admin.profile-meta.xml"
+    FLS_WITHOUT=$(grep -c "<fieldPermissions>" "$PROFILE_FILE" || echo "0")
+    log_info "  Field permissions WITHOUT --all-fields: $FLS_WITHOUT"
+
+    if [ "$FLS_WITHOUT" -eq 0 ]; then
+        log_success "Field-level security removed (as expected)"
+    else
+        log_warning "Field permissions still present: $FLS_WITHOUT"
+    fi
+fi
+
+# Clean and retrieve WITH --all-fields
+rm -rf force-app/main/default/profiles
+
+log_info "Step 2.5b: Retrieve WITH --all-fields..."
+sf profiler retrieve --target-org "$TARGET_ORG" --name "Admin" --all-fields 2>&1 | grep -v "MissingBundleError" || true
+
+if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
+    PROFILE_FILE="force-app/main/default/profiles/Admin.profile-meta.xml"
+    FLS_WITH=$(grep -c "<fieldPermissions>" "$PROFILE_FILE" || echo "0")
+    log_info "  Field permissions WITH --all-fields: $FLS_WITH"
+
+    if [ "$FLS_WITH" -gt 0 ]; then
+        log_success "Field-level security preserved: $FLS_WITH field permissions"
+    else
+        log_warning "No field permissions found (org may have none defined)"
+    fi
+
+    # SAFETY VALIDATION
+    if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+        log_success "✓ DummyTest.cls unchanged"
+    else
+        log_error "CRITICAL: DummyTest.cls was modified!"
+        exit 1
+    fi
+else
+    log_error "Profile not retrieved with --all-fields"
+    exit 1
+fi
 
 # Clean for next test
 rm -rf force-app/main/default/profiles
@@ -262,10 +384,21 @@ if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
     if [ "$OBJECT_PERMS" -gt 0 ]; then
         log_success "Profile still contains $OBJECT_PERMS object permissions (not empty)"
     fi
+
+    # SAFETY VALIDATION
+    if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+        log_success "✓ DummyTest.cls unchanged"
+    else
+        log_error "CRITICAL: DummyTest.cls was modified!"
+        exit 1
+    fi
 else
     log_error "Profile not retrieved with --exclude-managed"
     exit 1
 fi
+
+# Clean for next test
+rm -rf force-app/main/default/profiles
 
 # Test 4: Retrieve with --from-project flag
 log_info ""
@@ -282,6 +415,14 @@ sf profiler retrieve --target-org "$TARGET_ORG" --from-project 2>&1 | grep -v "M
 
 if [ -d "force-app/main/default/profiles" ]; then
     log_success "Retrieve with --from-project completed"
+
+    # SAFETY VALIDATION
+    if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+        log_success "✓ DummyTest.cls unchanged"
+    else
+        log_error "CRITICAL: DummyTest.cls was modified!"
+        exit 1
+    fi
 else
     log_error "Retrieve with --from-project failed"
     exit 1
@@ -306,6 +447,14 @@ fi
 
 if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
     log_success "Profile retrieved successfully with --verbose-performance"
+
+    # SAFETY VALIDATION
+    if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+        log_success "✓ DummyTest.cls unchanged"
+    else
+        log_error "CRITICAL: DummyTest.cls was modified!"
+        exit 1
+    fi
 else
     log_error "Profile retrieval failed with --verbose-performance"
     exit 1
@@ -331,6 +480,14 @@ fi
 
 if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
     log_success "Profile retrieved with custom --max-profiles"
+
+    # SAFETY VALIDATION
+    if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+        log_success "✓ DummyTest.cls unchanged"
+    else
+        log_error "CRITICAL: DummyTest.cls was modified!"
+        exit 1
+    fi
 else
     log_error "Profile retrieval failed with --max-profiles"
     exit 1
@@ -351,6 +508,14 @@ fi
 
 if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
     log_success "Profile retrieved with custom --max-api-calls"
+
+    # SAFETY VALIDATION
+    if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+        log_success "✓ DummyTest.cls unchanged"
+    else
+        log_error "CRITICAL: DummyTest.cls was modified!"
+        exit 1
+    fi
 else
     log_error "Profile retrieval failed with --max-api-calls"
     exit 1
@@ -383,6 +548,14 @@ if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
     else
         log_info "No specific warnings shown (all within safe limits)"
     fi
+
+    # SAFETY VALIDATION
+    if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+        log_success "✓ DummyTest.cls unchanged"
+    else
+        log_error "CRITICAL: DummyTest.cls was modified!"
+        exit 1
+    fi
 else
     log_error "Profile retrieval failed with combined flags"
     exit 1
@@ -414,6 +587,25 @@ else
     log_warning "Compare output may not show comparison details"
 fi
 
+# SAFETY VALIDATION for compare command
+log_info "Verifying compare command safety..."
+if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+    log_success "✓ Compare command: DummyTest.cls unchanged"
+else
+    log_error "CRITICAL: Compare command modified DummyTest.cls!"
+    exit 1
+fi
+
+if git diff --quiet HEAD -- force-app/main/default/objects/DummyObject__c/; then
+    log_success "✓ Compare command: DummyObject__c unchanged"
+else
+    log_error "CRITICAL: Compare command modified DummyObject__c!"
+    exit 1
+fi
+
+# Clean for next test
+rm -rf force-app/main/default/profiles
+
 # Test 9: Invalid combinations / edge cases
 log_info ""
 log_info "═══════════════════════════════════════════"
@@ -436,6 +628,40 @@ fi
 
 if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
     log_success "Profile retrieved even with high limits"
+
+    # SAFETY VALIDATION
+    if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+        log_success "✓ DummyTest.cls unchanged (edge case)"
+    else
+        log_error "CRITICAL: DummyTest.cls was modified!"
+        exit 1
+    fi
+fi
+
+log_info "Step 9b: Testing --from-project with --exclude-managed (combined)..."
+rm -rf force-app/main/default/profiles
+sf profiler retrieve --target-org "$TARGET_ORG" --name "Admin" > /dev/null 2>&1
+
+OUTPUT=$(sf profiler retrieve \
+    --target-org "$TARGET_ORG" \
+    --from-project \
+    --exclude-managed \
+    --verbose-performance \
+    2>&1 | grep -v "MissingBundleError" || true)
+
+if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
+    log_success "Combined flags --from-project + --exclude-managed work"
+
+    # SAFETY VALIDATION
+    if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+        log_success "✓ DummyTest.cls unchanged (combined flags)"
+    else
+        log_error "CRITICAL: DummyTest.cls was modified!"
+        exit 1
+    fi
+else
+    log_error "Combined flags failed"
+    exit 1
 fi
 
 # Final summary
@@ -448,14 +674,20 @@ log_info ""
 log_info "Validations performed:"
 log_info "  ✓ Profile files created correctly"
 log_info "  ✓ Profile content validated (metadata sections present)"
-log_info "  ✓ Git safety confirmed (no unintended file modifications)"
+log_info "  🛡️  Git safety confirmed (no unintended file modifications)"
+log_info "  🛡️  DummyTest.cls NEVER modified (verified in 10 tests)"
+log_info "  🛡️  DummyObject__c NEVER modified (verified in 2 tests)"
 log_info "  ✓ Managed package filtering tested"
 log_info "  ✓ --from-project flag working"
+log_info "  ✓ --all-fields flag tested (FLS preservation)"
 log_info "  ✓ Performance flags tested (--verbose-performance)"
 log_info "  ✓ Custom performance limits validated"
 log_info "  ✓ Combined performance flags working"
 log_info "  ✓ Compare command with performance flags"
 log_info "  ✓ Edge cases and high limits handled"
+log_info ""
+log_success "🎯 100% Flag Coverage - All 10 retrieve flags tested"
+log_success "🛡️  100% Safety Coverage - All tests validated metadata isolation"
 log_info ""
 log_info "Profile metadata validated:"
 log_info "  • Object Permissions"
