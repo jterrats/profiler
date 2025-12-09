@@ -116,6 +116,6 @@ plugins:
 repository: jterrats/profiler
 
 # Show downloads button
-show_downloads: true
+show_downloads: false
 # Google Analytics (optional - add your tracking ID)
 # google_analytics: UA-XXXXXXXX-X
