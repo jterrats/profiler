@@ -431,4 +431,134 @@ describe('Operations Integration Tests', () => {
       expect(incrementalError.actions).to.include('Falling back to full retrieve for safety');
     });
   });
+
+  describe('Incremental Retrieve Happy Path', () => {
+    it('should read local metadata successfully', async () => {
+      const { readLocalMetadata } = await import('../../src/operations/retrieve-operation.js');
+
+      // Create test profile in local project
+      const profileContent = `<?xml version="1.0" encoding="UTF-8"?>
+<Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+    <userLicense>Salesforce</userLicense>
+</Profile>`;
+
+      const profilePath = path.join(
+        testProjectPath,
+        'force-app',
+        'main',
+        'default',
+        'profiles',
+        'TestProfile.profile-meta.xml'
+      );
+      await fs.writeFile(profilePath, profileContent);
+
+      // Read local metadata
+      const result = await readLocalMetadata(testProjectPath, ['Profile']).run();
+
+      // Assert
+      expect(result.isSuccess()).to.be.true;
+      if (result.isSuccess()) {
+        expect(result.value.metadataTypes).to.have.lengthOf(1);
+        expect(result.value.metadataTypes[0].type).to.equal('Profile');
+        expect(result.value.metadataTypes[0].members).to.include('TestProfile');
+        expect(result.value.totalMembers).to.equal(1);
+      }
+    });
+
+    it('should return empty result when no local metadata exists', async () => {
+      const { readLocalMetadata } = await import('../../src/operations/retrieve-operation.js');
+
+      // Read local metadata from empty project
+      const result = await readLocalMetadata(testProjectPath, ['Profile']).run();
+
+      // Assert - success with empty result (not an error)
+      expect(result.isSuccess()).to.be.true;
+      if (result.isSuccess()) {
+        expect(result.value.metadataTypes).to.have.lengthOf(0);
+        expect(result.value.totalMembers).to.equal(0);
+      }
+    });
+
+    it('should compare metadata and find new items', async () => {
+      const { compareMetadataLists } = await import('../../src/operations/retrieve-operation.js');
+
+      const local = {
+        metadataTypes: [{ type: 'Profile', members: ['Admin'] }],
+        totalMembers: 1,
+      };
+
+      const org = {
+        metadataTypes: [{ type: 'Profile', members: ['Admin', 'Sales', 'Custom'] }],
+        totalMembers: 3,
+      };
+
+      // Compare
+      const result = await compareMetadataLists(local, org).run();
+
+      // Assert - should return only new items
+      expect(result.isSuccess()).to.be.true;
+      if (result.isSuccess()) {
+        expect(result.value.metadataTypes).to.have.lengthOf(1);
+        expect(result.value.metadataTypes[0].type).to.equal('Profile');
+        expect(result.value.metadataTypes[0].members).to.have.lengthOf(2); // Sales + Custom
+        expect(result.value.metadataTypes[0].members).to.include('Sales');
+        expect(result.value.metadataTypes[0].members).to.include('Custom');
+        expect(result.value.metadataTypes[0].members).to.not.include('Admin'); // Already exists locally
+        expect(result.value.totalMembers).to.equal(2);
+      }
+    });
+
+    it('should return empty result when no changes detected', async () => {
+      const { compareMetadataLists } = await import('../../src/operations/retrieve-operation.js');
+
+      const local = {
+        metadataTypes: [{ type: 'Profile', members: ['Admin', 'Sales'] }],
+        totalMembers: 2,
+      };
+
+      const org = {
+        metadataTypes: [{ type: 'Profile', members: ['Admin', 'Sales'] }],
+        totalMembers: 2,
+      };
+
+      // Compare
+      const result = await compareMetadataLists(local, org).run();
+
+      // Assert - no changes
+      expect(result.isSuccess()).to.be.true;
+      if (result.isSuccess()) {
+        expect(result.value.metadataTypes).to.have.lengthOf(0);
+        expect(result.value.totalMembers).to.equal(0);
+      }
+    });
+
+    it('should handle new metadata types not in local', async () => {
+      const { compareMetadataLists } = await import('../../src/operations/retrieve-operation.js');
+
+      const local = {
+        metadataTypes: [{ type: 'Profile', members: ['Admin'] }],
+        totalMembers: 1,
+      };
+
+      const org = {
+        metadataTypes: [
+          { type: 'Profile', members: ['Admin'] },
+          { type: 'ApexClass', members: ['NewClass1', 'NewClass2'] },
+        ],
+        totalMembers: 3,
+      };
+
+      // Compare
+      const result = await compareMetadataLists(local, org).run();
+
+      // Assert - should return ALL items for new type
+      expect(result.isSuccess()).to.be.true;
+      if (result.isSuccess()) {
+        expect(result.value.metadataTypes).to.have.lengthOf(1); // Only ApexClass (Profile has no changes)
+        expect(result.value.metadataTypes[0].type).to.equal('ApexClass');
+        expect(result.value.metadataTypes[0].members).to.have.lengthOf(2);
+        expect(result.value.totalMembers).to.equal(2);
+      }
+    });
+  });
 });
