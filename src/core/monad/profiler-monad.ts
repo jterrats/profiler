@@ -34,6 +34,55 @@ export class ProfilerMonad<T> {
   public constructor(private readonly computation: () => Promise<Result<T>>) {}
 
   /**
+   * Execute multiple ProfilerMonads in parallel
+   *
+   * Runs all monads concurrently and returns a monad of results array.
+   * If any monad fails, the entire operation fails with the first error.
+   *
+   * @param monads - Array of ProfilerMonads to execute
+   * @returns ProfilerMonad of array of results
+   *
+   * @example
+   * ```typescript
+   * const results = await ProfilerMonad.all([
+   *   operation1(),
+   *   operation2(),
+   *   operation3()
+   * ]).run();
+   *
+   * if (results.isSuccess()) {
+   *   const [result1, result2, result3] = results.value;
+   * }
+   * ```
+   */
+  public static all<T extends readonly unknown[]>(
+    monads: { [K in keyof T]: ProfilerMonad<T[K]> }
+  ): ProfilerMonad<T> {
+    return new ProfilerMonad(async () => {
+      const promises = monads.map((monad) => monad.run());
+      const results = await Promise.all(promises);
+
+      // Check if any result is a failure
+      for (const result of results) {
+        if (result.isFailure()) {
+          return failure(result.error);
+        }
+      }
+
+      // All succeeded, extract values
+      const values = results.map((result) => {
+        if (result.isSuccess()) {
+          return result.value;
+        }
+        // This should never happen due to the check above, but TypeScript needs it
+        throw new Error('Unexpected failure after success check');
+      });
+
+      return success(values as unknown as T);
+    });
+  }
+
+  /**
    * Functor: map
    *
    * Transform the value inside the monad if successful.

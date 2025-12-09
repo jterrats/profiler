@@ -287,6 +287,157 @@ else
     exit 1
 fi
 
+# Clean for next test
+rm -rf force-app/main/default/profiles
+
+# Test 5: Performance flags - verbose mode
+log_info ""
+log_info "═══════════════════════════════════════════"
+log_info "Test 5: Performance flags (--verbose-performance)"
+log_info "═══════════════════════════════════════════"
+
+OUTPUT=$(sf profiler retrieve --target-org "$TARGET_ORG" --name "Admin" --verbose-performance 2>&1 | grep -v "MissingBundleError" || true)
+
+if echo "$OUTPUT" | grep -qi "performance"; then
+    log_success "Verbose performance metrics displayed"
+else
+    log_info "Performance metrics may not show for fast operations"
+fi
+
+if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
+    log_success "Profile retrieved successfully with --verbose-performance"
+else
+    log_error "Profile retrieval failed with --verbose-performance"
+    exit 1
+fi
+
+# Clean for next test
+rm -rf force-app/main/default/profiles
+
+# Test 6: Custom performance limits
+log_info ""
+log_info "═══════════════════════════════════════════"
+log_info "Test 6: Custom performance limits"
+log_info "═══════════════════════════════════════════"
+
+log_info "Step 6a: Testing --max-profiles flag..."
+OUTPUT=$(sf profiler retrieve --target-org "$TARGET_ORG" --name "Admin" --max-profiles 100 2>&1 | grep -v "MissingBundleError" || true)
+
+if echo "$OUTPUT" | grep -qi "Increased max profiles to 100"; then
+    log_success "Custom --max-profiles accepted and displayed warning"
+else
+    log_info "No warning shown (may be within default limits)"
+fi
+
+if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
+    log_success "Profile retrieved with custom --max-profiles"
+else
+    log_error "Profile retrieval failed with --max-profiles"
+    exit 1
+fi
+
+# Clean for next test
+rm -rf force-app/main/default/profiles
+
+log_info "Step 6b: Testing --max-api-calls flag..."
+OUTPUT=$(sf profiler retrieve --target-org "$TARGET_ORG" --name "Admin" --max-api-calls 200 2>&1 | grep -v "MissingBundleError" || true)
+
+if echo "$OUTPUT" | grep -qi "Increased API calls"; then
+    log_success "Custom --max-api-calls accepted and displayed warning"
+    log_info "Salesforce hard limits information shown"
+else
+    log_info "No API warning shown (may be within default limits)"
+fi
+
+if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
+    log_success "Profile retrieved with custom --max-api-calls"
+else
+    log_error "Profile retrieval failed with --max-api-calls"
+    exit 1
+fi
+
+# Clean for next test
+rm -rf force-app/main/default/profiles
+
+# Test 7: Combined performance flags
+log_info ""
+log_info "═══════════════════════════════════════════"
+log_info "Test 7: Combined performance flags"
+log_info "═══════════════════════════════════════════"
+
+OUTPUT=$(sf profiler retrieve \
+    --target-org "$TARGET_ORG" \
+    --name "Admin" \
+    --verbose-performance \
+    --max-profiles 100 \
+    --max-memory 1024 \
+    --concurrent-workers 5 \
+    2>&1 | grep -v "MissingBundleError" || true)
+
+if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
+    log_success "Profile retrieved with multiple performance flags"
+
+    # Check for warnings in output
+    if echo "$OUTPUT" | grep -qi "performance\|increased\|warning"; then
+        log_success "Performance warnings/metrics displayed"
+    else
+        log_info "No specific warnings shown (all within safe limits)"
+    fi
+else
+    log_error "Profile retrieval failed with combined flags"
+    exit 1
+fi
+
+# Clean for next test
+rm -rf force-app/main/default/profiles
+
+# Test 8: Performance flags in compare command
+log_info ""
+log_info "═══════════════════════════════════════════"
+log_info "Test 8: Performance flags in compare command"
+log_info "═══════════════════════════════════════════"
+
+# First retrieve a profile to compare
+sf profiler retrieve --target-org "$TARGET_ORG" --name "Admin" > /dev/null 2>&1
+
+log_info "Comparing with performance flags..."
+OUTPUT=$(sf profiler compare \
+    --target-org "$TARGET_ORG" \
+    --name "Admin" \
+    --verbose-performance \
+    --max-api-calls 150 \
+    2>&1 | grep -v "MissingBundleError" || true)
+
+if echo "$OUTPUT" | grep -qi "comparison"; then
+    log_success "Compare command executed with performance flags"
+else
+    log_warning "Compare output may not show comparison details"
+fi
+
+# Test 9: Invalid combinations / edge cases
+log_info ""
+log_info "═══════════════════════════════════════════"
+log_info "Test 9: Edge cases and validation"
+log_info "═══════════════════════════════════════════"
+
+log_info "Step 9a: Testing with extremely high limits (should show warnings)..."
+OUTPUT=$(sf profiler retrieve \
+    --target-org "$TARGET_ORG" \
+    --name "Admin" \
+    --max-profiles 500 \
+    --max-api-calls 5000 \
+    2>&1 | grep -v "MissingBundleError" || true)
+
+if echo "$OUTPUT" | grep -qi "increased\|warning\|salesforce.*limit"; then
+    log_success "Warnings displayed for high limits"
+else
+    log_info "High limits accepted without explicit warning"
+fi
+
+if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
+    log_success "Profile retrieved even with high limits"
+fi
+
 # Final summary
 log_info ""
 log_info "═══════════════════════════════════════════"
@@ -300,6 +451,11 @@ log_info "  ✓ Profile content validated (metadata sections present)"
 log_info "  ✓ Git safety confirmed (no unintended file modifications)"
 log_info "  ✓ Managed package filtering tested"
 log_info "  ✓ --from-project flag working"
+log_info "  ✓ Performance flags tested (--verbose-performance)"
+log_info "  ✓ Custom performance limits validated"
+log_info "  ✓ Combined performance flags working"
+log_info "  ✓ Compare command with performance flags"
+log_info "  ✓ Edge cases and high limits handled"
 log_info ""
 log_info "Profile metadata validated:"
 log_info "  • Object Permissions"
@@ -307,6 +463,14 @@ log_info "  • Layout Assignments"
 log_info "  • Apex Class Accesses"
 log_info "  • Apex Page Accesses (Visualforce)"
 log_info "  • Tab Visibilities"
+log_info ""
+log_info "Performance flags tested:"
+log_info "  • --verbose-performance"
+log_info "  • --max-profiles"
+log_info "  • --max-api-calls"
+log_info "  • --max-memory"
+log_info "  • --concurrent-workers"
+log_info "  • Combined flags (multiple at once)"
 log_info ""
 
 # Cleanup test project

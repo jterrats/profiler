@@ -5,12 +5,15 @@
 ## Error Classification
 
 ### 1. **User Errors** (Recoverable)
+
 User provided invalid input. Clear message + action to fix.
 
 ### 2. **System Errors** (Recoverable)
+
 External dependency failed. Retry or fallback possible.
 
 ### 3. **Fatal Errors** (Non-recoverable)
+
 Critical failure. Cannot continue, exit gracefully.
 
 ---
@@ -20,6 +23,7 @@ Critical failure. Cannot continue, exit gracefully.
 ### **Retrieve Errors**
 
 #### `ProfileNotFoundError` (User Error)
+
 - **When**: Profile name doesn't exist in org
 - **Message**: `Profile '{profileName}' not found in org '{orgAlias}'`
 - **Actions**:
@@ -30,6 +34,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: No
 
 #### `OrgNotAuthenticatedError` (User Error)
+
 - **When**: Target org not authenticated
 - **Message**: `Org '{orgAlias}' is not authenticated`
 - **Actions**:
@@ -39,6 +44,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: No
 
 #### `MetadataApiError` (System Error)
+
 - **When**: Salesforce Metadata API returns error
 - **Message**: `Metadata API failed: {apiError}`
 - **Actions**:
@@ -50,6 +56,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: Yes (retry)
 
 #### `RetrieveTimeoutError` (System Error)
+
 - **When**: Retrieve takes longer than timeout
 - **Message**: `Retrieve timed out after {timeout}s`
 - **Actions**:
@@ -60,6 +67,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: Yes (retry with smaller scope)
 
 #### `InsufficientPermissionsError` (User Error)
+
 - **When**: User doesn't have permission to retrieve metadata
 - **Message**: `Insufficient permissions to retrieve {metadataType}`
 - **Actions**:
@@ -70,6 +78,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: No
 
 #### `InvalidProjectError` (User Error)
+
 - **When**: Not run from valid Salesforce project
 - **Message**: `Not a valid Salesforce project. Missing sfdx-project.json`
 - **Actions**:
@@ -79,6 +88,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: No
 
 #### `DiskSpaceError` (System Error)
+
 - **When**: Not enough disk space for retrieve
 - **Message**: `Insufficient disk space. Need {required}MB, have {available}MB`
 - **Actions**:
@@ -88,6 +98,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: No
 
 #### `ManagedPackageError` (System Error)
+
 - **When**: Profile references unavailable managed package
 - **Message**: `Profile references managed package '{namespace}' which is not installed`
 - **Actions**:
@@ -102,6 +113,7 @@ Critical failure. Cannot continue, exit gracefully.
 ### **Compare Errors**
 
 #### `NoLocalProfileError` (User Error)
+
 - **When**: Local profile doesn't exist for comparison
 - **Message**: `Local profile '{profileName}' not found in project`
 - **Actions**:
@@ -111,6 +123,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: Yes (run retrieve first)
 
 #### `NoOrgProfileError` (System Error)
+
 - **When**: Profile doesn't exist in target org
 - **Message**: `Profile '{profileName}' not found in org '{orgAlias}'`
 - **Actions**:
@@ -121,6 +134,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: No
 
 #### `InvalidXmlError` (User Error)
+
 - **When**: Profile XML is malformed
 - **Message**: `Invalid XML in profile '{profileName}': {parseError}`
 - **Actions**:
@@ -131,6 +145,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: Yes (re-retrieve)
 
 #### `MultipleEnvironmentFailureError` (System Error)
+
 - **When**: Multiple orgs failed in multi-source compare
 - **Message**: `Failed to retrieve from {count} environments: {orgList}`
 - **Details**: Individual errors for each failed org
@@ -142,6 +157,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: Partial (show successful results)
 
 #### `ComparisonTimeoutError` (System Error)
+
 - **When**: Comparison takes too long (large profiles)
 - **Message**: `Comparison timed out after {timeout}s`
 - **Actions**:
@@ -156,6 +172,7 @@ Critical failure. Cannot continue, exit gracefully.
 ### **Merge Errors**
 
 #### `MergeConflictError` (User Error)
+
 - **When**: Manual changes conflict with merge
 - **Message**: `Merge conflict detected in profile '{profileName}'`
 - **Details**: List of conflicting permissions/objects
@@ -168,6 +185,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: Yes (manual resolution)
 
 #### `BackupFailedError` (System Error)
+
 - **When**: Cannot create backup before merge
 - **Message**: `Failed to create backup of '{profileName}'`
 - **Actions**:
@@ -178,6 +196,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: No (safety mechanism)
 
 #### `InvalidMergeStrategyError` (User Error)
+
 - **When**: Invalid merge strategy specified
 - **Message**: `Invalid merge strategy '{strategy}'. Must be: all, selective, or interactive`
 - **Actions**:
@@ -187,6 +206,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: Yes (fix command)
 
 #### `NoChangesToMergeError` (User Error)
+
 - **When**: No differences detected between local and org
 - **Message**: `No changes to merge. Local and org profiles are identical.`
 - **Actions**:
@@ -196,6 +216,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: N/A (success case)
 
 #### `MergeValidationError` (System Error)
+
 - **When**: Merged profile fails validation
 - **Message**: `Merged profile failed validation: {validationErrors}`
 - **Actions**:
@@ -211,6 +232,7 @@ Critical failure. Cannot continue, exit gracefully.
 ### **Validation Errors**
 
 #### `MissingMetadataReferenceError` (User Error)
+
 - **When**: Profile references metadata that doesn't exist
 - **Message**: `Profile references non-existent metadata: {metadataList}`
 - **Actions**:
@@ -221,6 +243,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: Yes (fix references)
 
 #### `DuplicateEntryError` (User Error)
+
 - **When**: Profile has duplicate permissions/objects
 - **Message**: `Duplicate entries found: {duplicates}`
 - **Actions**:
@@ -230,6 +253,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: Yes (fix duplicates)
 
 #### `InvalidPermissionError` (User Error)
+
 - **When**: Profile has invalid permission value
 - **Message**: `Invalid permission '{permission}': {reason}`
 - **Actions**:
@@ -243,6 +267,7 @@ Critical failure. Cannot continue, exit gracefully.
 ### **Cache Errors**
 
 #### `CacheCorruptedError` (System Error)
+
 - **When**: Cache file is corrupted
 - **Message**: `Cache corrupted for org '{orgAlias}'. Clearing cache.`
 - **Actions**:
@@ -253,6 +278,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: Yes (auto-recovery)
 
 #### `CacheWriteError` (System Error)
+
 - **When**: Cannot write to cache directory
 - **Message**: `Failed to write cache: {error}`
 - **Actions**:
@@ -267,6 +293,7 @@ Critical failure. Cannot continue, exit gracefully.
 ### **Pipeline Errors**
 
 #### `PipelineStepFailedError` (System Error)
+
 - **When**: A step in the pipeline fails
 - **Message**: `Pipeline failed at step '{stepName}': {error}`
 - **Details**: Full error from failed step
@@ -278,6 +305,7 @@ Critical failure. Cannot continue, exit gracefully.
 - **Recoverable**: Depends on step error
 
 #### `PipelineInterruptedError` (System Error)
+
 - **When**: User cancels pipeline (Ctrl+C)
 - **Message**: `Pipeline interrupted by user at step '{stepName}'`
 - **Actions**:
@@ -298,7 +326,7 @@ export class ProfilerError extends Error {
   readonly exitCode: number;
   readonly recoverable: boolean;
   readonly actions: string[];
-  
+
   constructor(message: string, code: string, actions: string[], exitCode = 1, recoverable = false) {
     super(message);
     this.code = code;
@@ -341,6 +369,7 @@ export class FatalError extends ProfilerError {
 For EVERY feature, test ALL error cases:
 
 ### Retrieve Feature
+
 - [ ] Profile not found
 - [ ] Org not authenticated
 - [ ] Metadata API error
@@ -351,6 +380,7 @@ For EVERY feature, test ALL error cases:
 - [ ] Managed package error
 
 ### Compare Feature
+
 - [ ] No local profile
 - [ ] No org profile
 - [ ] Invalid XML
@@ -358,6 +388,7 @@ For EVERY feature, test ALL error cases:
 - [ ] Comparison timeout
 
 ### Merge Feature
+
 - [ ] Merge conflict
 - [ ] Backup failed
 - [ ] Invalid merge strategy
@@ -365,15 +396,18 @@ For EVERY feature, test ALL error cases:
 - [ ] Merge validation error
 
 ### Validation Feature
+
 - [ ] Missing metadata reference
 - [ ] Duplicate entry
 - [ ] Invalid permission
 
 ### Cache Feature
+
 - [ ] Cache corrupted
 - [ ] Cache write error
 
 ### Pipeline Feature
+
 - [ ] Pipeline step failed
 - [ ] Pipeline interrupted
 
@@ -381,31 +415,31 @@ For EVERY feature, test ALL error cases:
 
 ## Error Message Template
 
-```typescript
+````typescript
 /**
  * Error: {ErrorName}
- * 
+ *
  * When: {When this error occurs}
- * 
+ *
  * Message: {User-facing message with context}
- * 
+ *
  * Actions:
  * - {Specific action user can take}
  * - {Alternative action}
  * - {Last resort action}
- * 
+ *
  * Example:
  * ```
  * Error: ProfileNotFoundError
  * Profile 'Admin' not found in org 'production'
- * 
+ *
  * Actions to resolve:
  * 1. Run 'sf profiler list --target-org production' to see available profiles
  * 2. Check spelling of profile name (case-sensitive)
  * 3. Verify you're connected to the correct org
  * ```
  */
-```
+````
 
 ---
 
@@ -421,6 +455,7 @@ For EVERY feature, test ALL error cases:
 ## Monitoring
 
 Track error frequency to improve UX:
+
 - Most common errors → better docs
 - Recoverable errors → auto-recovery
 - System errors → better error messages

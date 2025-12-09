@@ -5,21 +5,25 @@ This document describes the branch protection rules configured for the `main` br
 ## Current Protection Rules
 
 ### 1. Require Pull Request Reviews
+
 - ✅ **Required approvals**: 1
 - ✅ **Dismiss stale reviews**: Enabled
 - ✅ **Require review from Code Owners**: Disabled (optional)
 
 ### 2. Restrict Who Can Push
+
 - ✅ **Allow specific users**: @jterrats and repository owner only
 - ❌ **Direct pushes blocked** for all other users
 
 ### 3. Require Status Checks
+
 - ✅ **Require branches to be up to date**: Enabled
 - ✅ **Required status checks**:
   - `Test Plugin on Push` workflow must pass
   - All tests must pass before merge
 
 ### 4. Additional Rules
+
 - ✅ **Require linear history**: Enabled (no merge commits)
 - ✅ **Include administrators**: Protection applies to admins too
 - ✅ **Allow force pushes**: Disabled
@@ -96,19 +100,20 @@ After configuration, test:
 ## Exceptions
 
 The following users can bypass these rules:
+
 - **@jterrats** (repository owner)
 - Any additional users explicitly added to the restrictions list
 
 ## Impact
 
-| Action | Before | After |
-|--------|--------|-------|
-| Direct push to main | ✅ Allowed | ❌ Blocked (except authorized users) |
-| Merge without PR | ✅ Allowed | ❌ Blocked |
-| Merge without approval | ✅ Allowed | ❌ Blocked |
-| Merge with failed tests | ✅ Allowed | ❌ Blocked |
-| Force push | ✅ Allowed | ❌ Blocked |
-| Delete branch | ✅ Allowed | ❌ Blocked |
+| Action                  | Before     | After                                |
+| ----------------------- | ---------- | ------------------------------------ |
+| Direct push to main     | ✅ Allowed | ❌ Blocked (except authorized users) |
+| Merge without PR        | ✅ Allowed | ❌ Blocked                           |
+| Merge without approval  | ✅ Allowed | ❌ Blocked                           |
+| Merge with failed tests | ✅ Allowed | ❌ Blocked                           |
+| Force push              | ✅ Allowed | ❌ Blocked                           |
+| Delete branch           | ✅ Allowed | ❌ Blocked                           |
 
 ## Emergency Override
 
@@ -131,4 +136,5 @@ If you need to bypass protection temporarily:
 Review these rules quarterly to ensure they still meet project needs.
 
 Last updated: 2024-12-02
+
 
