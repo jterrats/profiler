@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2024, Jorge Terrats
  * All rights reserved.
- * Licensed under the BSD 3-Clause license.
- * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+ * Licensed under the MIT License.
+ * For full license text, see LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
 /**
@@ -275,4 +275,3 @@ export async function withCache<T>(
 
   return result;
 }
-

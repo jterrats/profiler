@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2024, Jorge Terrats
  * All rights reserved.
- * Licensed under the BSD 3-Clause license.
- * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+ * Licensed under the MIT License.
+ * For full license text, see LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
 /**
@@ -380,98 +380,101 @@ export function detectMissingReferences(
  */
 export function validateProfileOperation(input: ValidateInput): ProfilerMonad<ValidationResult> {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  return readProfileXml(input.profileName, input.projectPath)
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    .chain((profileData: Record<string, unknown>) => {
-      // Run all validations in parallel and collect results
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      const duplicatesMonad = detectDuplicates(input.profileName, profileData).recover(() => []);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      const invalidPermsMonad = detectInvalidPermissions(input.profileName, profileData).recover(() => []);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      const missingRefsMonad = detectMissingReferences(input.profileName, profileData, input.org, input.apiVersion).recover(() => []);
+  return (
+    readProfileXml(input.profileName, input.projectPath)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      .chain((profileData: Record<string, unknown>) => {
+        // Run all validations in parallel and collect results
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        const duplicatesMonad = detectDuplicates(input.profileName, profileData).recover(() => []);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        const invalidPermsMonad = detectInvalidPermissions(input.profileName, profileData).recover(() => []);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        const missingRefsMonad = detectMissingReferences(
+          input.profileName,
+          profileData,
+          input.org,
+          input.apiVersion
+        ).recover(() => []);
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      return ProfilerMonad.all([duplicatesMonad, invalidPermsMonad, missingRefsMonad]).map(
-        ([
-          duplicates,
-          invalidPerms,
-          missingRefs,
-        ]: [
-          Array<{ type: string; name: string }>,
-          Array<{ object: string; issue: string }>,
-          Array<{ type: string; name: string }>
-        ]) => {
-          const issues: ValidationIssue[] = [];
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        return ProfilerMonad.all([duplicatesMonad, invalidPermsMonad, missingRefsMonad]).map(
+          ([duplicates, invalidPerms, missingRefs]: [
+            Array<{ type: string; name: string }>,
+            Array<{ object: string; issue: string }>,
+            Array<{ type: string; name: string }>
+          ]) => {
+            const issues: ValidationIssue[] = [];
 
-          // Collect duplicate issues
-          if (Array.isArray(duplicates) && duplicates.length > 0) {
-            for (const dup of duplicates) {
-              issues.push({
-                type: 'duplicate',
-                severity: 'error',
-                element: `${dup.type}: ${dup.name}`,
-                message: 'Duplicate entry found',
-                suggestion: 'Remove duplicate entries',
-              });
+            // Collect duplicate issues
+            if (Array.isArray(duplicates) && duplicates.length > 0) {
+              for (const dup of duplicates) {
+                issues.push({
+                  type: 'duplicate',
+                  severity: 'error',
+                  element: `${dup.type}: ${dup.name}`,
+                  message: 'Duplicate entry found',
+                  suggestion: 'Remove duplicate entries',
+                });
+              }
             }
-          }
 
-          // Collect invalid permission issues
-          if (Array.isArray(invalidPerms) && invalidPerms.length > 0) {
-            for (const perm of invalidPerms) {
-              issues.push({
-                type: 'invalid-permission',
-                severity: 'error',
-                element: perm.object,
-                message: perm.issue,
-                suggestion: 'Fix permission combination',
-              });
+            // Collect invalid permission issues
+            if (Array.isArray(invalidPerms) && invalidPerms.length > 0) {
+              for (const perm of invalidPerms) {
+                issues.push({
+                  type: 'invalid-permission',
+                  severity: 'error',
+                  element: perm.object,
+                  message: perm.issue,
+                  suggestion: 'Fix permission combination',
+                });
+              }
             }
-          }
 
-          // Collect missing reference issues
-          if (Array.isArray(missingRefs) && missingRefs.length > 0) {
-            for (const ref of missingRefs) {
-              issues.push({
-                type: 'missing-reference',
-                severity: 'warning',
-                element: `${ref.type}: ${ref.name}`,
-                message: 'Referenced metadata not found in org',
-                suggestion: 'Deploy referenced metadata or remove reference',
-              });
+            // Collect missing reference issues
+            if (Array.isArray(missingRefs) && missingRefs.length > 0) {
+              for (const ref of missingRefs) {
+                issues.push({
+                  type: 'missing-reference',
+                  severity: 'warning',
+                  element: `${ref.type}: ${ref.name}`,
+                  message: 'Referenced metadata not found in org',
+                  suggestion: 'Deploy referenced metadata or remove reference',
+                });
+              }
             }
+
+            const valid = issues.filter((i) => i.severity === 'error').length === 0;
+            const fixable = issues.some((i) => i.type === 'duplicate' || i.type === 'invalid-permission');
+
+            return {
+              profileName: input.profileName,
+              valid,
+              issues,
+              fixable,
+            };
           }
-
-          const valid = issues.filter((i) => i.severity === 'error').length === 0;
-          const fixable = issues.some((i) => i.type === 'duplicate' || i.type === 'invalid-permission');
-
-          return {
-            profileName: input.profileName,
-            valid,
-            issues,
-            fixable,
-          };
-        }
-      );
-    })
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    .recover((error): ValidationResult =>
-      // If validation fails (e.g., can't read file), return error as issue
-      ({
-        profileName: input.profileName,
-        valid: false,
-        issues: [
-          {
-            type: 'xml-error',
-            severity: 'error',
-            element: 'Profile',
-            message: error.message,
-            suggestion: 'Fix XML structure',
-          },
-        ],
-        fixable: false,
+        );
       })
-    );
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      .recover(
+        (error): ValidationResult =>
+          // If validation fails (e.g., can't read file), return error as issue
+          ({
+            profileName: input.profileName,
+            valid: false,
+            issues: [
+              {
+                type: 'xml-error',
+                severity: 'error',
+                element: 'Profile',
+                message: error.message,
+                suggestion: 'Fix XML structure',
+              },
+            ],
+            fixable: false,
+          })
+      )
+  );
 }
-

@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2024, Jorge Terrats
  * All rights reserved.
- * Licensed under the BSD 3-Clause license.
- * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+ * Licensed under the MIT License.
+ * For full license text, see LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
 /**
@@ -64,7 +64,7 @@ export type GuardrailWarning = {
  */
 export enum CircuitState {
   CLOSED = 'CLOSED', // Normal operation
-  OPEN = 'OPEN',     // Too many errors, reject requests
+  OPEN = 'OPEN', // Too many errors, reject requests
   HALF_OPEN = 'HALF_OPEN', // Testing if service recovered
 }
 
@@ -138,8 +138,8 @@ export class CircuitBreaker {
     if (this.state === CircuitState.OPEN) {
       throw new Error(
         'Circuit breaker is OPEN - Too many failures. ' +
-        'Please wait before retrying. ' +
-        `Last failure: ${this.lastFailureTime ? new Date(this.lastFailureTime).toISOString() : 'unknown'}`
+          'Please wait before retrying. ' +
+          `Last failure: ${this.lastFailureTime ? new Date(this.lastFailureTime).toISOString() : 'unknown'}`
       );
     }
 
@@ -285,9 +285,7 @@ export function checkMemoryUsage(): GuardrailWarning | null {
 export class RateLimiter {
   private callTimestamps: number[] = [];
 
-  public constructor(
-    private readonly maxCallsPerMinute: number = SAFETY_LIMITS.MAX_API_CALLS_PER_MINUTE
-  ) {}
+  public constructor(private readonly maxCallsPerMinute: number = SAFETY_LIMITS.MAX_API_CALLS_PER_MINUTE) {}
 
   /**
    * Records an API call
@@ -305,7 +303,7 @@ export class RateLimiter {
     if (this.callTimestamps.length >= this.maxCallsPerMinute) {
       throw new Error(
         `Rate limit exceeded: ${this.callTimestamps.length} API calls in the last minute. ` +
-        `Maximum: ${this.maxCallsPerMinute}. Please wait before retrying.`
+          `Maximum: ${this.maxCallsPerMinute}. Please wait before retrying.`
       );
     }
 
@@ -348,8 +346,7 @@ export function displayWarnings(warnings: GuardrailWarning[]): void {
   console.log('\n⚠️  Safety Warnings:\n');
 
   for (const warning of warnings) {
-    const icon = warning.level === WarningLevel.CRITICAL ? '🔴' :
-                 warning.level === WarningLevel.WARNING ? '🟡' : '🔵';
+    const icon = warning.level === WarningLevel.CRITICAL ? '🔴' : warning.level === WarningLevel.WARNING ? '🟡' : '🔵';
 
     console.log(`${icon} [${warning.level}] ${warning.message}`);
     console.log(`   💡 ${warning.suggestion}`);
@@ -372,5 +369,3 @@ export function displayWarnings(warnings: GuardrailWarning[]): void {
 export function canContinueOperation(warnings: GuardrailWarning[]): boolean {
   return !warnings.some((w) => !w.canContinue);
 }
-
-
