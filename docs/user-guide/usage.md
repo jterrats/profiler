@@ -87,6 +87,53 @@ sf profiler retrieve --target-org myOrg --name "Admin" --exclude-managed
 
 This flag filters out all metadata components with namespace prefixes (e.g., `namespace__ComponentName`), helping avoid errors when profiles reference components from uninstalled or inaccessible managed packages.
 
+#### Incremental Retrieve (Performance Optimization)
+
+**NEW in v2.4.0**: Automatic incremental retrieve for 10x faster operations when no changes exist.
+
+By default, the plugin now uses **incremental retrieve** which compares local metadata with org metadata and only retrieves what has changed:
+
+```bash
+# Default behavior - incremental retrieve
+sf profiler retrieve --target-org myOrg
+# ✨ No changes detected. Profiles are up to date! (~3s vs ~30s)
+```
+
+**How it works:**
+
+1. Reads local `force-app/` metadata
+2. Lists org metadata via API
+3. Compares to find new/changed items
+4. If no changes → skips retrieve (10x faster)
+5. If changes found → retrieves only changed items
+6. On any error → automatically falls back to full retrieve (safe)
+
+**Control incremental behavior:**
+
+```bash
+# Force full retrieve (bypass incremental optimization)
+sf profiler retrieve --target-org myOrg --force
+
+# Preview what would be retrieved (dry run)
+sf profiler retrieve --target-org myOrg --dry-run
+
+# Dry run with specific profile
+sf profiler retrieve --target-org myOrg --name Admin --dry-run
+```
+
+**When incremental is skipped:**
+
+- `--from-project` flag is used (reads local, not org)
+- `--force` flag is used (explicit full retrieve)
+- Local metadata cannot be read (auto-fallback to full)
+- Comparison fails (auto-fallback to full)
+
+**Performance targets:**
+
+- No changes: ~3s (vs ~30s) = **10x faster** ⚡
+- Few changes: ~12s (vs ~30s) = **2.5x faster**
+- Many changes: ~30s (same as full retrieve)
+
 #### JSON Output
 
 Get the results in JSON format:
