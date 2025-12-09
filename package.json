@@ -19,7 +19,7 @@
     "commitizen": "^4.3.0",
     "cz-customizable": "^7.0.0",
     "eslint-plugin-sf-plugin": "^1.20.33",
-    "oclif": "^4.22.47",
+    "oclif": "^4.22.54",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
