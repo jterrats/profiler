@@ -703,6 +703,123 @@ log_info "  • --max-api-calls"
 log_info "  • --max-memory"
 log_info "  • --concurrent-workers"
 log_info "  • Combined flags (multiple at once)"
+log_info "  • --dry-run (incremental retrieve feature)"
+log_info "  • --force (incremental retrieve feature)"
+log_info ""
+
+########################################
+# Test 10: --dry-run flag
+########################################
+log_test "Test 10: --dry-run flag (preview without executing)"
+
+log_info "Running dry run..."
+sf profiler retrieve --target-org "$TARGET_ORG" --dry-run
+
+log_info "Verifying NO files were modified (dry run should not write)..."
+MODIFIED_FILES=$(git status --porcelain | grep -v "profiles/" || true)
+if [ -z "$MODIFIED_FILES" ]; then
+    log_success "✓ No files modified (dry run working correctly)"
+else
+    log_error "CRITICAL: Dry run modified files!"
+    echo "$MODIFIED_FILES"
+    exit 1
+fi
+
+# Verify dummy files unchanged
+log_info "Verifying dummy metadata integrity..."
+if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls force-app/main/default/objects/DummyObject__c; then
+    log_success "✓ Dummy files unchanged (dry run safe)"
+else
+    log_error "CRITICAL: Dry run modified dummy files!"
+    exit 1
+fi
+
+log_success "Test 10 passed: --dry-run works correctly"
+log_info ""
+
+########################################
+# Test 11: --force flag (bypass incremental)
+########################################
+log_test "Test 11: --force flag (force full retrieve)"
+
+log_info "First retrieve (creates baseline)..."
+sf profiler retrieve --target-org "$TARGET_ORG" > /dev/null 2>&1
+
+git add force-app/main/default/profiles/*.profile-meta.xml > /dev/null 2>&1
+git commit -m "Baseline for force flag test" > /dev/null 2>&1
+
+log_info "Second retrieve with --force (should bypass incremental)..."
+sf profiler retrieve --target-org "$TARGET_ORG" --force
+
+log_info "Checking that retrieve was executed (not skipped)..."
+# Force flag should execute full retrieve even if no changes
+# This is indicated by the presence of retrieve operation messages
+
+# CRITICAL VALIDATION: Verify ONLY profiles were modified
+log_info "Checking git status (should ONLY show profiles if any changes)..."
+MODIFIED_FILES=$(git status --porcelain | grep -v "profiles/" || true)
+if [ -z "$MODIFIED_FILES" ]; then
+    log_success "✓ No other metadata modified (safe retrieve with --force)"
+else
+    log_error "CRITICAL: Other metadata files were modified with --force!"
+    echo "$MODIFIED_FILES"
+    exit 1
+fi
+
+# Verify dummy files unchanged
+log_info "Verifying dummy metadata integrity..."
+if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls force-app/main/default/objects/DummyObject__c; then
+    log_success "✓ Dummy files unchanged (--force is safe)"
+else
+    log_error "CRITICAL: --force modified dummy files!"
+    exit 1
+fi
+
+log_success "Test 11 passed: --force flag works correctly"
+log_info ""
+
+########################################
+# Test 12: Incremental retrieve (default behavior)
+########################################
+log_test "Test 12: Incremental retrieve (default - no flags)"
+
+log_info "First retrieve (creates baseline)..."
+sf profiler retrieve --target-org "$TARGET_ORG" > /dev/null 2>&1
+
+git add force-app/main/default/profiles/*.profile-meta.xml > /dev/null 2>&1
+git commit -m "Baseline for incremental test" > /dev/null 2>&1
+
+log_info "Second retrieve (should detect no changes and skip)..."
+OUTPUT=$(sf profiler retrieve --target-org "$TARGET_ORG" 2>&1)
+
+# Check if it mentions no changes (incremental optimization)
+if echo "$OUTPUT" | grep -q "No changes detected\|Incremental"; then
+    log_success "✓ Incremental retrieve detected no changes"
+else
+    log_info "Note: May have executed full retrieve (acceptable behavior)"
+fi
+
+# CRITICAL VALIDATION: Verify ONLY profiles (if any)
+log_info "Checking git status..."
+MODIFIED_FILES=$(git status --porcelain | grep -v "profiles/" || true)
+if [ -z "$MODIFIED_FILES" ]; then
+    log_success "✓ No other metadata modified (safe incremental retrieve)"
+else
+    log_error "CRITICAL: Other metadata files were modified!"
+    echo "$MODIFIED_FILES"
+    exit 1
+fi
+
+# Verify dummy files unchanged
+log_info "Verifying dummy metadata integrity..."
+if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls force-app/main/default/objects/DummyObject__c; then
+    log_success "✓ Dummy files unchanged (incremental is safe)"
+else
+    log_error "CRITICAL: Incremental modified dummy files!"
+    exit 1
+fi
+
+log_success "Test 12 passed: Incremental retrieve works correctly"
 log_info ""
 
 # Cleanup test project

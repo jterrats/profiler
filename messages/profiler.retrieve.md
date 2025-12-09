@@ -52,6 +52,22 @@ Exclude metadata from managed packages (with namespace prefixes).
 
 When enabled, filters out all metadata components that belong to managed packages (identified by namespace prefixes like "namespace**ComponentName"). This helps avoid errors when retrieving profiles that reference components from uninstalled or inaccessible managed packages. Custom objects ending in "**c" are always included even with this flag.
 
+# flags.force.summary
+
+Force full retrieve, bypassing incremental optimization.
+
+# flags.force.description
+
+When enabled, skips the incremental retrieve optimization and always performs a full retrieve of all specified metadata. Use this flag if you suspect local metadata is out of sync or if incremental retrieve is causing issues.
+
+# flags.dry-run.summary
+
+Preview what would be retrieved without executing the retrieve.
+
+# flags.dry-run.description
+
+When enabled, shows a detailed preview of what metadata would be retrieved without actually executing the retrieve operation. Useful for verifying the scope of a retrieve before making changes. Combines well with incremental retrieve to see what has changed.
+
 # examples
 
 - Retrieve all profiles with metadata (without FLS):
@@ -93,6 +109,18 @@ When enabled, filters out all metadata components that belong to managed package
 - Retrieve specific profiles excluding managed packages:
 
   <%= config.bin %> <%= command.id %> --target-org myOrg --name Admin --exclude-managed
+
+- Force full retrieve (bypass incremental optimization):
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg --force
+
+- Preview what would be retrieved (dry run):
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg --dry-run
+
+- Combine dry run with specific profile:
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg --name Admin --dry-run
 
 # info.starting
 

@@ -2,7 +2,12 @@ import { Messages, SfError, SfProject } from '@salesforce/core';
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 
 import { retrieveProfiles, type RetrieveInput } from '../../operations/index.js';
-import { PERFORMANCE_FLAGS, parsePerformanceFlags, resolvePerformanceConfig, displayConfigWarnings } from '../../core/performance/index.js';
+import {
+  PERFORMANCE_FLAGS,
+  parsePerformanceFlags,
+  resolvePerformanceConfig,
+  displayConfigWarnings,
+} from '../../core/performance/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.retrieve');
@@ -51,6 +56,16 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       description: messages.getMessage('flags.exclude-managed.description'),
       default: false,
     }),
+    force: Flags.boolean({
+      summary: messages.getMessage('flags.force.summary'),
+      description: messages.getMessage('flags.force.description'),
+      default: false,
+    }),
+    'dry-run': Flags.boolean({
+      summary: messages.getMessage('flags.dry-run.summary'),
+      description: messages.getMessage('flags.dry-run.description'),
+      default: false,
+    }),
     // Performance flags
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
     ...(PERFORMANCE_FLAGS as any),
@@ -64,6 +79,8 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     const includeAllFields = flags['all-fields'];
     const fromProject = flags['from-project'];
     const excludeManaged = flags['exclude-managed'];
+    const forceFullRetrieve = flags.force;
+    const dryRun = flags['dry-run'];
     const apiVersion = flags['api-version'] ?? (await org.retrieveMaxApiVersion());
 
     // Parse performance flags
@@ -110,7 +127,19 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       includeAllFields,
       fromProject,
       performanceConfig: perfConfig,
+      forceFullRetrieve,
+      dryRun,
     };
+
+    // Show incremental retrieve info
+    if (!forceFullRetrieve && !fromProject && !dryRun) {
+      this.log('🚀 Incremental retrieve enabled (faster if no changes)');
+      this.log('   Use --force to bypass incremental optimization');
+    }
+
+    if (dryRun) {
+      this.log('🔍 Dry run mode - previewing without executing...');
+    }
 
     // Execute monadic operation
     this.log('Building package.xml...');

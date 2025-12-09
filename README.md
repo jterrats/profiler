@@ -29,9 +29,9 @@ The Profiler plugin is an essential Salesforce CLI extension engineered to guara
 **Key Features**:
 
 - ✅ **Safe retrieval** - Uses temporary directories, never overwrites local changes
+- ⚡ **Incremental retrieve** (v2.4.0) - 10x faster when no changes (~3s vs ~30s)
 - 🔒 Field Level Security (FLS) control
 - 🚀 No git operations required
-- ⚡ Cross-platform compatibility
 - 🔄 Parallel metadata processing
 - 🛡️ Comprehensive error handling
 

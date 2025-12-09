@@ -10,9 +10,7 @@
 
 import type { Connection, Org } from '@salesforce/core';
 import { ProfilerMonad, success, failure, liftAsync } from '../core/monad/index.js';
-import {
-  ProfileNotFoundError,
-} from '../core/errors/operation-errors.js';
+import { ProfileNotFoundError } from '../core/errors/operation-errors.js';
 import type { PerformanceConfig } from '../core/performance/config.js';
 
 /**
@@ -35,6 +33,10 @@ export type RetrieveInput = {
   fromProject?: boolean;
   /** Performance configuration options */
   performanceConfig?: PerformanceConfig;
+  /** Force full retrieve, bypassing incremental optimization */
+  forceFullRetrieve?: boolean;
+  /** Dry run mode - show what would be retrieved without executing */
+  dryRun?: boolean;
 };
 
 /**
@@ -168,7 +170,9 @@ export function listAllMetadata(input: RetrieveInput, metadataTypes: string[]): 
   return new ProfilerMonad(async () => {
     // Import performance utilities
     const { createWorkerPool, PerformanceTracker } = await import('../core/performance/worker-pool.js');
-    const { validateProfileCount, displayWarnings, canContinueOperation, RateLimiter, CircuitBreaker } = await import('../core/performance/guardrails.js');
+    const { validateProfileCount, displayWarnings, canContinueOperation, RateLimiter, CircuitBreaker } = await import(
+      '../core/performance/guardrails.js'
+    );
 
     const connection = input.org.getConnection(input.apiVersion);
     const excludeManaged = input.excludeManaged ?? false;
@@ -459,6 +463,152 @@ export function buildMetadataFromProject(
 }
 
 /**
+ * Read local metadata files from project for incremental comparison
+ * NOTE: Incremental retrieve feature - reads local force-app to determine what has changed
+ *
+ * @param projectPath - Path to Salesforce project
+ * @param metadataTypes - Types to scan for
+ * @returns ProfilerMonad<MetadataListResult> - Falls back to empty list on error (triggers full retrieve)
+ */
+export function readLocalMetadata(projectPath: string, metadataTypes: string[]): ProfilerMonad<MetadataListResult> {
+  return new ProfilerMonad(async () => {
+    const fs = await import('node:fs/promises');
+    const path = await import('node:path');
+    const { LocalMetadataReadError } = await import('../core/errors/operation-errors.js');
+
+    try {
+      const resultTypes: MetadataTypeMembers[] = [];
+      const forceAppPath = path.join(projectPath, 'force-app', 'main', 'default');
+
+      // Type to directory mapping
+      const typeToDir: Record<string, string> = {
+        Profile: 'profiles',
+        ApexClass: 'classes',
+        CustomObject: 'objects',
+        Flow: 'flows',
+        Layout: 'layouts',
+        ApexPage: 'pages',
+        ConnectedApp: 'connectedApps',
+        CustomApplication: 'applications',
+        CustomPermission: 'customPermissions',
+        CustomTab: 'tabs',
+      };
+
+      // Sequential await is intentional - we want to skip missing directories individually
+      // eslint-disable-next-line no-await-in-loop
+      for (const metadataType of metadataTypes) {
+        const dirName = typeToDir[metadataType];
+        if (!dirName) continue;
+
+        const metadataDir = path.join(forceAppPath, dirName);
+
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          const stats = await fs.stat(metadataDir);
+          if (!stats.isDirectory()) continue;
+
+          // eslint-disable-next-line no-await-in-loop
+          const files = await fs.readdir(metadataDir);
+          const members: string[] = [];
+
+          // Extract metadata names from files
+          for (const file of files) {
+            if (metadataType === 'Profile' && file.endsWith('.profile-meta.xml')) {
+              members.push(file.replace('.profile-meta.xml', ''));
+            } else if (metadataType === 'CustomObject' && file.endsWith('.object-meta.xml')) {
+              members.push(file.replace('.object-meta.xml', ''));
+            } else if (metadataType === 'ApexClass' && file.endsWith('.cls-meta.xml')) {
+              members.push(file.replace('.cls-meta.xml', ''));
+            } else if (metadataType === 'Flow' && file.endsWith('.flow-meta.xml')) {
+              members.push(file.replace('.flow-meta.xml', ''));
+            } else if (metadataType === 'Layout' && file.endsWith('.layout-meta.xml')) {
+              members.push(file.replace('.layout-meta.xml', ''));
+            }
+          }
+
+          if (members.length > 0) {
+            resultTypes.push({ type: metadataType, members });
+          }
+        } catch (error) {
+          // Directory doesn't exist or can't be read - skip this type
+          continue;
+        }
+      }
+
+      const totalMembers = resultTypes.reduce((sum, item) => sum + item.members.length, 0);
+
+      return success({
+        metadataTypes: resultTypes,
+        totalMembers,
+      });
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call
+      return failure(new LocalMetadataReadError(projectPath, err));
+    }
+  });
+}
+
+/**
+ * Compare org metadata vs local to determine changed items
+ * NOTE: Incremental retrieve feature - returns only new/changed metadata
+ *
+ * @param local - Local metadata list
+ * @param org - Org metadata list
+ * @returns ProfilerMonad<MetadataListResult> with only changed items
+ */
+export function compareMetadataLists(
+  local: MetadataListResult,
+  org: MetadataListResult
+): ProfilerMonad<MetadataListResult> {
+  return new ProfilerMonad(async () => {
+    const { MetadataComparisonError } = await import('../core/errors/operation-errors.js');
+
+    try {
+      const resultTypes: MetadataTypeMembers[] = [];
+
+      // Build local metadata map
+      const localMap = new Map<string, Set<string>>();
+      for (const item of local.metadataTypes) {
+        localMap.set(item.type, new Set(item.members));
+      }
+
+      // Find new or changed items
+      for (const orgItem of org.metadataTypes) {
+        const localMembers = localMap.get(orgItem.type);
+
+        if (!localMembers) {
+          // Type doesn't exist locally - need all
+          resultTypes.push(orgItem);
+          continue;
+        }
+
+        // Find members not in local
+        const newMembers = orgItem.members.filter((member: string) => !localMembers.has(member));
+
+        if (newMembers.length > 0) {
+          resultTypes.push({
+            type: orgItem.type,
+            members: newMembers,
+          });
+        }
+      }
+
+      const totalMembers = resultTypes.reduce((sum, item) => sum + item.members.length, 0);
+
+      return success({
+        metadataTypes: resultTypes,
+        totalMembers,
+      });
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call
+      return failure(new MetadataComparisonError('Failed to compare metadata', err));
+    }
+  });
+}
+
+/**
  * Executes sf project retrieve command with package.xml into a temporary directory
  * CRITICAL: This retrieves to a temp directory to avoid modifying user's local metadata
  *
@@ -505,48 +655,138 @@ export function retrieveProfiles(input: RetrieveInput): ProfilerMonad<RetrieveRe
     'Profile',
   ];
 
-  // Choose metadata source: project files or org API
-  const metadataSource = input.fromProject
-    ? buildMetadataFromProject(input.projectPath, metadataTypes, input.apiVersion, input.profileNames, input.excludeManaged)
-    : listAllMetadata(input, metadataTypes);
+  // Step 1: ALWAYS validate input first (UserError - NO fallback)
+  return validateProfileNames(input.profileNames).chain(() => {
+    // Step 2: Determine metadata source strategy
+    let metadataSource: ProfilerMonad<MetadataListResult>;
 
-  return validateProfileNames(input.profileNames)
-    .chain(() => metadataSource)
-    .chain((metadataList) => generatePackageXml(metadataList, input.apiVersion))
-    .chain((packageXmlResult: PackageXmlResult) =>
-      liftAsync(async () => {
-        const fs = await import('node:fs/promises');
-        const path = await import('node:path');
-        const os = await import('node:os');
+    // Force full retrieve OR fromProject → skip incremental
+    if ((input.forceFullRetrieve ?? false) || (input.fromProject ?? false)) {
+      metadataSource =
+        input.fromProject ?? false
+          ? buildMetadataFromProject(
+              input.projectPath,
+              metadataTypes,
+              input.apiVersion,
+              input.profileNames,
+              input.excludeManaged
+            )
+          : listAllMetadata(input, metadataTypes);
+    } else {
+      // Step 3: Try incremental with automatic fallback
+      metadataSource = new ProfilerMonad(async () => {
+        // Try incremental path
+        const localResult = await readLocalMetadata(input.projectPath, metadataTypes).run();
 
-        // Create isolated temp directory for retrieve operation
-        const timestamp = Date.now();
-        const tempDir = path.join(os.tmpdir(), `profiler-${timestamp}`);
-        const tempRetrieveDir = path.join(tempDir, 'retrieve');
-        
-        // Create temp retrieve directory with minimal SFDX project structure
-        await fs.mkdir(tempRetrieveDir, { recursive: true });
-        
-        // Create minimal sfdx-project.json in temp directory
-        const sfdxProjectJson = {
-          packageDirectories: [{ path: 'force-app', default: true }],
-          namespace: '',
-          sfdcLoginUrl: 'https://login.salesforce.com',
-          sourceApiVersion: input.apiVersion,
-        };
-        await fs.writeFile(
-          path.join(tempRetrieveDir, 'sfdx-project.json'),
-          JSON.stringify(sfdxProjectJson, null, 2)
+        if (!localResult.isSuccess()) {
+          // Local read failed → fallback to full
+          // eslint-disable-next-line no-console
+          console.log(`⚠️  Incremental retrieve failed (local read): ${localResult.error.message}`);
+          // eslint-disable-next-line no-console
+          console.log('   Falling back to full retrieve for safety...');
+          const fullResult = await listAllMetadata(input, metadataTypes).run();
+          return fullResult;
+        }
+
+        const orgResult = await listAllMetadata(input, metadataTypes).run();
+        if (!orgResult.isSuccess()) {
+          // Org listing failed → return error (this is UserError)
+          return orgResult;
+        }
+
+        const compareResult = await compareMetadataLists(localResult.value, orgResult.value).run();
+        if (!compareResult.isSuccess()) {
+          // Comparison failed → fallback to full
+          // eslint-disable-next-line no-console
+          console.log(`⚠️  Incremental retrieve failed (comparison): ${compareResult.error.message}`);
+          // eslint-disable-next-line no-console
+          console.log('   Falling back to full retrieve for safety...');
+          const fullResult2 = await listAllMetadata(input, metadataTypes).run();
+          return fullResult2;
+        }
+
+        // Success - return only changed metadata
+        return compareResult;
+      });
+    }
+
+    // Step 4: Process metadata and execute retrieve
+    return metadataSource.chain((metadataList) => {
+      // Check if there's anything to retrieve
+      if (metadataList.totalMembers === 0) {
+        // eslint-disable-next-line no-console
+        console.log('✨ No changes detected. Profiles are up to date!');
+        return new ProfilerMonad(() =>
+          Promise.resolve(
+            success({
+              profilesRetrieved: input.profileNames ?? [],
+              metadataTypes: [],
+              totalComponents: 0,
+              profileCount: 0,
+            })
+          )
         );
+      }
 
-        // Write package.xml to temp directory
-        const packageXmlPath = path.join(tempDir, 'package.xml');
-        await fs.writeFile(packageXmlPath, packageXmlResult.content);
+      // Dry run mode - preview without executing
+      if (input.dryRun ?? false) {
+        // eslint-disable-next-line no-console
+        console.log('\n🔍 Dry Run Mode - Would retrieve:');
+        for (const item of metadataList.metadataTypes) {
+          // eslint-disable-next-line no-console
+          console.log(`   ${item.type}: ${item.members.length} items`);
+        }
+        // eslint-disable-next-line no-console
+        console.log(`\n   Total: ${metadataList.totalMembers} components\n`);
 
-        return { tempDir, tempRetrieveDir, packageXmlPath, packageXmlResult };
-      })
-        .chain(
-          (context: { tempDir: string; tempRetrieveDir: string; packageXmlPath: string; packageXmlResult: PackageXmlResult }) =>
+        return new ProfilerMonad(() =>
+          Promise.resolve(
+            success({
+              profilesRetrieved: input.profileNames ?? [],
+              metadataTypes: metadataList.metadataTypes.map((m) => m.type),
+              totalComponents: metadataList.totalMembers,
+              profileCount: 0,
+            })
+          )
+        );
+      }
+
+      // Execute actual retrieve
+      return generatePackageXml(metadataList, input.apiVersion).chain((packageXmlResult: PackageXmlResult) =>
+        liftAsync(async () => {
+          const fs = await import('node:fs/promises');
+          const path = await import('node:path');
+          const os = await import('node:os');
+
+          // Create isolated temp directory for retrieve operation
+          const timestamp = Date.now();
+          const tempDir = path.join(os.tmpdir(), `profiler-${timestamp}`);
+          const tempRetrieveDir = path.join(tempDir, 'retrieve');
+
+          // Create temp retrieve directory with minimal SFDX project structure
+          await fs.mkdir(tempRetrieveDir, { recursive: true });
+
+          // Create minimal sfdx-project.json in temp directory
+          const sfdxProjectJson = {
+            packageDirectories: [{ path: 'force-app', default: true }],
+            namespace: '',
+            sfdcLoginUrl: 'https://login.salesforce.com',
+            sourceApiVersion: input.apiVersion,
+          };
+          await fs.writeFile(path.join(tempRetrieveDir, 'sfdx-project.json'), JSON.stringify(sfdxProjectJson, null, 2));
+
+          // Write package.xml to temp directory
+          const packageXmlPath = path.join(tempDir, 'package.xml');
+          await fs.writeFile(packageXmlPath, packageXmlResult.content);
+
+          return { tempDir, tempRetrieveDir, packageXmlPath, packageXmlResult };
+        }).chain(
+          (context: {
+            tempDir: string;
+            tempRetrieveDir: string;
+            packageXmlPath: string;
+            packageXmlResult: PackageXmlResult;
+          }) =>
             // Execute retrieve in temp directory (NOT in user's project)
             executeRetrieve(input.org, context.packageXmlPath, context.tempRetrieveDir)
               .chain(() =>
@@ -555,7 +795,13 @@ export function retrieveProfiles(input: RetrieveInput): ProfilerMonad<RetrieveRe
                   const path = await import('node:path');
 
                   // Copy ONLY profiles from temp to user's project
-                  const tempProfilesDir = path.join(context.tempRetrieveDir, 'force-app', 'main', 'default', 'profiles');
+                  const tempProfilesDir = path.join(
+                    context.tempRetrieveDir,
+                    'force-app',
+                    'main',
+                    'default',
+                    'profiles'
+                  );
                   const userProfilesDir = path.join(input.projectPath, 'force-app', 'main', 'default', 'profiles');
 
                   // Ensure user's profiles directory exists
@@ -581,7 +827,10 @@ export function retrieveProfiles(input: RetrieveInput): ProfilerMonad<RetrieveRe
 
                       // Remove FLS if requested
                       if (!input.includeAllFields) {
-                        profileContent = profileContent.replace(/<fieldPermissions>[\s\S]*?<\/fieldPermissions>\n?/g, '');
+                        profileContent = profileContent.replace(
+                          /<fieldPermissions>[\s\S]*?<\/fieldPermissions>\n?/g,
+                          ''
+                        );
                       }
 
                       await fs.writeFile(userProfilePath, profileContent, 'utf-8');
@@ -608,5 +857,7 @@ export function retrieveProfiles(input: RetrieveInput): ProfilerMonad<RetrieveRe
                 })
               )
         )
-    );
+      );
+    });
+  });
 }
