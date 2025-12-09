@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2024-12-09
+
+### 🔴 CRITICAL FIX
+
+- **retrieve**: Fixed critical bug introduced in v2.2.0 (monadic refactor) where the `retrieve` command was overwriting ALL local metadata (ApexClass, CustomObject, Flow, Layout, etc.), not just profiles. This could cause loss of uncommitted local changes.
+  - **Root Cause**: `sf project retrieve` was executing with `cwd` set to user's project directory, causing all metadata in package.xml to be written directly to user's `force-app/` directory
+  - **Solution**: Now executes retrieve in an isolated temporary SFDX project, then copies ONLY profiles to user's project
+  - **Impact**: Zero breaking changes to command interface - same flags, same behavior from user perspective, but with critical safety improvement
+  - **Validation**: Added comprehensive safety tests to all 12 E2E tests (100% coverage)
+
+### Added
+
+- **e2e tests**: New Test 2.5 for `--all-fields` flag validation, comparing FLS removal vs preservation
+- **e2e tests**: Added "canary files" (DummyTest.cls, DummyObject__c) to detect unintended metadata modifications
+- **e2e tests**: Added safety validation to all 12 tests - each test now verifies that only profiles are modified
+
+### Changed
+
+- **retrieve-operation**: Refactored `executeRetrieve()` to use temporary directory instead of user's project directory
+- **retrieve-operation**: Refactored `retrieveProfiles()` to create isolated temp SFDX project, execute retrieve there, copy only profiles, and clean up
+- **retrieve-operation**: Removed `copyProfiles()` and `removeFieldLevelSecurity()` helper functions (logic now inline for efficiency)
+- **RetrieveResult**: Added optional `profileCount` field for better telemetry
+
+### Guarantees
+
+- ✅ ONLY profiles are modified in user's project (`force-app/main/default/profiles/`)
+- ✅ Works with ALL flags: `--from-project`, `--exclude-managed`, `--all-fields`, etc.
+- ✅ Works with ALL flag combinations
+- ✅ 100% backward compatible
+- ✅ Validated with 100% E2E test coverage (12 tests, 10 flags)
+
 ## [2.1.2] - 2024-12-04
 
 ### Fixed

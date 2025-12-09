@@ -157,10 +157,9 @@ For more details, see [Testing and Publishing Guide](docs/development/testing-an
 ## Commands
 
 <!-- commands -->
-
-- [`sf profiler compare`](#sf-profiler-compare)
-- [`sf profiler docs`](#sf-profiler-docs)
-- [`sf profiler retrieve`](#sf-profiler-retrieve)
+* [`sf profiler compare`](#sf-profiler-compare)
+* [`sf profiler docs`](#sf-profiler-docs)
+* [`sf profiler retrieve`](#sf-profiler-retrieve)
 
 ## `sf profiler compare`
 
@@ -169,13 +168,20 @@ Compare local Profile metadata with the version in Salesforce org.
 ```
 USAGE
   $ sf profiler compare -o <value> [--json] [--flags-dir <value>] [-n <value>] [--api-version <value>]
-    [--exclude-managed]
+    [--exclude-managed] [--max-profiles <value>] [--max-api-calls <value>] [--max-memory <value>] [--operation-timeout
+    <value>] [--concurrent-workers <value>] [--verbose-performance]
 
 FLAGS
-  -n, --name=<value>         The name of a specific profile or comma-separated list of profiles to compare.
-  -o, --target-org=<value>   (required) The target org to compare profiles against.
-      --api-version=<value>  Override the API version used for metadata operations.
-      --exclude-managed      Exclude metadata from managed packages (with namespace prefixes).
+  -n, --name=<value>                The name of a specific profile or comma-separated list of profiles to compare.
+  -o, --target-org=<value>          (required) The target org to compare profiles against.
+      --api-version=<value>         Override the API version used for metadata operations.
+      --concurrent-workers=<value>  Number of concurrent workers for parallel operations
+      --exclude-managed             Exclude metadata from managed packages (with namespace prefixes).
+      --max-api-calls=<value>       Maximum API calls per minute
+      --max-memory=<value>          Maximum memory usage in MB
+      --max-profiles=<value>        Maximum number of profiles to process in a single operation
+      --operation-timeout=<value>   Operation timeout in milliseconds
+      --verbose-performance         Show detailed performance metrics
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -216,14 +222,39 @@ FLAG DESCRIPTIONS
 
     Specify the API version to use for the comparison. Defaults to the org's API version.
 
+  --concurrent-workers=<value>  Number of concurrent workers for parallel operations
+
+    Overrides the auto-detected worker count. Max recommended: 5 for metadata operations, 10 for API operations.
+
   --exclude-managed  Exclude metadata from managed packages (with namespace prefixes).
 
     When enabled, filters out all metadata components that belong to managed packages (identified by namespace prefixes
     like "namespace\_\_ComponentName"). This helps avoid errors when comparing profiles that reference components from
     uninstalled or inaccessible managed packages.
+
+  --max-api-calls=<value>  Maximum API calls per minute
+
+    Overrides the default limit of 100 API calls per minute. Ensure your Salesforce org can handle the increased load.
+
+  --max-memory=<value>  Maximum memory usage in MB
+
+    Overrides the default limit of 512MB. Ensure your system has enough available memory.
+
+  --max-profiles=<value>  Maximum number of profiles to process in a single operation
+
+    Overrides the default limit of 50 profiles. Use with caution as higher values may result in longer processing times
+    and more API calls.
+
+  --operation-timeout=<value>  Operation timeout in milliseconds
+
+    Overrides the default timeout of 300000ms (5 minutes).
+
+  --verbose-performance  Show detailed performance metrics
+
+    Displays detailed information about worker pool configuration, API calls, memory usage, and operation timings.
 ```
 
-_See code: [src/commands/profiler/compare.ts](https://github.com/jterrats/profiler/blob/v2.1.2/src/commands/profiler/compare.ts)_
+_See code: [src/commands/profiler/compare.ts](https://github.com/jterrats/profiler/blob/v2.3.0/src/commands/profiler/compare.ts)_
 
 ## `sf profiler docs`
 
@@ -306,7 +337,7 @@ FLAG DESCRIPTIONS
     package permissions that may not be relevant to your implementation.
 ```
 
-_See code: [src/commands/profiler/docs.ts](https://github.com/jterrats/profiler/blob/v2.1.2/src/commands/profiler/docs.ts)_
+_See code: [src/commands/profiler/docs.ts](https://github.com/jterrats/profiler/blob/v2.3.0/src/commands/profiler/docs.ts)_
 
 ## `sf profiler retrieve`
 
@@ -315,15 +346,22 @@ Retrieve Profile metadata with all required dependencies.
 ```
 USAGE
   $ sf profiler retrieve -o <value> [--json] [--flags-dir <value>] [-n <value>] [--all-fields] [--api-version <value>]
-    [-f] [--exclude-managed]
+    [-f] [--exclude-managed] [--max-profiles <value>] [--max-api-calls <value>] [--max-memory <value>]
+    [--operation-timeout <value>] [--concurrent-workers <value>] [--verbose-performance]
 
 FLAGS
-  -f, --from-project         Use local project metadata to build the package.xml instead of listing from org.
-  -n, --name=<value>         The name of a specific profile or comma-separated list of profiles to retrieve.
-  -o, --target-org=<value>   (required) The target org to retrieve profiles from.
-      --all-fields           Include Field Level Security (FLS) in the retrieved profiles.
-      --api-version=<value>  Override the API version used for metadata operations.
-      --exclude-managed      Exclude metadata from managed packages (with namespace prefixes).
+  -f, --from-project                Use local project metadata to build the package.xml instead of listing from org.
+  -n, --name=<value>                The name of a specific profile or comma-separated list of profiles to retrieve.
+  -o, --target-org=<value>          (required) The target org to retrieve profiles from.
+      --all-fields                  Include Field Level Security (FLS) in the retrieved profiles.
+      --api-version=<value>         Override the API version used for metadata operations.
+      --concurrent-workers=<value>  Number of concurrent workers for parallel operations
+      --exclude-managed             Exclude metadata from managed packages (with namespace prefixes).
+      --max-api-calls=<value>       Maximum API calls per minute
+      --max-memory=<value>          Maximum memory usage in MB
+      --max-profiles=<value>        Maximum number of profiles to process in a single operation
+      --operation-timeout=<value>   Operation timeout in milliseconds
+      --verbose-performance         Show detailed performance metrics
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -405,14 +443,38 @@ FLAG DESCRIPTIONS
 
     Specify the API version to use for the retrieve operation. Defaults to the org's API version.
 
+  --concurrent-workers=<value>  Number of concurrent workers for parallel operations
+
+    Overrides the auto-detected worker count. Max recommended: 5 for metadata operations, 10 for API operations.
+
   --exclude-managed  Exclude metadata from managed packages (with namespace prefixes).
 
     When enabled, filters out all metadata components that belong to managed packages (identified by namespace prefixes
     like "namespace**ComponentName"). This helps avoid errors when retrieving profiles that reference components from
     uninstalled or inaccessible managed packages. Custom objects ending in "**c" are always included even with this
     flag.
+
+  --max-api-calls=<value>  Maximum API calls per minute
+
+    Overrides the default limit of 100 API calls per minute. Ensure your Salesforce org can handle the increased load.
+
+  --max-memory=<value>  Maximum memory usage in MB
+
+    Overrides the default limit of 512MB. Ensure your system has enough available memory.
+
+  --max-profiles=<value>  Maximum number of profiles to process in a single operation
+
+    Overrides the default limit of 50 profiles. Use with caution as higher values may result in longer processing times
+    and more API calls.
+
+  --operation-timeout=<value>  Operation timeout in milliseconds
+
+    Overrides the default timeout of 300000ms (5 minutes).
+
+  --verbose-performance  Show detailed performance metrics
+
+    Displays detailed information about worker pool configuration, API calls, memory usage, and operation timings.
 ```
 
-_See code: [src/commands/profiler/retrieve.ts](https://github.com/jterrats/profiler/blob/v2.1.2/src/commands/profiler/retrieve.ts)_
-
+_See code: [src/commands/profiler/retrieve.ts](https://github.com/jterrats/profiler/blob/v2.3.0/src/commands/profiler/retrieve.ts)_
 <!-- commandsstop -->
