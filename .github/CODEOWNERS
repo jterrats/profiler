@@ -1,0 +1,27 @@
+# Code Owners for @jterrats/profiler
+#
+# These owners will be automatically requested for review when someone opens a PR.
+# More info: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @jterrats
+
+# Core operations (critical business logic)
+/src/operations/ @jterrats
+
+# Error definitions (EDD foundation)
+/src/core/errors/ @jterrats
+
+# CLI commands (user-facing)
+/src/commands/ @jterrats
+
+# Configuration files
+/.github/ @jterrats
+/package.json @jterrats
+/tsconfig.json @jterrats
+
+# Documentation (can be more flexible)
+/docs/ @jterrats
+README.md @jterrats
+CONTRIBUTING.md @jterrats
+
