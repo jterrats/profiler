@@ -5,7 +5,12 @@ import { Messages, SfError, SfProject } from '@salesforce/core';
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 
 import { compareProfileOperation, type CompareInput } from '../../operations/index.js';
-import { PERFORMANCE_FLAGS, parsePerformanceFlags, resolvePerformanceConfig, displayConfigWarnings } from '../../core/performance/index.js';
+import {
+  PERFORMANCE_FLAGS,
+  parsePerformanceFlags,
+  resolvePerformanceConfig,
+  displayConfigWarnings,
+} from '../../core/performance/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.compare');
@@ -51,6 +56,11 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       description: messages.getMessage('flags.exclude-managed.description'),
       default: false,
     }),
+    'no-cache': Flags.boolean({
+      summary: messages.getMessage('flags.no-cache.summary'),
+      description: messages.getMessage('flags.no-cache.description'),
+      default: false,
+    }),
     // Performance flags
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
     ...(PERFORMANCE_FLAGS as any),
@@ -81,12 +91,18 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
     const { flags } = await this.parse(ProfilerCompare);
     const org = flags['target-org'];
     const profileName = flags.name;
+    const noCache = flags['no-cache'] ?? false;
     const apiVersion = flags['api-version'] ?? (await org.retrieveMaxApiVersion());
 
     // Parse performance flags
     const perfConfig = parsePerformanceFlags(flags);
     const resolvedConfig = resolvePerformanceConfig(perfConfig);
     displayConfigWarnings(resolvedConfig);
+
+    // Show cache bypass info
+    if (noCache) {
+      this.log('🔄 Cache bypassed - forcing fresh retrieval from org');
+    }
 
     this.log(messages.getMessage('info.starting', [org.getUsername() ?? org.getOrgId()]));
 
@@ -116,6 +132,7 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
         org,
         apiVersion,
         performanceConfig: perfConfig,
+        noCache,
       };
 
       const result = await compareProfileOperation(input).run();

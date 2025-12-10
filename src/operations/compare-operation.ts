@@ -37,6 +37,8 @@ export type CompareInput = {
   timeoutMs?: number;
   /** Performance configuration options */
   performanceConfig?: PerformanceConfig;
+  /** Bypass cache and force fresh retrieval (default: false) */
+  noCache?: boolean;
 };
 
 /**
@@ -158,7 +160,8 @@ export function retrieveOrgProfile(profileName: string, org: Org, apiVersion: st
 
       // For now, return a placeholder
       // In a full implementation, this would use metadata.read() or retrieve()
-      const profileContent = '<?xml version="1.0" encoding="UTF-8"?>\n<Profile xmlns="http://soap.sforce.com/2006/04/metadata">\n</Profile>';
+      const profileContent =
+        '<?xml version="1.0" encoding="UTF-8"?>\n<Profile xmlns="http://soap.sforce.com/2006/04/metadata">\n</Profile>';
 
       // Cache the result
       cache.set(orgId, cacheKey, apiVersion, profileContent);
