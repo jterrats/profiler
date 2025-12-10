@@ -457,3 +457,100 @@ export class InvalidPermissionError extends SystemError {
     );
   }
 }
+
+// ============================================================================
+// MULTI-SOURCE COMPARISON ERRORS (4 total)
+// ============================================================================
+
+/**
+ * MultipleEnvironmentFailureError - Multiple orgs failed during parallel retrieval
+ * When: All or most environments failed to retrieve
+ * Recoverable: No (requires fixing org connections)
+ */
+export class MultipleEnvironmentFailureError extends UserError {
+  public constructor(failedOrgs: Array<{ alias: string; error: string }>, totalOrgs: number) {
+    const failedList = failedOrgs.map((org) => `${org.alias}: ${org.error}`).slice(0, 3);
+    const failureCount = failedOrgs.length;
+
+    super(`${failureCount} of ${totalOrgs} environments failed to retrieve profiles`, 'MULTIPLE_ENVIRONMENT_FAILURE', [
+      'Multiple org connections failed',
+      `Failed environments: ${failedList.join(', ')}${failureCount > 3 ? '...' : ''}`,
+      'Check org authentication and network connection',
+      'Verify org aliases are correct',
+      'Try authenticating again: sf org login web --alias <alias>',
+    ]);
+  }
+}
+
+/**
+ * PartialRetrievalError - Some orgs succeeded, some failed (partial success)
+ * When: Not all environments retrieved successfully
+ * Recoverable: Yes (show partial results with warnings)
+ */
+export class PartialRetrievalError extends SystemError {
+  public constructor(successOrgs: string[], failedOrgs: Array<{ alias: string; error: string }>) {
+    const successList = successOrgs.join(', ');
+    const failedList = failedOrgs.map((org) => org.alias).join(', ');
+
+    super(
+      `Partial retrieval: ${successOrgs.length} succeeded, ${failedOrgs.length} failed`,
+      'PARTIAL_RETRIEVAL',
+      [
+        'Some environments retrieved successfully',
+        `Successful: ${successList}`,
+        `Failed: ${failedList}`,
+        'Comparison will show available data with warnings',
+        'Check failed org connections and retry',
+      ],
+      true // recoverable - show partial results
+    );
+  }
+}
+
+/**
+ * MatrixBuildError - Error building comparison matrix
+ * When: Cannot construct comparison matrix from profiles
+ * Recoverable: Yes (can retry)
+ */
+export class MatrixBuildError extends SystemError {
+  public constructor(reason: string, cause?: Error) {
+    super(
+      `Failed to build comparison matrix: ${reason}`,
+      'MATRIX_BUILD_ERROR',
+      [
+        'Could not construct comparison matrix',
+        'Profiles may have incompatible structure',
+        'Try comparing fewer environments',
+        'Verify profile XML is valid',
+      ],
+      true // recoverable
+    );
+    if (cause) {
+      this.cause = cause;
+    }
+  }
+}
+
+/**
+ * ParallelExecutionError - Parallel retrieval failed
+ * When: Promise.all() or parallel execution encounters error
+ * Recoverable: Yes (can retry sequentially)
+ */
+export class ParallelExecutionError extends SystemError {
+  public constructor(errorCount: number, totalTasks: number, cause?: Error) {
+    super(
+      `Parallel execution failed: ${errorCount} of ${totalTasks} tasks failed`,
+      'PARALLEL_EXECUTION_ERROR',
+      [
+        'Parallel retrieval encountered errors',
+        'Will retry failed tasks sequentially',
+        'This may take longer but will be more reliable',
+        'Consider reducing --max-parallel value',
+      ],
+      true // recoverable - fallback to sequential
+    );
+    if (cause) {
+      this.cause = cause;
+    }
+  }
+}
