@@ -76,7 +76,7 @@ describe('Multi-Source Comparison - Error Handling (EDD)', () => {
 
     it('should be a UserError (not recoverable)', async () => {
       const { MultipleEnvironmentFailureError } = await import('../../src/core/errors/operation-errors.js');
-      const { UserError } = await import('../../src/core/errors/profiler-error.js');
+      const { UserError } = await import('../../src/core/errors/base-errors.js');
 
       const error = new MultipleEnvironmentFailureError([{ alias: 'qa', error: 'Failed' }], 1);
 
@@ -119,7 +119,7 @@ describe('Multi-Source Comparison - Error Handling (EDD)', () => {
 
     it('should be a SystemError (recoverable with graceful degradation)', async () => {
       const { PartialRetrievalError } = await import('../../src/core/errors/operation-errors.js');
-      const { SystemError } = await import('../../src/core/errors/profiler-error.js');
+      const { SystemError } = await import('../../src/core/errors/base-errors.js');
 
       const error = new PartialRetrievalError(['qa'], [{ alias: 'prod', error: 'Failed' }]);
 
@@ -134,7 +134,7 @@ describe('Multi-Source Comparison - Error Handling (EDD)', () => {
 
       expect(error.actions).to.be.an('array');
       expect(error.actions.length).to.be.greaterThan(0);
-      expect(error.actions.join(' ')).to.include('partial');
+      expect(error.actions.join(' ')).to.include('environments retrieved successfully');
       expect(error.actions.join(' ')).to.include('retry');
     });
   });
@@ -159,7 +159,7 @@ describe('Multi-Source Comparison - Error Handling (EDD)', () => {
       const error = new MatrixBuildError('Cannot parse profile', originalError);
 
       expect(error.cause).to.equal(originalError);
-      expect(error.cause?.message).to.equal('XML parse failed');
+      expect((error.cause as Error).message).to.equal('XML parse failed');
     });
 
     it('should provide recovery actions', async () => {
@@ -177,7 +177,7 @@ describe('Multi-Source Comparison - Error Handling (EDD)', () => {
 
     it('should be a SystemError (recoverable)', async () => {
       const { MatrixBuildError } = await import('../../src/core/errors/operation-errors.js');
-      const { SystemError } = await import('../../src/core/errors/profiler-error.js');
+      const { SystemError } = await import('../../src/core/errors/base-errors.js');
 
       const error = new MatrixBuildError('Build failed');
 
@@ -219,12 +219,12 @@ describe('Multi-Source Comparison - Error Handling (EDD)', () => {
       const error = new ParallelExecutionError(2, 5, originalError);
 
       expect(error.cause).to.equal(originalError);
-      expect(error.cause?.message).to.equal('Promise.all() rejected');
+      expect((error.cause as Error).message).to.equal('Promise.all() rejected');
     });
 
     it('should be a SystemError (recoverable with sequential fallback)', async () => {
       const { ParallelExecutionError } = await import('../../src/core/errors/operation-errors.js');
-      const { SystemError } = await import('../../src/core/errors/profiler-error.js');
+      const { SystemError } = await import('../../src/core/errors/base-errors.js');
 
       const error = new ParallelExecutionError(1, 3);
 
@@ -237,7 +237,7 @@ describe('Multi-Source Comparison - Error Handling (EDD)', () => {
     it('should classify errors correctly (User vs System)', async () => {
       const { MultipleEnvironmentFailureError, PartialRetrievalError, MatrixBuildError, ParallelExecutionError } =
         await import('../../src/core/errors/operation-errors.js');
-      const { UserError, SystemError } = await import('../../src/core/errors/profiler-error.js');
+      const { UserError, SystemError } = await import('../../src/core/errors/base-errors.js');
 
       // UserError: requires user action (not recoverable by system)
       const userError = new MultipleEnvironmentFailureError([{ alias: 'qa', error: 'Failed' }], 1);
@@ -269,13 +269,13 @@ describe('Multi-Source Comparison - Error Handling (EDD)', () => {
 
       // SystemError: show partial results
       const partialError = new PartialRetrievalError(['qa'], [{ alias: 'prod', error: 'Failed' }]);
-      expect(partialError.actions.join(' ')).to.include('partial');
+      expect(partialError.actions.join(' ')).to.include('environments retrieved successfully');
       expect(partialError.actions.join(' ')).to.include('available data');
 
       // SystemError: fallback to sequential
       const parallelError = new ParallelExecutionError(1, 3);
       expect(parallelError.actions.join(' ')).to.include('sequential');
-      expect(parallelError.actions.join(' ')).to.include('fallback');
+      expect(parallelError.actions.join(' ')).to.include('retry');
     });
   });
 });

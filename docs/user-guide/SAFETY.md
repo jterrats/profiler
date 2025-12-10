@@ -27,7 +27,7 @@ The retrieve command uses an **isolated temporary project strategy**:
    /tmp/profiler-{timestamp}/retrieve/
    ├─ sfdx-project.json (minimal config)
    └─ package.xml (with all metadata types)
-   
+
    🔒 CRITICAL: Completely separate from your project!
 
 2️⃣ RETRIEVE TO TEMP (NOT your project!)
@@ -49,11 +49,11 @@ The retrieve command uses an **isolated temporary project strategy**:
 
 **Key Difference from Old Versions:**
 
-| Aspect                          | v2.1.x (OLD)                 | v2.3.0+ (NEW)              |
-| ------------------------------- | ---------------------------- | -------------------------- |
-| **Where retrieve executes**     | ⚠️ Your project directory    | ✅ Isolated temp directory |
-| **Files initially overwritten** | ⚠️ ALL metadata in your proj | ✅ None (happens in temp)  |
-| **Backup needed**               | ⚠️ Yes (complex flow)        | ✅ No (never touches orig) |
+| Aspect                          | v2.1.x (OLD)                   | v2.3.0+ (NEW)              |
+| ------------------------------- | ------------------------------ | -------------------------- |
+| **Where retrieve executes**     | ⚠️ Your project directory      | ✅ Isolated temp directory |
+| **Files initially overwritten** | ⚠️ ALL metadata in your proj   | ✅ None (happens in temp)  |
+| **Backup needed**               | ⚠️ Yes (complex flow)          | ✅ No (never touches orig) |
 | **Risk of data loss**           | ⚠️ Low (but backup could fail) | ✅ Zero                    |
 
 **Guarantees:**
@@ -294,6 +294,7 @@ Everything else in your project:
 - ✅ Any other files
 
 **This is GUARANTEED** because:
+
 1. Retrieve executes in isolated temp directory
 2. Only profiles are copied from temp to your project
 3. Validated with comprehensive E2E tests (12 tests with 100% safety coverage)

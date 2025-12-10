@@ -18,6 +18,9 @@ import {
   NoOrgProfileError,
   InvalidXmlError,
   ComparisonTimeoutError,
+  MultipleEnvironmentFailureError,
+  ParallelExecutionError,
+  MatrixBuildError,
 } from '../core/errors/operation-errors.js';
 import type { PerformanceConfig } from '../core/performance/config.js';
 
@@ -309,4 +312,315 @@ export function compareProfileOperation(input: CompareInput): ProfilerMonad<Comp
       totalDifferences: comparison.differences.length,
       profilesCompared: 1,
     }));
+}
+
+// ============================================================================
+// MULTI-SOURCE COMPARISON - Issue #14
+// ============================================================================
+
+/**
+ * Org alias with connection
+ */
+export type OrgSource = {
+  /** Org alias/name for display */
+  alias: string;
+  /** Salesforce org connection */
+  org: Org;
+};
+
+/**
+ * Input parameters for multi-source compare operation
+ */
+export type MultiSourceCompareInput = {
+  /** Profile names to compare */
+  profileNames: string[];
+  /** Array of org sources to compare */
+  sources: OrgSource[];
+  /** API version to use */
+  apiVersion: string;
+  /** Optional timeout in milliseconds */
+  timeoutMs?: number;
+  /** Bypass cache and force fresh retrieval (default: false) */
+  noCache?: boolean;
+};
+
+/**
+ * Result of retrieving a profile from one org
+ */
+export type OrgProfileResult = {
+  /** Org alias */
+  alias: string;
+  /** Profile name */
+  profileName: string;
+  /** Parsed profile XML */
+  profile: ProfileXml;
+  /** Success flag */
+  success: boolean;
+  /** Error if retrieval failed */
+  error?: Error;
+};
+
+/**
+ * Comparison matrix - profiles across multiple orgs
+ */
+export type ComparisonMatrix = {
+  /** Profile name */
+  profileName: string;
+  /** Map of org alias to parsed profile */
+  orgProfiles: Map<string, ProfileXml>;
+  /** Orgs that succeeded */
+  successfulOrgs: string[];
+  /** Orgs that failed */
+  failedOrgs: Array<{ orgAlias: string; error: Error }>;
+};
+
+/**
+ * Result of multi-source comparison
+ */
+export type MultiSourceCompareResult = {
+  /** Comparison matrices for each profile */
+  matrices: ComparisonMatrix[];
+  /** Total profiles compared */
+  profilesCompared: number;
+  /** Total orgs involved */
+  orgsInvolved: number;
+  /** Orgs that succeeded */
+  successfulOrgs: string[];
+  /** Orgs that failed */
+  failedOrgs: Array<{ orgAlias: string; error: Error }>;
+  /** Whether all orgs succeeded */
+  allOrgsSucceeded: boolean;
+};
+
+/**
+ * Retrieves a profile from multiple orgs in parallel
+ *
+ * This function implements parallel retrieval with error handling:
+ * - If all orgs fail → throw MultipleEnvironmentFailureError (UserError)
+ * - If some orgs fail → throw PartialRetrievalError (SystemError, recoverable)
+ * - If retrieval succeeds but some profiles missing → partial success
+ *
+ * @param profileName - Profile to retrieve
+ * @param sources - Array of org sources
+ * @param apiVersion - API version
+ * @returns ProfilerMonad<OrgProfileResult[]> - Results from all orgs
+ *
+ * @throws MultipleEnvironmentFailureError if all orgs fail
+ * @throws PartialRetrievalError if some orgs fail (recoverable)
+ * @throws ParallelExecutionError if parallel execution fails unexpectedly
+ */
+export function retrieveFromMultipleSources(
+  profileName: string,
+  sources: OrgSource[],
+  apiVersion: string
+): ProfilerMonad<OrgProfileResult[]> {
+  return new ProfilerMonad(async () => {
+    try {
+      // Execute parallel retrieval
+      const retrievalPromises = sources.map(async (source): Promise<OrgProfileResult> => {
+        const result = await retrieveOrgProfile(profileName, source.org, apiVersion)
+          .chain((xmlContent) => parseProfileXml(xmlContent, `${source.alias}:${profileName}`))
+          .run();
+
+        if (result.isSuccess()) {
+          return {
+            alias: source.alias,
+            profileName,
+            profile: result.value,
+            success: true,
+          };
+        } else {
+          return {
+            alias: source.alias,
+            profileName,
+            profile: { profile: {} },
+            success: false,
+            error: result.error,
+          };
+        }
+      });
+
+      const results = await Promise.all(retrievalPromises);
+
+      // Categorize results
+      const succeeded = results.filter((r) => r.success);
+      const failed = results.filter((r) => !r.success);
+
+      // Error handling: All failed → UserError (unrecoverable)
+      if (succeeded.length === 0) {
+        const failedOrgs = failed.map((r) => ({
+          alias: r.alias,
+          error: r.error?.message ?? 'Unknown error',
+        }));
+        return failure(new MultipleEnvironmentFailureError(failedOrgs, sources.length));
+      }
+
+      // Error handling: Some failed → Return partial success
+      // (caller can check failed orgs and handle accordingly)
+      if (failed.length > 0) {
+        return success(succeeded);
+      }
+
+      // All succeeded
+      return success(results);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      return failure(new ParallelExecutionError(1, sources.length, err));
+    }
+  });
+}
+
+/**
+ * Builds comparison matrix from retrieved profiles
+ *
+ * This function constructs a matrix showing each profile across multiple orgs.
+ * The matrix is used for side-by-side comparison.
+ *
+ * @param profileName - Profile name
+ * @param results - Array of org profile results
+ * @returns ProfilerMonad<ComparisonMatrix> - Comparison matrix
+ *
+ * @throws MatrixBuildError if matrix construction fails
+ */
+export function buildComparisonMatrix(
+  profileName: string,
+  results: OrgProfileResult[]
+): ProfilerMonad<ComparisonMatrix> {
+  return new ProfilerMonad(() => {
+    try {
+      const orgProfiles = new Map<string, ProfileXml>();
+      const successfulOrgs: string[] = [];
+      const failedOrgs: Array<{ orgAlias: string; error: Error }> = [];
+
+      for (const result of results) {
+        if (result.success) {
+          orgProfiles.set(result.alias, result.profile);
+          successfulOrgs.push(result.alias);
+        } else {
+          failedOrgs.push({
+            orgAlias: result.alias,
+            error: result.error ?? new Error('Unknown error'),
+          });
+        }
+      }
+
+      if (orgProfiles.size === 0) {
+        return Promise.resolve(failure(new MatrixBuildError(`No successful retrievals for profile: ${profileName}`)));
+      }
+
+      return Promise.resolve(
+        success({
+          profileName,
+          orgProfiles,
+          successfulOrgs,
+          failedOrgs,
+        })
+      );
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      return Promise.resolve(failure(new MatrixBuildError(`Failed to build matrix for ${profileName}`, err)));
+    }
+  });
+}
+
+/**
+ * Main multi-source compare operation
+ *
+ * This is the main entry point for multi-source comparison:
+ * 1. Retrieve profiles from all orgs in parallel (per profile)
+ * 2. Build comparison matrix for each profile
+ * 3. Return aggregated results
+ *
+ * Error handling strategy:
+ * - All orgs fail for a profile → skip that profile
+ * - Some orgs fail → include partial results with warnings
+ * - All profiles fail → return error
+ *
+ * @param input - Multi-source compare input parameters
+ * @returns ProfilerMonad<MultiSourceCompareResult> - Comparison result
+ *
+ * @example
+ * ```typescript
+ * const result = await compareMultiSource({
+ *   profileNames: ['Admin', 'Sales'],
+ *   sources: [
+ *     { alias: 'dev', org: devOrg },
+ *     { alias: 'qa', org: qaOrg },
+ *     { alias: 'prod', org: prodOrg }
+ *   ],
+ *   apiVersion: '60.0'
+ * }).run();
+ *
+ * if (result.isSuccess()) {
+ *   console.log(`Compared ${result.value.profilesCompared} profiles across ${result.value.orgsInvolved} orgs`);
+ * }
+ * ```
+ */
+export function compareMultiSource(input: MultiSourceCompareInput): ProfilerMonad<MultiSourceCompareResult> {
+  return new ProfilerMonad(async () => {
+    try {
+      const allSuccessfulOrgs = new Set<string>();
+      const allFailedOrgs = new Map<string, string>();
+      const matrices: ComparisonMatrix[] = [];
+
+      // Process all profiles in parallel
+      const profilePromises = input.profileNames.map(async (profileName) => {
+        const retrievalResult = await retrieveFromMultipleSources(profileName, input.sources, input.apiVersion).run();
+
+        if (retrievalResult.isFailure()) {
+          return { success: false as const, profileName, error: retrievalResult.error };
+        }
+
+        const profileResults = retrievalResult.value;
+        const matrixResult = await buildComparisonMatrix(profileName, profileResults).run();
+
+        if (matrixResult.isFailure()) {
+          return { success: false as const, profileName, error: matrixResult.error };
+        }
+
+        return { success: true as const, profileName, matrix: matrixResult.value };
+      });
+
+      const profileResults = await Promise.all(profilePromises);
+
+      // Process results
+      for (const result of profileResults) {
+        if (result.success) {
+          matrices.push(result.matrix);
+
+          // Track successful and failed orgs
+          for (const orgAlias of result.matrix.successfulOrgs) {
+            allSuccessfulOrgs.add(orgAlias);
+          }
+          for (const failed of result.matrix.failedOrgs) {
+            allFailedOrgs.set(failed.orgAlias, failed.error.message);
+          }
+        }
+      }
+
+      // If no matrices were built, all profiles failed
+      if (matrices.length === 0) {
+        const failedOrgsList = Array.from(allFailedOrgs.entries()).map(([alias, error]) => ({ alias, error }));
+        return failure(new MultipleEnvironmentFailureError(failedOrgsList, input.sources.length));
+      }
+
+      const successfulOrgs = Array.from(allSuccessfulOrgs);
+      const failedOrgs = Array.from(allFailedOrgs.entries()).map(([orgAlias, error]) => ({
+        orgAlias,
+        error: new Error(error),
+      }));
+
+      return success({
+        matrices,
+        profilesCompared: matrices.length,
+        orgsInvolved: input.sources.length,
+        successfulOrgs,
+        failedOrgs,
+        allOrgsSucceeded: failedOrgs.length === 0,
+      });
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      return failure(new ParallelExecutionError(1, input.profileNames.length, err));
+    }
+  });
 }
