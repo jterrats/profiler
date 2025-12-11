@@ -26,7 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **errors**: 4 new error types for multi-source comparison (MultipleEnvironmentFailureError, PartialRetrievalError, MatrixBuildError, ParallelExecutionError)
 - **errors**: 3 new error types for incremental retrieve (LocalMetadataReadError, MetadataComparisonError, IncrementalRetrieveError)
 - **tests**: 44 integration tests total (27 error tests + 12 incremental retrieve + 5 multi-source happy path)
-- **tests**: 3 new e2e tests for --force, --dry-run, and default incremental behavior
+- **tests**: 3 new e2e tests for incremental retrieve (--force, --dry-run, default behavior)
+- **tests**: 3 new e2e tests for multi-source comparison (--sources, JSON format, HTML export)
+- **tests**: Total 15 E2E tests covering all major features
 - **operations**: New compareMultiSource() operation for parallel multi-org comparison
 - **operations**: retrieveFromMultipleSources() for concurrent profile retrieval
 - **operations**: buildComparisonMatrix() for cross-environment comparison structuring
