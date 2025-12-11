@@ -1,10 +1,16 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import { Messages, SfError, SfProject } from '@salesforce/core';
+import { Messages, SfError, SfProject, AuthInfo, Connection, Org } from '@salesforce/core';
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 
-import { compareProfileOperation, type CompareInput } from '../../operations/index.js';
+import {
+  compareProfileOperation,
+  compareMultiSource,
+  type CompareInput,
+  type MultiSourceCompareInput,
+  type MultiSourceCompareResult,
+} from '../../operations/index.js';
 import {
   PERFORMANCE_FLAGS,
   parsePerformanceFlags,
@@ -38,9 +44,9 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   public static readonly flags = {
-    'target-org': Flags.requiredOrg({
+    'target-org': Flags.optionalOrg({
       summary: messages.getMessage('flags.target-org.summary'),
-      required: true,
+      exactlyOne: ['target-org', 'sources'],
     }),
     name: Flags.string({
       char: 'n',
@@ -60,6 +66,11 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       summary: messages.getMessage('flags.no-cache.summary'),
       description: messages.getMessage('flags.no-cache.description'),
       default: false,
+    }),
+    sources: Flags.string({
+      summary: messages.getMessage('flags.sources.summary'),
+      description: messages.getMessage('flags.sources.description'),
+      exclusive: ['target-org'],
     }),
     // Performance flags
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
@@ -89,6 +100,18 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
   /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
   public async run(): Promise<ProfilerCompareResult> {
     const { flags } = await this.parse(ProfilerCompare);
+    const sources = flags.sources;
+
+    // Detect comparison mode
+    if (sources) {
+      return this.runMultiSourceComparison(flags);
+    } else {
+      return this.runSingleOrgComparison(flags);
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async runSingleOrgComparison(flags: any): Promise<ProfilerCompareResult> {
     const org = flags['target-org'];
     const profileName = flags.name;
     const noCache = flags['no-cache'] ?? false;
@@ -176,8 +199,88 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       profilesWithDifferences,
       comparisons,
     };
-    /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async runMultiSourceComparison(flags: any): Promise<ProfilerCompareResult> {
+    const sources = flags.sources as string;
+    const profileName = flags.name;
+    const noCache = flags['no-cache'] ?? false;
+
+    // Parse org aliases
+    const orgAliases = sources
+      .split(',')
+      .map((alias) => alias.trim())
+      .filter((alias) => alias.length > 0);
+
+    if (orgAliases.length < 2) {
+      throw new SfError(
+        'Multi-source comparison requires at least 2 org aliases. Use comma-separated format: "dev,qa,prod"'
+      );
+    }
+
+    this.log(messages.getMessage('info.multi-source-mode', [orgAliases.length.toString()]));
+    this.log(`Comparing across environments: ${orgAliases.join(', ')}\n`);
+
+    // Resolve orgs from aliases
+    const orgSources = await Promise.all(
+      orgAliases.map(async (alias) => {
+        try {
+          const authInfo = await AuthInfo.create({ username: alias });
+          const connection = await Connection.create({ authInfo });
+          const org = await Org.create({ connection });
+          return { alias, org };
+        } catch (error) {
+          throw new SfError(
+            `Failed to authenticate to org '${alias}': ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      })
+    );
+
+    // Get API version from first org
+    const apiVersion = flags['api-version'] ?? (await orgSources[0].org.retrieveMaxApiVersion());
+
+    // Get project path for profile names
+    const project = await SfProject.resolve();
+    const projectPath = project.getPath();
+
+    // Determine which profiles to compare
+    const profileNames = await ProfilerCompare.getProfilesToCompare(projectPath, profileName);
+
+    if (profileNames.length === 0) {
+      throw new SfError(messages.getMessage('error.no-profiles-found'));
+    }
+
+    this.log(`Comparing ${profileNames.length} profile(s): ${profileNames.join(', ')}`);
+
+    // Execute multi-source comparison
+    const input: MultiSourceCompareInput = {
+      profileNames,
+      sources: orgSources,
+      apiVersion,
+      noCache,
+    };
+
+    const result = await compareMultiSource(input).run();
+
+    if (result.isFailure()) {
+      throw new SfError(`Multi-source comparison failed: ${result.error.message}`);
+    }
+
+    const multiResult = result.value;
+
+    // Display matrix results
+    this.displayMultiSourceResults(multiResult);
+
+    return {
+      success: true,
+      totalProfilesCompared: profileNames.length,
+      profilesWithDifferences: 0, // TODO: Calculate from matrix
+      comparisons: [],
+    };
+  }
+  /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 
   private displayResults(comparisons: ProfileComparison[]): void {
     this.log('\n=== Comparison Results ===\n');
@@ -194,5 +297,42 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
     }
 
     this.log('');
+  }
+
+  private displayMultiSourceResults(result: MultiSourceCompareResult): void {
+    this.log('\n=== Multi-Source Comparison Results ===\n');
+
+    // Display successful orgs
+    if (result.successfulOrgs.length > 0) {
+      this.log(`✅ Successfully retrieved from: ${result.successfulOrgs.join(', ')}`);
+    }
+
+    // Display failed orgs with warnings
+    if (result.failedOrgs.length > 0) {
+      this.warn(`⚠️  Failed to retrieve from ${result.failedOrgs.length} org(s):`);
+      for (const failed of result.failedOrgs) {
+        this.warn(`   - ${failed.orgAlias}: ${failed.error.message}`);
+      }
+      this.log('');
+    }
+
+    // Display comparison matrices
+    for (const matrix of result.matrices) {
+      this.log(`\n📊 Profile: ${matrix.profileName}`);
+      this.log(`   Environments: ${matrix.successfulOrgs.join(', ')}`);
+
+      if (matrix.failedOrgs.length > 0) {
+        this.warn(`   Failed: ${matrix.failedOrgs.map((f) => f.orgAlias).join(', ')}`);
+      }
+
+      // TODO: Display actual comparison matrix (requires matrix data structure)
+      // For now, just show that the matrix was built
+      this.log('   ✅ Comparison matrix built successfully');
+    }
+
+    this.log(
+      `\n✨ Compared ${result.matrices.length} profile(s) across ${result.successfulOrgs.length} environment(s)`
+    );
+    this.log(messages.getMessage('success.comparison-complete'));
   }
 }

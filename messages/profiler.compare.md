@@ -42,6 +42,14 @@ Bypass cache and force fresh retrieval from org.
 
 When enabled, ignores any cached metadata and always retrieves fresh data from the org. Use this flag if you suspect cached data is stale or if you want to ensure you're comparing against the most recent org state. This guarantees accuracy but may be slower.
 
+# flags.sources.summary
+
+Compare profiles across multiple Salesforce environments (comma-separated org aliases).
+
+# flags.sources.description
+
+Enables multi-source comparison by specifying a comma-separated list of org aliases. Instead of comparing local vs. org, this compares the same profile across multiple environments. Example: "dev,qa,uat,prod". Requires authenticated orgs. Retrieves profiles in parallel for performance.
+
 # examples
 
 - Compare a specific profile:
@@ -63,6 +71,14 @@ When enabled, ignores any cached metadata and always retrieves fresh data from t
 - Force fresh retrieval (bypass cache):
 
   <%= config.bin %> <%= command.id %> --target-org myOrg --name "Admin" --no-cache
+
+- Compare profiles across multiple environments:
+
+  <%= config.bin %> <%= command.id %> --name "Admin" --sources "dev,qa,prod"
+
+- Multi-source comparison with multiple profiles:
+
+  <%= config.bin %> <%= command.id %> --name "Admin,Sales Profile" --sources "dev,qa,uat,prod"
 
 # info.starting
 
@@ -91,6 +107,14 @@ Total profiles compared: %s
 # info.profiles-with-differences
 
 Profiles with differences: %s
+
+# info.multi-source-mode
+
+🌍 Multi-source comparison mode enabled (%s environments)
+
+# info.retrieving-from-source
+
+Retrieving from %s...
 
 # info.line-added
 
