@@ -1,7 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import { Messages, SfError, SfProject, AuthInfo, Connection, Org } from '@salesforce/core';
+import { Messages, SfError, SfProject, AuthInfo, Connection, Org, StateAggregator } from '@salesforce/core';
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 
 import {
@@ -44,9 +44,9 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   public static readonly flags = {
-    'target-org': Flags.optionalOrg({
+    'target-org': Flags.string({
+      char: 'o',
       summary: messages.getMessage('flags.target-org.summary'),
-      exactlyOne: ['target-org', 'sources'],
     }),
     name: Flags.string({
       char: 'n',
@@ -70,7 +70,6 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
     sources: Flags.string({
       summary: messages.getMessage('flags.sources.summary'),
       description: messages.getMessage('flags.sources.description'),
-      exclusive: ['target-org'],
     }),
     'output-file': Flags.string({
       summary: messages.getMessage('flags.output-file.summary'),
@@ -111,6 +110,20 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
   public async run(): Promise<ProfilerCompareResult> {
     const { flags } = await this.parse(ProfilerCompare);
     const sources = flags.sources;
+    const targetOrg = flags['target-org'];
+
+    // Validate that exactly one of target-org or sources is provided
+    if (!sources && !targetOrg) {
+      throw new SfError(
+        'Either --target-org or --sources must be specified. Use --target-org for single-org comparison or --sources for multi-source comparison.'
+      );
+    }
+
+    if (sources && targetOrg) {
+      throw new SfError(
+        'Cannot use both --target-org and --sources together. Use --target-org for single-org comparison or --sources for multi-source comparison.'
+      );
+    }
 
     // Detect comparison mode
     if (sources) {
@@ -122,9 +135,26 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async runSingleOrgComparison(flags: any): Promise<ProfilerCompareResult> {
-    const org = flags['target-org'];
+    const targetOrgAlias = flags['target-org'] as string;
     const profileName = flags.name;
     const noCache = flags['no-cache'] ?? false;
+
+    // Resolve org from alias/username (same logic as multi-source)
+    let org: Org;
+    try {
+      // Resolve alias to username if needed
+      const aliases = await StateAggregator.getInstance();
+      const username = aliases.aliases.getUsername(targetOrgAlias) ?? targetOrgAlias;
+
+      const authInfo = await AuthInfo.create({ username });
+      const connection = await Connection.create({ authInfo });
+      org = await Org.create({ connection });
+    } catch (error) {
+      throw new SfError(
+        `Failed to authenticate to org '${targetOrgAlias}': ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+
     const apiVersion = flags['api-version'] ?? (await org.retrieveMaxApiVersion());
 
     // Parse performance flags
@@ -232,17 +262,23 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
     this.log(messages.getMessage('info.multi-source-mode', [orgAliases.length.toString()]));
     this.log(`Comparing across environments: ${orgAliases.join(', ')}\n`);
 
-    // Resolve orgs from aliases
+    // Resolve orgs from aliases (try alias first, fallback to username)
     const orgSources = await Promise.all(
-      orgAliases.map(async (alias) => {
+      orgAliases.map(async (aliasOrUsername) => {
         try {
-          const authInfo = await AuthInfo.create({ username: alias });
+          // Try to get org using StateAggregator to resolve alias
+          const aliasesInstance = await StateAggregator.getInstance();
+          const username = aliasesInstance.aliases.getUsername(aliasOrUsername) ?? aliasOrUsername;
+
+          const authInfo = await AuthInfo.create({ username });
           const connection = await Connection.create({ authInfo });
           const org = await Org.create({ connection });
-          return { alias, org };
+          return { alias: aliasOrUsername, org };
         } catch (error) {
           throw new SfError(
-            `Failed to authenticate to org '${alias}': ${error instanceof Error ? error.message : String(error)}`
+            `Failed to authenticate to org '${aliasOrUsername}': ${
+              error instanceof Error ? error.message : String(error)
+            }`
           );
         }
       })
@@ -269,6 +305,7 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       profileNames,
       sources: orgSources,
       apiVersion,
+      projectPath,
       noCache,
     };
 

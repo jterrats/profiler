@@ -836,10 +836,10 @@ if [ "$ORG_COUNT" -ge 2 ]; then
     # Get first 2-3 orgs for testing
     ORG1=$(echo "$AVAILABLE_ORGS" | sed -n '1p')
     ORG2=$(echo "$AVAILABLE_ORGS" | sed -n '2p')
-    
+
     log_success "Found $ORG_COUNT orgs available for multi-source testing"
     log_info "Using orgs: $ORG1, $ORG2"
-    
+
     # Test multi-source comparison
     log_info "Running multi-source comparison..."
     if sf profiler compare --name Admin --sources "$ORG1,$ORG2" 2>&1 | grep -q "Multi-source\|Compared"; then
@@ -847,7 +847,7 @@ if [ "$ORG_COUNT" -ge 2 ]; then
     else
         log_warning "Multi-source comparison may have failed or produced unexpected output"
     fi
-    
+
     log_success "Test 13 passed: Multi-source comparison works"
 else
     log_warning "Skipping Test 13: Only $ORG_COUNT org(s) available (need 2+)"
@@ -884,18 +884,18 @@ REPORT_FILE="$TEST_PROJECT_DIR/comparison-report.html"
 
 log_info "Testing HTML export to file..."
 if sf profiler compare --target-org "$TARGET_ORG" --name Admin --output-format html --output-file "$REPORT_FILE" > /dev/null 2>&1; then
-    
+
     # Verify file was created
     if [ -f "$REPORT_FILE" ]; then
         log_success "✓ HTML file created: $REPORT_FILE"
-        
+
         # Verify HTML structure
         if grep -q "<!DOCTYPE html>" "$REPORT_FILE" && grep -q "<table>" "$REPORT_FILE"; then
             log_success "✓ HTML file contains valid HTML structure"
         else
             log_warning "HTML file may be malformed"
         fi
-        
+
         # Check file size (should be > 100 bytes for valid HTML)
         FILE_SIZE=$(wc -c < "$REPORT_FILE")
         if [ "$FILE_SIZE" -gt 100 ]; then

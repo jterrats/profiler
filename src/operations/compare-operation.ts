@@ -338,6 +338,8 @@ export type MultiSourceCompareInput = {
   sources: OrgSource[];
   /** API version to use */
   apiVersion: string;
+  /** Project path (user's SFDX project with sfdx-project.json) */
+  projectPath: string;
   /** Optional timeout in milliseconds */
   timeoutMs?: number;
   /** Bypass cache and force fresh retrieval (default: false) */
@@ -393,6 +395,86 @@ export type MultiSourceCompareResult = {
 };
 
 /**
+ * Retrieves a profile with full metadata from an org
+ *
+ * This function performs a complete retrieve including all dependent metadata
+ * (ApexClass, CustomObject, Flow, etc.) to ensure the profile is fully populated.
+ * Each retrieve executes in an isolated temp directory for parallel safety.
+ *
+ * NOTE: This function is called from a command with requiresProject=true,
+ * so we are guaranteed to be in a valid SFDX project with sfdx-project.json.
+ *
+ * @param profileName - Profile to retrieve
+ * @param org - Salesforce org
+ * @param apiVersion - API version
+ * @param userProjectPath - User's SFDX project path (validated by requiresProject)
+ * @returns ProfilerMonad<string> - Profile XML content with full metadata
+ */
+async function retrieveProfileWithMetadata(
+  profileName: string,
+  org: Org,
+  apiVersion: string,
+  userProjectPath: string
+): Promise<string> {
+  const fsAsync = await import('node:fs/promises');
+  const pathModule = await import('node:path');
+  const osModule = await import('node:os');
+
+  // Import retrieve operations
+  const { retrieveProfiles } = await import('./retrieve-operation.js');
+
+  // Create isolated temp directory for this org's retrieve (parallel safe)
+  const tempDir = pathModule.join(
+    osModule.tmpdir(),
+    `profiler-compare-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+  );
+
+  try {
+    // Create temp project structure (must exist before retrieve)
+    await fsAsync.mkdir(pathModule.join(tempDir, 'force-app'), { recursive: true });
+
+    // Copy sfdx-project.json from user's project (validated by requiresProject)
+    const userSfdxProject = pathModule.join(userProjectPath, 'sfdx-project.json');
+    const tempSfdxProject = pathModule.join(tempDir, 'sfdx-project.json');
+    await fsAsync.copyFile(userSfdxProject, tempSfdxProject);
+
+    // Execute full retrieve with all metadata in isolated temp directory
+    const result = await retrieveProfiles({
+      org,
+      projectPath: tempDir,
+      profileNames: [profileName],
+      apiVersion,
+      includeAllFields: false, // No FLS for comparison
+      forceFullRetrieve: true, // Skip incremental for multi-source (always get fresh org data)
+    }).run();
+
+    if (result.isFailure()) {
+      throw new Error(`Failed to retrieve profile: ${result.error.message}`);
+    }
+
+    // Read the retrieved profile from temp
+    const profilePath = pathModule.join(
+      tempDir,
+      'force-app',
+      'main',
+      'default',
+      'profiles',
+      `${profileName}.profile-meta.xml`
+    );
+    const profileContent = await fsAsync.readFile(profilePath, 'utf-8');
+
+    return profileContent;
+  } finally {
+    // Clean up temp directory
+    try {
+      await fsAsync.rm(tempDir, { recursive: true, force: true });
+    } catch (cleanupError) {
+      // Ignore cleanup errors
+    }
+  }
+}
+
+/**
  * Retrieves a profile from multiple orgs in parallel
  *
  * This function implements parallel retrieval with error handling:
@@ -403,6 +485,7 @@ export type MultiSourceCompareResult = {
  * @param profileName - Profile to retrieve
  * @param sources - Array of org sources
  * @param apiVersion - API version
+ * @param projectPath - User's SFDX project path (for sfdx-project.json)
  * @returns ProfilerMonad<OrgProfileResult[]> - Results from all orgs
  *
  * @throws MultipleEnvironmentFailureError if all orgs fail
@@ -412,30 +495,43 @@ export type MultiSourceCompareResult = {
 export function retrieveFromMultipleSources(
   profileName: string,
   sources: OrgSource[],
-  apiVersion: string
+  apiVersion: string,
+  projectPath: string
 ): ProfilerMonad<OrgProfileResult[]> {
   return new ProfilerMonad(async () => {
     try {
-      // Execute parallel retrieval
+      // Execute parallel retrieval with full metadata
       const retrievalPromises = sources.map(async (source): Promise<OrgProfileResult> => {
-        const result = await retrieveOrgProfile(profileName, source.org, apiVersion)
-          .chain((xmlContent) => parseProfileXml(xmlContent, `${source.alias}:${profileName}`))
-          .run();
+        try {
+          // Use full retrieve with metadata (each org gets isolated temp directory)
+          const xmlContent = await retrieveProfileWithMetadata(profileName, source.org, apiVersion, projectPath);
 
-        if (result.isSuccess()) {
-          return {
-            alias: source.alias,
-            profileName,
-            profile: result.value,
-            success: true,
-          };
-        } else {
+          // Parse the retrieved profile
+          const parseResult = await parseProfileXml(xmlContent, `${source.alias}:${profileName}`).run();
+
+          if (parseResult.isSuccess()) {
+            return {
+              alias: source.alias,
+              profileName,
+              profile: parseResult.value,
+              success: true,
+            };
+          } else {
+            return {
+              alias: source.alias,
+              profileName,
+              profile: { profile: {} },
+              success: false,
+              error: parseResult.error,
+            };
+          }
+        } catch (error) {
           return {
             alias: source.alias,
             profileName,
             profile: { profile: {} },
             success: false,
-            error: result.error,
+            error: error instanceof Error ? error : new Error(String(error)),
           };
         }
       });
@@ -565,7 +661,12 @@ export function compareMultiSource(input: MultiSourceCompareInput): ProfilerMona
 
       // Process all profiles in parallel
       const profilePromises = input.profileNames.map(async (profileName) => {
-        const retrievalResult = await retrieveFromMultipleSources(profileName, input.sources, input.apiVersion).run();
+        const retrievalResult = await retrieveFromMultipleSources(
+          profileName,
+          input.sources,
+          input.apiVersion,
+          input.projectPath
+        ).run();
 
         if (retrievalResult.isFailure()) {
           return { success: false as const, profileName, error: retrievalResult.error };

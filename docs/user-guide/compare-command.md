@@ -34,32 +34,32 @@ sf profiler compare --sources <org1,org2,org3> [--name <profile-name>] [--output
 
 ### Common Flags
 
-| Flag | Alias | Required | Description |
-|------|-------|----------|-------------|
-| `--name` | `-n` | No | Profile name(s) to compare (comma-separated, without .profile-meta.xml) |
-| `--api-version` | | No | Override the API version used for metadata operations |
-| `--exclude-managed` | | No | Exclude metadata from managed packages (with namespace prefixes) |
-| `--json` | | No | Format output as JSON |
+| Flag                | Alias | Required | Description                                                             |
+| ------------------- | ----- | -------- | ----------------------------------------------------------------------- |
+| `--name`            | `-n`  | No       | Profile name(s) to compare (comma-separated, without .profile-meta.xml) |
+| `--api-version`     |       | No       | Override the API version used for metadata operations                   |
+| `--exclude-managed` |       | No       | Exclude metadata from managed packages (with namespace prefixes)        |
+| `--json`            |       | No       | Format output as JSON                                                   |
 
 ### Single-Source Mode Flags
 
-| Flag | Required | Description |
-|------|----------|-------------|
-| `--target-org` | Yes* | The target org to compare profiles against |
-| `--no-cache` | No | Bypass cache and force fresh retrieval (v2.4.0+) |
+| Flag           | Required | Description                                      |
+| -------------- | -------- | ------------------------------------------------ |
+| `--target-org` | Yes\*    | The target org to compare profiles against       |
+| `--no-cache`   | No       | Bypass cache and force fresh retrieval (v2.4.0+) |
 
-*Mutually exclusive with `--sources`
+\*Mutually exclusive with `--sources`
 
 ### Multi-Source Mode Flags (v2.4.0+)
 
-| Flag | Required | Description |
-|------|----------|-------------|
-| `--sources` | Yes* | Comma-separated list of org aliases to compare (e.g., "dev,qa,prod") |
-| `--output-format` | No | Output format: `table` (default), `json`, or `html` |
-| `--output-file` | No | Export comparison results to file |
-| `--no-cache` | No | Bypass cache and force fresh retrieval |
+| Flag              | Required | Description                                                          |
+| ----------------- | -------- | -------------------------------------------------------------------- |
+| `--sources`       | Yes\*    | Comma-separated list of org aliases to compare (e.g., "dev,qa,prod") |
+| `--output-format` | No       | Output format: `table` (default), `json`, or `html`                  |
+| `--output-file`   | No       | Export comparison results to file                                    |
+| `--no-cache`      | No       | Bypass cache and force fresh retrieval                               |
 
-*Mutually exclusive with `--target-org`, requires minimum 2 orgs
+\*Mutually exclusive with `--target-org`, requires minimum 2 orgs
 
 ## Examples
 
@@ -167,11 +167,11 @@ Multi-source comparison allows you to compare the same profiles across multiple 
 
 ### Key Features
 
-✅ **Parallel Execution**: Retrieves from all orgs simultaneously  
-✅ **Graceful Error Handling**: Partial results if some orgs fail  
-✅ **Multiple Output Formats**: Table, JSON, HTML  
-✅ **File Export**: Save results for documentation  
-✅ **No Local Comparison**: Compares org-to-org directly  
+✅ **Parallel Execution**: Retrieves from all orgs simultaneously
+✅ **Graceful Error Handling**: Partial results if some orgs fail
+✅ **Multiple Output Formats**: Table, JSON, HTML
+✅ **File Export**: Save results for documentation
+✅ **No Local Comparison**: Compares org-to-org directly
 
 ### Prerequisites
 
@@ -246,6 +246,7 @@ sf profiler compare --name Admin --sources "dev,qa,prod" \
 ```
 
 Features:
+
 - Responsive design
 - Color-coded success/failure indicators
 - Professional styling
@@ -317,10 +318,10 @@ sf profiler compare --name Admin --sources "dev,qa,prod"
 ### Performance
 
 | Environments | Sequential | Parallel | Speedup |
-|--------------|-----------|----------|---------|
-| 2 orgs       | ~20s      | ~10s     | 2x      |
-| 3 orgs       | ~30s      | ~10s     | 3x      |
-| 4 orgs       | ~40s      | ~10s     | 4x      |
+| ------------ | ---------- | -------- | ------- |
+| 2 orgs       | ~20s       | ~10s     | 2x      |
+| 3 orgs       | ~30s       | ~10s     | 3x      |
+| 4 orgs       | ~40s       | ~10s     | 4x      |
 
 ## Output Format
 
@@ -388,9 +389,11 @@ Total differences: 15
 The command identifies three types of differences:
 
 ### 1. Added Lines (+ symbol)
+
 Lines that exist in the org version but not in the local version.
 
 **Example:**
+
 ```
 + Line 45: <userPermissions><enabled>true</enabled><name>NewFeature</name></userPermissions>
 ```
@@ -398,9 +401,11 @@ Lines that exist in the org version but not in the local version.
 **Meaning:** This permission exists in the org but hasn't been retrieved locally yet.
 
 ### 2. Removed Lines (- symbol)
+
 Lines that exist in the local version but not in the org version.
 
 **Example:**
+
 ```
 - Line 23: <userPermissions><enabled>false</enabled><name>OldPermission</name></userPermissions>
 ```
@@ -408,9 +413,11 @@ Lines that exist in the local version but not in the org version.
 **Meaning:** This permission exists locally but has been removed from the org (or never existed).
 
 ### 3. Changed Lines (~ symbol)
+
 Lines that exist in both versions but with different content.
 
 **Example:**
+
 ```
 ~ Line 102:
   Local:  <enabled>false</enabled>
@@ -543,11 +550,13 @@ fi
 ### No Profiles Found
 
 **Error:**
+
 ```
 No profiles found in the project.
 ```
 
 **Solution:**
+
 ```bash
 # Make sure you're in a Salesforce project
 cd your-salesforce-project
@@ -559,16 +568,19 @@ ls force-app/main/default/profiles/
 ### Profile Not Found in Org
 
 **Warning:**
+
 ```
 Profile not found in org: CustomProfile
 ```
 
 **Possible Causes:**
+
 - Profile doesn't exist in the org
 - Profile name is misspelled
 - User doesn't have permission to see the profile
 
 **Solution:**
+
 ```bash
 # List profiles in org
 sf data query --query "SELECT Name FROM Profile" --target-org your-org
@@ -579,11 +591,13 @@ sf data query --query "SELECT Name FROM Profile" --target-org your-org
 ### Retrieve Failed
 
 **Error:**
+
 ```
 Failed to retrieve profile from org: INVALID_TYPE
 ```
 
 **Solution:**
+
 - Verify org authentication: `sf org display --target-org your-org`
 - Check user permissions
 - Try with a different API version: `--api-version 59.0`
@@ -645,6 +659,7 @@ Potential improvements for future versions:
 6. **Visual Diff Tool**: Interactive UI for exploring differences
 
 ✅ **Implemented in v2.4.0:**
+
 - Multi-source comparison across multiple environments
 - HTML export with styled reports
 - JSON output format for automation
@@ -660,8 +675,7 @@ Potential improvements for future versions:
 ## Support
 
 For issues or questions:
+
 - Check the main [README](README.md)
 - Review [USAGE](USAGE.md)
 - Open an issue on GitHub
-
-

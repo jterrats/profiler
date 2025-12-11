@@ -765,6 +765,8 @@ export function retrieveProfiles(input: RetrieveInput): ProfilerMonad<RetrieveRe
 
           // Create temp retrieve directory with minimal SFDX project structure
           await fs.mkdir(tempRetrieveDir, { recursive: true });
+          // Create force-app directory (required by sf project retrieve)
+          await fs.mkdir(path.join(tempRetrieveDir, 'force-app'), { recursive: true });
 
           // Create minimal sfdx-project.json in temp directory
           const sfdxProjectJson = {
