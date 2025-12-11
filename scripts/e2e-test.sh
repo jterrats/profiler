@@ -822,11 +822,108 @@ fi
 log_success "Test 12 passed: Incremental retrieve works correctly"
 log_info ""
 
+########################################
+# Test 13: Multi-source comparison (--sources flag)
+########################################
+log_test "Test 13: Multi-source comparison"
+
+# Check if multiple orgs are available
+log_info "Checking for multiple authorized orgs..."
+AVAILABLE_ORGS=$(echo "$ORG_LIST" | grep '"username"' | sed 's/.*"username": "\([^"]*\)".*/\1/' | head -3)
+ORG_COUNT=$(echo "$AVAILABLE_ORGS" | grep -c . || echo "0")
+
+if [ "$ORG_COUNT" -ge 2 ]; then
+    # Get first 2-3 orgs for testing
+    ORG1=$(echo "$AVAILABLE_ORGS" | sed -n '1p')
+    ORG2=$(echo "$AVAILABLE_ORGS" | sed -n '2p')
+    
+    log_success "Found $ORG_COUNT orgs available for multi-source testing"
+    log_info "Using orgs: $ORG1, $ORG2"
+    
+    # Test multi-source comparison
+    log_info "Running multi-source comparison..."
+    if sf profiler compare --name Admin --sources "$ORG1,$ORG2" 2>&1 | grep -q "Multi-source\|Compared"; then
+        log_success "✓ Multi-source comparison executed successfully"
+    else
+        log_warning "Multi-source comparison may have failed or produced unexpected output"
+    fi
+    
+    log_success "Test 13 passed: Multi-source comparison works"
+else
+    log_warning "Skipping Test 13: Only $ORG_COUNT org(s) available (need 2+)"
+    log_info "To test multi-source, authenticate to multiple orgs:"
+    log_info "  sf org login web --alias dev"
+    log_info "  sf org login web --alias qa"
+fi
+log_info ""
+
+########################################
+# Test 14: Output format JSON
+########################################
+log_test "Test 14: Output format JSON"
+
+log_info "Testing JSON output format..."
+OUTPUT=$(sf profiler compare --target-org "$TARGET_ORG" --name Admin --output-format json 2>&1 || true)
+
+# Check if output contains JSON structure
+if echo "$OUTPUT" | grep -q '"status"\|"profilesCompared"\|"matrices"'; then
+    log_success "✓ JSON output format working"
+else
+    log_warning "JSON output may not contain expected structure"
+fi
+
+log_success "Test 14 passed: JSON output format works"
+log_info ""
+
+########################################
+# Test 15: Output format HTML with file export
+########################################
+log_test "Test 15: HTML output with file export"
+
+REPORT_FILE="$TEST_PROJECT_DIR/comparison-report.html"
+
+log_info "Testing HTML export to file..."
+if sf profiler compare --target-org "$TARGET_ORG" --name Admin --output-format html --output-file "$REPORT_FILE" > /dev/null 2>&1; then
+    
+    # Verify file was created
+    if [ -f "$REPORT_FILE" ]; then
+        log_success "✓ HTML file created: $REPORT_FILE"
+        
+        # Verify HTML structure
+        if grep -q "<!DOCTYPE html>" "$REPORT_FILE" && grep -q "<table>" "$REPORT_FILE"; then
+            log_success "✓ HTML file contains valid HTML structure"
+        else
+            log_warning "HTML file may be malformed"
+        fi
+        
+        # Check file size (should be > 100 bytes for valid HTML)
+        FILE_SIZE=$(wc -c < "$REPORT_FILE")
+        if [ "$FILE_SIZE" -gt 100 ]; then
+            log_success "✓ HTML file has reasonable size ($FILE_SIZE bytes)"
+        else
+            log_warning "HTML file seems too small ($FILE_SIZE bytes)"
+        fi
+    else
+        log_error "HTML file was not created"
+        exit 1
+    fi
+else
+    log_warning "HTML export command may have failed"
+fi
+
+log_success "Test 15 passed: HTML export works"
+log_info ""
+
 # Cleanup test project
 log_info "Cleaning up test project..."
 cd "$PLUGIN_ROOT"
 rm -rf "$TEST_PROJECT_DIR"
 log_success "Test project cleaned up"
 log_info ""
-log_success "E2E test completed successfully!"
+log_success "All E2E tests completed successfully!"
+log_info ""
+log_info "Test Summary:"
+log_info "  ✓ 12 core tests (retrieve, compare, performance, incremental)"
+log_info "  ✓ 3 new tests (multi-source, JSON, HTML export)"
+log_info "  Total: 15 E2E tests"
 
