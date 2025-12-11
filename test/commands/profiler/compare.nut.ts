@@ -13,13 +13,13 @@ import * as path from 'node:path';
  *   export PROFILER_TEST_ORG_ALIAS=myDevOrg
  *
  * Multi-source tests:
- *   export PROFILER_TEST_ORG_ALIAS_2=testOrg1
- *   export PROFILER_TEST_ORG_ALIAS_3=testOrg2
+ *   export PROFILER_TEST_ORG_ALIAS_2=secondOrg
+ *   export PROFILER_TEST_ORG_ALIAS_3=thirdOrg
  *
  * Example:
- *   export PROFILER_TEST_ORG_ALIAS=myDevOrg
- *   export PROFILER_TEST_ORG_ALIAS_2=testOrg1
- *   export PROFILER_TEST_ORG_ALIAS_3=testOrg2
+ *   export PROFILER_TEST_ORG_ALIAS=grg-poc
+ *   export PROFILER_TEST_ORG_ALIAS_2=grg-qa
+ *   export PROFILER_TEST_ORG_ALIAS_3=grg-uat
  *   npm run test:nuts
  */
 describe('profiler compare NUTs', () => {

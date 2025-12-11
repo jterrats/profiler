@@ -34,11 +34,11 @@ You need to authenticate with Salesforce orgs using `sf org login`:
 
 ```bash
 # For single-org tests (retrieve + compare)
-sf org login web --alias myDevOrg
+sf org login web --alias grg-poc
 
 # For multi-source tests (compare only)
-sf org login web --alias testOrg1
-sf org login web --alias testOrg2
+sf org login web --alias grg-qa
+sf org login web --alias grg-uat
 ```
 
 2. **Environment Variables**
@@ -47,11 +47,11 @@ Set the following environment variables:
 
 ```bash
 # Required for single-org tests
-export PROFILER_TEST_ORG_ALIAS=myDevOrg
+export PROFILER_TEST_ORG_ALIAS=grg-poc
 
 # Required for multi-source tests (in addition to above)
-export PROFILER_TEST_ORG_ALIAS_2=testOrg1
-export PROFILER_TEST_ORG_ALIAS_3=testOrg2
+export PROFILER_TEST_ORG_ALIAS_2=grg-qa
+export PROFILER_TEST_ORG_ALIAS_3=grg-uat
 ```
 
 ### Quick Setup Script
@@ -62,9 +62,9 @@ Save this to `~/.profiler-test-env`:
 #!/bin/bash
 # Profiler NUT Test Environment Configuration
 
-export PROFILER_TEST_ORG_ALIAS=myDevOrg
-export PROFILER_TEST_ORG_ALIAS_2=testOrg1
-export PROFILER_TEST_ORG_ALIAS_3=testOrg2
+export PROFILER_TEST_ORG_ALIAS=grg-poc
+export PROFILER_TEST_ORG_ALIAS_2=grg-qa
+export PROFILER_TEST_ORG_ALIAS_3=grg-uat
 
 echo "✅ Profiler test environment configured:"
 echo "   Primary org: $PROFILER_TEST_ORG_ALIAS"
@@ -179,28 +179,28 @@ jobs:
         with:
           node-version: 'lts/*'
       - run: npm ci
-
+      
       # Authenticate orgs
       - name: Authenticate Test Orgs
         run: |
           echo "${{ secrets.SF_AUTH_URL_DEV_ORG }}" > authfile.txt
-          sf org login sfdx-url --sfdx-url-file authfile.txt --alias myDevOrg
+          sf org login sfdx-url --sfdx-url-file authfile.txt --alias grg-poc
           
           echo "${{ secrets.SF_AUTH_URL_DEV_ORG_2 }}" > authfile2.txt
-          sf org login sfdx-url --sfdx-url-file authfile2.txt --alias testOrg1
+          sf org login sfdx-url --sfdx-url-file authfile2.txt --alias grg-qa
           
           echo "${{ secrets.SF_AUTH_URL_DEV_ORG_3 }}" > authfile3.txt
-          sf org login sfdx-url --sfdx-url-file authfile3.txt --alias testOrg2
+          sf org login sfdx-url --sfdx-url-file authfile3.txt --alias grg-uat
           
           rm authfile*.txt
       
       # Set environment variables
       - name: Set Test Env Vars
         run: |
-          echo "PROFILER_TEST_ORG_ALIAS=myDevOrg" >> $GITHUB_ENV
-          echo "PROFILER_TEST_ORG_ALIAS_2=testOrg1" >> $GITHUB_ENV
-          echo "PROFILER_TEST_ORG_ALIAS_3=testOrg2" >> $GITHUB_ENV
-
+          echo "PROFILER_TEST_ORG_ALIAS=grg-poc" >> $GITHUB_ENV
+          echo "PROFILER_TEST_ORG_ALIAS_2=grg-qa" >> $GITHUB_ENV
+          echo "PROFILER_TEST_ORG_ALIAS_3=grg-uat" >> $GITHUB_ENV
+      
       # Run NUT tests
       - name: Run NUT Tests
         run: npm run test:nuts
@@ -230,7 +230,7 @@ jobs:
 **Solution**:
 ```bash
 sf org list
-sf org login web --alias myDevOrg
+sf org login web --alias grg-poc
 ```
 
 ### Error: "Command failed with exit code 1"
