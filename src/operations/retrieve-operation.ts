@@ -738,6 +738,8 @@ export function retrieveProfiles(input: RetrieveInput): ProfilerMonad<RetrieveRe
         }
         // eslint-disable-next-line no-console
         console.log(`\n   Total: ${metadataList.totalMembers} components\n`);
+        // eslint-disable-next-line no-console
+        console.log('✨ Dry run completed - no files were modified');
 
         return new ProfilerMonad(() =>
           Promise.resolve(
