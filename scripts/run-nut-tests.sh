@@ -66,25 +66,25 @@ show_setup() {
     
     echo "1️⃣  Authenticate with test orgs:"
     echo ""
-    echo "   sf org login web --alias grg-poc"
-    echo "   sf org login web --alias grg-qa"
-    echo "   sf org login web --alias grg-uat"
+    echo "   sf org login web --alias myDevOrg"
+    echo "   sf org login web --alias testOrg1"
+    echo "   sf org login web --alias testOrg2"
     echo ""
     
     echo "2️⃣  Set environment variables:"
     echo ""
-    echo "   export PROFILER_TEST_ORG_ALIAS=grg-poc"
-    echo "   export PROFILER_TEST_ORG_ALIAS_2=grg-qa"
-    echo "   export PROFILER_TEST_ORG_ALIAS_3=grg-uat"
+    echo "   export PROFILER_TEST_ORG_ALIAS=myDevOrg"
+    echo "   export PROFILER_TEST_ORG_ALIAS_2=testOrg1"
+    echo "   export PROFILER_TEST_ORG_ALIAS_3=testOrg2"
     echo ""
     
     echo "3️⃣  (Optional) Save to ~/.profiler-test-env:"
     echo ""
     echo "   cat > ~/.profiler-test-env << 'EOF'"
     echo "   #!/bin/bash"
-    echo "   export PROFILER_TEST_ORG_ALIAS=grg-poc"
-    echo "   export PROFILER_TEST_ORG_ALIAS_2=grg-qa"
-    echo "   export PROFILER_TEST_ORG_ALIAS_3=grg-uat"
+    echo "   export PROFILER_TEST_ORG_ALIAS=myDevOrg"
+    echo "   export PROFILER_TEST_ORG_ALIAS_2=testOrg1"
+    echo "   export PROFILER_TEST_ORG_ALIAS_3=testOrg2"
     echo "   EOF"
     echo ""
     echo "   chmod +x ~/.profiler-test-env"
@@ -101,19 +101,19 @@ show_setup() {
 
 check_config() {
     print_header "Current NUT Tests Configuration"
-    
+
     local primary_org="${PROFILER_TEST_ORG_ALIAS:-<not set>}"
     local secondary_org="${PROFILER_TEST_ORG_ALIAS_2:-<not set>}"
     local tertiary_org="${PROFILER_TEST_ORG_ALIAS_3:-<not set>}"
-    
+
     echo "Environment Variables:"
     echo "  PROFILER_TEST_ORG_ALIAS   = $primary_org"
     echo "  PROFILER_TEST_ORG_ALIAS_2 = $secondary_org"
     echo "  PROFILER_TEST_ORG_ALIAS_3 = $tertiary_org"
     echo ""
-    
+
     echo "Org Authentication Status:"
-    
+
     # Check primary org
     if [ -n "$PROFILER_TEST_ORG_ALIAS" ]; then
         if check_org_auth "$PROFILER_TEST_ORG_ALIAS"; then
@@ -124,7 +124,7 @@ check_config() {
     else
         print_warning "Primary org not configured"
     fi
-    
+
     # Check secondary org
     if [ -n "$PROFILER_TEST_ORG_ALIAS_2" ]; then
         if check_org_auth "$PROFILER_TEST_ORG_ALIAS_2"; then
@@ -135,7 +135,7 @@ check_config() {
     else
         print_warning "Secondary org not configured (multi-source tests will be skipped)"
     fi
-    
+
     # Check tertiary org
     if [ -n "$PROFILER_TEST_ORG_ALIAS_3" ]; then
         if check_org_auth "$PROFILER_TEST_ORG_ALIAS_3"; then
@@ -146,35 +146,35 @@ check_config() {
     else
         print_warning "Tertiary org not configured (multi-source tests will be skipped)"
     fi
-    
+
     echo ""
     echo "Test Coverage Estimate:"
-    
+
     local basic_tests=6
     local single_org_tests=8
     local multi_org_tests=6
     local total_tests=$basic_tests
-    
+
     echo "  Basic tests (no org): $basic_tests tests ✅"
-    
+
     if [ -n "$PROFILER_TEST_ORG_ALIAS" ]; then
         total_tests=$((total_tests + single_org_tests))
         echo "  Single-org tests: $single_org_tests tests ✅"
     else
         echo "  Single-org tests: $single_org_tests tests ⏭️  (skipped)"
     fi
-    
+
     if [ -n "$PROFILER_TEST_ORG_ALIAS" ] && [ -n "$PROFILER_TEST_ORG_ALIAS_2" ] && [ -n "$PROFILER_TEST_ORG_ALIAS_3" ]; then
         total_tests=$((total_tests + multi_org_tests))
         echo "  Multi-org tests: $multi_org_tests tests ✅"
     else
         echo "  Multi-org tests: $multi_org_tests tests ⏭️  (skipped)"
     fi
-    
+
     echo ""
     echo "Expected to run: $total_tests / 20 tests ($(( total_tests * 100 / 20 ))% coverage)"
     echo ""
-    
+
     if [ $total_tests -eq 20 ]; then
         print_success "Full NUT test coverage available!"
     elif [ $total_tests -gt 6 ]; then
@@ -183,19 +183,19 @@ check_config() {
         print_warning "Only basic tests will run (configure orgs for full coverage)"
         print_info "Run './scripts/run-nut-tests.sh --setup' for instructions"
     fi
-    
+
     exit 0
 }
 
 run_tests() {
     local test_file="$1"
     local test_name="$2"
-    
+
     print_header "Running $test_name"
-    
+
     echo "Test file: $test_file"
     echo ""
-    
+
     if npm run test:nuts -- "$test_file"; then
         print_success "$test_name passed!"
         return 0
@@ -219,12 +219,12 @@ case "$MODE" in
         print_header "Running Basic NUT Tests (no org required)"
         print_warning "Org-dependent tests will be skipped"
         echo ""
-        
+
         # Temporarily unset org variables
         unset PROFILER_TEST_ORG_ALIAS
         unset PROFILER_TEST_ORG_ALIAS_2
         unset PROFILER_TEST_ORG_ALIAS_3
-        
+
         npm run test:nuts
         ;;
     --retrieve)
@@ -238,20 +238,20 @@ case "$MODE" in
         ;;
     --all)
         print_header "Running All NUT Tests"
-        
+
         # Show current config
         echo "Current configuration:"
         echo "  Primary org: ${PROFILER_TEST_ORG_ALIAS:-<not set>}"
         echo "  Secondary org: ${PROFILER_TEST_ORG_ALIAS_2:-<not set>}"
         echo "  Tertiary org: ${PROFILER_TEST_ORG_ALIAS_3:-<not set>}"
         echo ""
-        
+
         if [ -z "$PROFILER_TEST_ORG_ALIAS" ]; then
             print_warning "No orgs configured - only basic tests will run"
             print_info "Run './scripts/run-nut-tests.sh --setup' for instructions"
             echo ""
         fi
-        
+
         npm run test:nuts
         ;;
     *)

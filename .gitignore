@@ -5,8 +5,24 @@ profile-docs/
 # E2E test project directory
 test-project/
 
-# SFDX local metadata cache
+# Local test environment configuration (contains org-specific aliases)
+.profiler-test-env
+
+# Downloaded metadata from NUT/E2E tests (keep only README.md and .gitkeep)
+force-app/main/default/profiles/*.profile-meta.xml
+force-app/main/default/classes/
+force-app/main/default/objects/
+force-app/main/default/flows/
+force-app/main/default/layouts/
+force-app/main/default/lwc/
+force-app/main/default/aura/
+force-app/main/default/triggers/
+force-app/main/default/pages/
+force-app/main/default/components/
+
+# SFDX local metadata cache and configuration
 .sfdx/
+.sf/
 # use yarn by default, so ignore npm
 package-lock.json
 
