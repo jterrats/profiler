@@ -2,6 +2,7 @@ name: EDD CI Pipeline
 
 # Optimized for GitHub Actions Free Tier
 # Philosophy: Run error tests first (cheap), full tests only when needed
+# Architecture: Main workflow that orchestrates all testing (calls tests.yml and e2e.yml)
 
 on:
   push:
@@ -63,106 +64,29 @@ jobs:
         if: success()
         run: echo "All error scenarios properly handled!"
 
-  # Tier 2: Unit & Integration (runs on PRs only, ~5-7 min)
-  unit-tests:
+  # Tier 2: Official Salesforce CLI tests (runs on PRs, ~7 min)
+  # Calls the reusable tests workflow (unit-tests, nuts, macOS)
+  official-tests:
     name: Unit & Integration Tests
     needs: quick-check
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: "yarn"
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      # Now run happy path tests
-      - name: Run Unit Tests
-        run: yarn test:unit --maxWorkers=2
-
-      - name: Run Integration Tests
-        run: yarn test:integration --maxWorkers=2
-        continue-on-error: true # Optional - integration tests may not exist yet
-
-      # Generate coverage report
-      - name: Upload Coverage
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
 
   # Tier 3: E2E Tests (runs only on main merge, ~10-15 min)
+  # Calls the e2e.yml workflow with real Salesforce org
   e2e-tests:
     name: End-to-End Tests
     needs: quick-check
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    uses: ./.github/workflows/e2e.yml
+    secrets:
+      SF_AUTH_URL_E2E_ORG: ${{ secrets.SF_AUTH_URL_E2E_ORG }}
 
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: "yarn"
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      # Install Salesforce CLI for E2E tests
-      - name: Install Salesforce CLI
-        run: npm install -g @salesforce/cli
-
-      - name: Verify SF CLI
-        run: sf --version
-
-      - name: Build
-        run: yarn build
-
-      # E2E tests use actual SF org
-      - name: Run E2E Tests
-        run: yarn test:e2e
-        env:
-          SALESFORCE_CLIENT_ID: ${{ secrets.SALESFORCE_CLIENT_ID }}
-          SALESFORCE_CLIENT_SECRET: ${{ secrets.SALESFORCE_CLIENT_SECRET }}
-          TESTKIT_AUTH_URL: ${{ secrets.TESTKIT_AUTH_URL }}
-
-  # Optional: Build check (only on main/develop, ~3-5 min)
-  build:
+  # Build check on push to main/develop (calls official tests which include macOS build)
+  build-check:
     name: Build Check
     needs: quick-check
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: "yarn"
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build
-        run: yarn build
-
-      - name: Verify build artifacts
-        run: |
-          if [ ! -d "lib" ]; then
-            echo "Build failed: lib directory not found"
-            exit 1
-          fi
+    uses: ./.github/workflows/test.yml
+    secrets: inherit

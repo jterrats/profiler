@@ -1,7 +1,22 @@
 name: tests
+
+# Reusable workflow for official Salesforce CLI tests
+# Can be called by edd-ci.yml or triggered manually
+# Executes: unit-tests (Linux/Windows), macOS build check, NUT tests, E2E (optional)
+
 on:
-  push:
-    branches-ignore: [main]
+  # Can be called by other workflows (like edd-ci.yml)
+  workflow_call:
+    inputs:
+      run_e2e:
+        description: "Run E2E tests with real org (requires SF_AUTH_URL_E2E_ORG secret)"
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      SF_AUTH_URL_E2E_ORG:
+        required: false
+  # Can also be triggered manually for testing
   workflow_dispatch:
     inputs:
       run_e2e:
