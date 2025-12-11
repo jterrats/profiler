@@ -73,12 +73,12 @@ jobs:
     uses: ./.github/workflows/test.yml
     secrets: inherit
 
-  # Tier 3: E2E Tests (runs only on main merge, ~10-15 min)
+  # Tier 3: E2E Tests (runs on PRs, ~10-15 min)
   # Calls the e2e.yml workflow with real Salesforce org
   e2e-tests:
     name: End-to-End Tests
-    needs: quick-check
-    if: github.ref == 'refs/heads/main'
+    needs: official-tests
+    if: github.event_name == 'pull_request'
     uses: ./.github/workflows/e2e.yml
     secrets:
       SF_AUTH_URL_E2E_ORG: ${{ secrets.SF_AUTH_URL_E2E_ORG }}
