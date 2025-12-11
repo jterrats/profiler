@@ -50,6 +50,22 @@ Compare profiles across multiple Salesforce environments (comma-separated org al
 
 Enables multi-source comparison by specifying a comma-separated list of org aliases. Instead of comparing local vs. org, this compares the same profile across multiple environments. Example: "dev,qa,uat,prod". Requires authenticated orgs. Retrieves profiles in parallel for performance.
 
+# flags.output-file.summary
+
+Export comparison results to a file.
+
+# flags.output-file.description
+
+Specify a file path to export the comparison matrix results. The output format is determined by the --output-format flag. Example: "./comparison-report.html". Useful for documentation, reports, or sharing results with team members.
+
+# flags.output-format.summary
+
+Output format for comparison results (table, json, html).
+
+# flags.output-format.description
+
+Choose the output format for displaying or exporting comparison matrices. Options: "table" (ASCII table for terminal), "json" (machine-readable structured data), "html" (web-friendly formatted output with styling). Default is "table" for terminal display. Use "json" for automation or "html" for reports.
+
 # examples
 
 - Compare a specific profile:
@@ -79,6 +95,14 @@ Enables multi-source comparison by specifying a comma-separated list of org alia
 - Multi-source comparison with multiple profiles:
 
   <%= config.bin %> <%= command.id %> --name "Admin,Sales Profile" --sources "dev,qa,uat,prod"
+
+- Export comparison matrix to HTML file:
+
+  <%= config.bin %> <%= command.id %> --name "Admin" --sources "dev,qa,prod" --output-format html --output-file "./comparison-report.html"
+
+- Get comparison results as JSON:
+
+  <%= config.bin %> <%= command.id %> --name "Admin" --sources "dev,qa,prod" --output-format json
 
 # info.starting
 

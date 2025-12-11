@@ -9,7 +9,6 @@ import {
   compareMultiSource,
   type CompareInput,
   type MultiSourceCompareInput,
-  type MultiSourceCompareResult,
 } from '../../operations/index.js';
 import {
   PERFORMANCE_FLAGS,
@@ -17,6 +16,7 @@ import {
   resolvePerformanceConfig,
   displayConfigWarnings,
 } from '../../core/performance/index.js';
+import { formatComparisonMatrix, exportComparisonMatrix } from '../../core/formatters/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.compare');
@@ -71,6 +71,16 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       summary: messages.getMessage('flags.sources.summary'),
       description: messages.getMessage('flags.sources.description'),
       exclusive: ['target-org'],
+    }),
+    'output-file': Flags.string({
+      summary: messages.getMessage('flags.output-file.summary'),
+      description: messages.getMessage('flags.output-file.description'),
+    }),
+    'output-format': Flags.string({
+      summary: messages.getMessage('flags.output-format.summary'),
+      description: messages.getMessage('flags.output-format.description'),
+      options: ['table', 'json', 'html'],
+      default: 'table',
     }),
     // Performance flags
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
@@ -270,8 +280,34 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
 
     const multiResult = result.value;
 
-    // Display matrix results
-    this.displayMultiSourceResults(multiResult);
+    // Get output format preferences
+    const outputFormat = (flags['output-format'] as 'table' | 'json' | 'html') ?? 'table';
+    const outputFile = flags['output-file'] as string | undefined;
+
+    // Format the comparison matrix
+    const formatted = formatComparisonMatrix(multiResult, {
+      format: outputFormat,
+      includeDetails: false,
+      compact: false,
+    });
+
+    // Export to file if requested
+    if (outputFile) {
+      await exportComparisonMatrix(multiResult, outputFile, {
+        format: outputFormat,
+        includeDetails: false,
+        compact: false,
+      });
+      this.log(`\n📄 Comparison matrix exported to: ${outputFile}`);
+    }
+
+    // Display results (unless it's JSON format which is handled by --json flag)
+    if (outputFormat === 'table') {
+      this.log(formatted.content);
+    } else if (!outputFile) {
+      // If JSON/HTML and no output file, still display it
+      this.log(formatted.content);
+    }
 
     return {
       success: true,
@@ -297,42 +333,5 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
     }
 
     this.log('');
-  }
-
-  private displayMultiSourceResults(result: MultiSourceCompareResult): void {
-    this.log('\n=== Multi-Source Comparison Results ===\n');
-
-    // Display successful orgs
-    if (result.successfulOrgs.length > 0) {
-      this.log(`✅ Successfully retrieved from: ${result.successfulOrgs.join(', ')}`);
-    }
-
-    // Display failed orgs with warnings
-    if (result.failedOrgs.length > 0) {
-      this.warn(`⚠️  Failed to retrieve from ${result.failedOrgs.length} org(s):`);
-      for (const failed of result.failedOrgs) {
-        this.warn(`   - ${failed.orgAlias}: ${failed.error.message}`);
-      }
-      this.log('');
-    }
-
-    // Display comparison matrices
-    for (const matrix of result.matrices) {
-      this.log(`\n📊 Profile: ${matrix.profileName}`);
-      this.log(`   Environments: ${matrix.successfulOrgs.join(', ')}`);
-
-      if (matrix.failedOrgs.length > 0) {
-        this.warn(`   Failed: ${matrix.failedOrgs.map((f) => f.orgAlias).join(', ')}`);
-      }
-
-      // TODO: Display actual comparison matrix (requires matrix data structure)
-      // For now, just show that the matrix was built
-      this.log('   ✅ Comparison matrix built successfully');
-    }
-
-    this.log(
-      `\n✨ Compared ${result.matrices.length} profile(s) across ${result.successfulOrgs.length} environment(s)`
-    );
-    this.log(messages.getMessage('success.comparison-complete'));
   }
 }
