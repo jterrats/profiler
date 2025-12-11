@@ -34,14 +34,6 @@ Exclude metadata from managed packages (with namespace prefixes).
 
 When enabled, filters out all metadata components that belong to managed packages (identified by namespace prefixes like "namespace\_\_ComponentName"). This helps avoid errors when comparing profiles that reference components from uninstalled or inaccessible managed packages.
 
-# flags.no-cache.summary
-
-Bypass cache and force fresh retrieval from org.
-
-# flags.no-cache.description
-
-When enabled, ignores any cached metadata and always retrieves fresh data from the org. Use this flag if you suspect cached data is stale or if you want to ensure you're comparing against the most recent org state. This guarantees accuracy but may be slower.
-
 # flags.sources.summary
 
 Compare profiles across multiple Salesforce environments (comma-separated org aliases).
@@ -83,10 +75,6 @@ Choose the output format for displaying or exporting comparison matrices. Option
 - Compare excluding managed package metadata:
 
   <%= config.bin %> <%= command.id %> --target-org myOrg --name "Admin" --exclude-managed
-
-- Force fresh retrieval (bypass cache):
-
-  <%= config.bin %> <%= command.id %> --target-org myOrg --name "Admin" --no-cache
 
 - Compare profiles across multiple environments:
 

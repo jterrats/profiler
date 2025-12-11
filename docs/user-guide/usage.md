@@ -188,18 +188,6 @@ sf profiler compare --sources "dev,qa,prod"
 - Minimum 2 org aliases required
 - Flag `--sources` is mutually exclusive with `--target-org`
 
-#### Bypass Cache
-
-Force fresh retrieval from org, ignoring any cached data:
-
-```bash
-# Local vs. org with fresh data
-sf profiler compare --target-org myOrg --name Admin --no-cache
-
-# Multi-source with fresh data
-sf profiler compare --name Admin --sources "dev,qa,prod" --no-cache
-```
-
 #### Exclude Managed Packages
 
 Filter out metadata from managed packages during comparison:
@@ -255,7 +243,7 @@ sf profiler compare --name Admin --sources "dev,qa,uat,prod"
 
 ```bash
 # Compare all profiles to detect recent org changes
-sf profiler compare --target-org myOrg --no-cache
+sf profiler compare --target-org myOrg
 
 # Retrieve any profiles with differences
 sf profiler retrieve --target-org myOrg --name "ProfileWithChanges"

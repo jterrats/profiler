@@ -62,11 +62,6 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       description: messages.getMessage('flags.exclude-managed.description'),
       default: false,
     }),
-    'no-cache': Flags.boolean({
-      summary: messages.getMessage('flags.no-cache.summary'),
-      description: messages.getMessage('flags.no-cache.description'),
-      default: false,
-    }),
     sources: Flags.string({
       summary: messages.getMessage('flags.sources.summary'),
       description: messages.getMessage('flags.sources.description'),
@@ -137,7 +132,6 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
   private async runSingleOrgComparison(flags: any): Promise<ProfilerCompareResult> {
     const targetOrgAlias = flags['target-org'] as string;
     const profileName = flags.name;
-    const noCache = flags['no-cache'] ?? false;
 
     // Resolve org from alias/username (same logic as multi-source)
     let org: Org;
@@ -161,11 +155,6 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
     const perfConfig = parsePerformanceFlags(flags);
     const resolvedConfig = resolvePerformanceConfig(perfConfig);
     displayConfigWarnings(resolvedConfig);
-
-    // Show cache bypass info
-    if (noCache) {
-      this.log('🔄 Cache bypassed - forcing fresh retrieval from org');
-    }
 
     this.log(messages.getMessage('info.starting', [org.getUsername() ?? org.getOrgId()]));
 
@@ -195,7 +184,6 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
         org,
         apiVersion,
         performanceConfig: perfConfig,
-        noCache,
       };
 
       const result = await compareProfileOperation(input).run();
@@ -245,7 +233,6 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
   private async runMultiSourceComparison(flags: any): Promise<ProfilerCompareResult> {
     const sources = flags.sources as string;
     const profileName = flags.name;
-    const noCache = flags['no-cache'] ?? false;
 
     // Parse org aliases
     const orgAliases = sources
@@ -306,7 +293,6 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       sources: orgSources,
       apiVersion,
       projectPath,
-      noCache,
     };
 
     const result = await compareMultiSource(input).run();

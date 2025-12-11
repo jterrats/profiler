@@ -40,8 +40,6 @@ export type CompareInput = {
   timeoutMs?: number;
   /** Performance configuration options */
   performanceConfig?: PerformanceConfig;
-  /** Bypass cache and force fresh retrieval (default: false) */
-  noCache?: boolean;
 };
 
 /**
@@ -342,8 +340,6 @@ export type MultiSourceCompareInput = {
   projectPath: string;
   /** Optional timeout in milliseconds */
   timeoutMs?: number;
-  /** Bypass cache and force fresh retrieval (default: false) */
-  noCache?: boolean;
 };
 
 /**

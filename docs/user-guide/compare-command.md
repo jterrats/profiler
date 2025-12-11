@@ -43,10 +43,9 @@ sf profiler compare --sources <org1,org2,org3> [--name <profile-name>] [--output
 
 ### Single-Source Mode Flags
 
-| Flag           | Required | Description                                      |
-| -------------- | -------- | ------------------------------------------------ |
-| `--target-org` | Yes\*    | The target org to compare profiles against       |
-| `--no-cache`   | No       | Bypass cache and force fresh retrieval (v2.4.0+) |
+| Flag           | Required | Description                                |
+| -------------- | -------- | ------------------------------------------ |
+| `--target-org` | Yes\*    | The target org to compare profiles against |
 
 \*Mutually exclusive with `--sources`
 
@@ -57,7 +56,6 @@ sf profiler compare --sources <org1,org2,org3> [--name <profile-name>] [--output
 | `--sources`       | Yes\*    | Comma-separated list of org aliases to compare (e.g., "dev,qa,prod") |
 | `--output-format` | No       | Output format: `table` (default), `json`, or `html`                  |
 | `--output-file`   | No       | Export comparison results to file                                    |
-| `--no-cache`      | No       | Bypass cache and force fresh retrieval                               |
 
 \*Mutually exclusive with `--target-org`, requires minimum 2 orgs
 
@@ -97,12 +95,6 @@ sf profiler compare --target-org production --name "Admin" --exclude-managed
 
 This is useful when comparing profiles that reference managed package components that may not be installed or accessible.
 
-#### Force Fresh Retrieval (Bypass Cache)
-
-```bash
-sf profiler compare --target-org qa-org --name "Admin" --no-cache
-```
-
 #### JSON Output for Automation
 
 ```bash
@@ -139,12 +131,6 @@ sf profiler compare --name Admin --sources "dev,qa,prod" \
 ```bash
 sf profiler compare --name Admin --sources "dev,qa,prod" \
   --output-format json > comparison.json
-```
-
-#### Multi-Source with Fresh Data
-
-```bash
-sf profiler compare --name Admin --sources "dev,qa,prod" --no-cache
 ```
 
 ## Multi-Source Comparison (v2.4.0+)
