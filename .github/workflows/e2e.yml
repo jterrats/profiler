@@ -32,16 +32,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-          cache: 'npm'
+          cache: 'yarn'
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile
 
       - name: Build plugin
         run: npm run build
@@ -63,12 +63,12 @@ jobs:
             echo ""
             exit 1
           fi
-          
+
           echo "Authenticating to test org..."
           echo "$SF_AUTH_URL" > authfile.txt
           sf org login sfdx-url --sfdx-url-file authfile.txt --alias e2e-test-org --set-default
           rm authfile.txt
-          
+
           echo "✅ Successfully authenticated to test org"
           sf org display --target-org e2e-test-org
 
@@ -82,17 +82,17 @@ jobs:
           echo "🧪 Running E2E Tests"
           echo "═══════════════════════════════════════════════════"
           echo ""
-          
+
           if [ -n "$PROFILE_NAME" ]; then
             echo "Testing specific profile: $PROFILE_NAME"
             export TEST_PROFILE_NAME="$PROFILE_NAME"
           else
             echo "Testing all profiles (default Admin)"
           fi
-          
+
           echo ""
           chmod +x scripts/e2e-test.sh
-          
+
           # Run E2E tests
           if ./scripts/e2e-test.sh; then
             echo ""
@@ -109,7 +109,7 @@ jobs:
 
       - name: Upload test artifacts (on failure)
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: e2e-test-artifacts
           path: |
@@ -117,4 +117,3 @@ jobs:
             profile-docs/
             *.log
           retention-days: 7
-
