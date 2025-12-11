@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # validate-ci.sh - Validate CI/CD pipeline locally using ACT
-# 
+#
 # REGLA DE ORO: Ejecutar ANTES de cada push para validar workflows
 # Usage: ./scripts/validate-ci.sh [workflow-name]
 #
@@ -53,7 +53,36 @@ fi
 
 echo ""
 echo "═══════════════════════════════════════════════════"
-echo "🚀 RUNNING ACT..."
+echo "🔍 STEP 1: VALIDATE HOOKS"
+echo "═══════════════════════════════════════════════════"
+echo ""
+
+# Run pre-commit hooks
+echo -e "${BLUE}Running pre-commit hooks...${NC}"
+export WIREIT_PARALLEL=1
+if yarn lint && yarn pretty-quick --staged; then
+    echo -e "${GREEN}✓${NC} Pre-commit hooks passed"
+else
+    echo -e "${RED}✗${NC} Pre-commit hooks failed"
+    echo "Fix lint/format issues before pushing"
+    exit 1
+fi
+
+echo ""
+
+# Run pre-push hooks
+echo -e "${BLUE}Running pre-push hooks...${NC}"
+if yarn build && yarn test; then
+    echo -e "${GREEN}✓${NC} Pre-push hooks passed"
+else
+    echo -e "${RED}✗${NC} Pre-push hooks failed"
+    echo "Fix build/test issues before pushing"
+    exit 1
+fi
+
+echo ""
+echo "═══════════════════════════════════════════════════"
+echo "🚀 STEP 2: RUNNING ACT (CI/CD Simulation)..."
 echo "═══════════════════════════════════════════════════"
 echo ""
 echo -e "${YELLOW}Note:${NC} This will:"
@@ -85,7 +114,7 @@ if act pull_request \
     $PLATFORM_FLAG \
     --pull=false \
     --rm; then
-    
+
     echo ""
     echo "═══════════════════════════════════════════════════"
     echo -e "${GREEN}✅ CI/CD PIPELINE VALIDATION PASSED${NC}"
