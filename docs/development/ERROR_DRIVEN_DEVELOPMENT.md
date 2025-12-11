@@ -517,7 +517,7 @@ EDD combines all three:
 
 ## Resources
 
-- [ERROR_CATALOG.md](../../ERROR_CATALOG.md) - Complete error catalog
+- [ERROR_CATALOG.md](ERROR_CATALOG.md) - Complete error catalog
 - [Monad Pattern](./MONAD_PATTERN.md) - How errors flow through monads
 - [Testing Guide](./TESTING_GUIDE.md) - Error testing strategies
 
@@ -530,5 +530,3 @@ EDD combines all three:
 > — EDD Philosophy
 
 **Every feature starts with: "What can go wrong?"**
-
-
