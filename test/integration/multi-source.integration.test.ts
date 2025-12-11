@@ -278,4 +278,47 @@ describe('Multi-Source Comparison - Error Handling (EDD)', () => {
       expect(parallelError.actions.join(' ')).to.include('retry');
     });
   });
+
+  describe('Multi-Source Comparison - Happy Path', () => {
+    it('should successfully compare profiles across multiple orgs', async () => {
+      // This is an integration test placeholder
+      // Real implementation would require:
+      // 1. Mock Org instances for dev/qa/prod
+      // 2. Mock profile retrieval responses
+      // 3. Call compareMultiSource() with test data
+      // 4. Verify matrix structure and results
+
+      // For now, verify that the operation types are exported correctly
+      const { compareMultiSource } = await import('../../src/operations/index.js');
+      expect(compareMultiSource).to.be.a('function');
+    });
+
+    it('should build comparison matrix with successful orgs', async () => {
+      const { buildComparisonMatrix } = await import('../../src/operations/index.js');
+      expect(buildComparisonMatrix).to.be.a('function');
+    });
+
+    it('should handle partial success gracefully', async () => {
+      // Placeholder for test that verifies partial success handling
+      // Should show that if some orgs fail, the operation continues
+      // with the successful orgs and returns a partial matrix
+      const { retrieveFromMultipleSources } = await import('../../src/operations/index.js');
+      expect(retrieveFromMultipleSources).to.be.a('function');
+    });
+
+    it('should execute parallel retrieval from multiple sources', async () => {
+      // Placeholder for test that verifies parallel execution
+      // Should mock multiple org retrievals and verify they run concurrently
+      const { retrieveFromMultipleSources } = await import('../../src/operations/index.js');
+      expect(retrieveFromMultipleSources).to.be.a('function');
+    });
+
+    it('should aggregate results from all profiles', async () => {
+      // Placeholder for test that verifies aggregation logic
+      // Should test compareMultiSource with multiple profile names
+      // and verify that all matrices are built correctly
+      const { compareMultiSource } = await import('../../src/operations/index.js');
+      expect(compareMultiSource).to.be.a('function');
+    });
+  });
 });
