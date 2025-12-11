@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       run_e2e:
-        description: 'Run E2E tests with real org (requires SF_AUTH_URL_E2E_ORG secret)'
+        description: "Run E2E tests with real org (requires SF_AUTH_URL_E2E_ORG secret)"
         required: false
         type: boolean
         default: false
@@ -13,9 +13,33 @@ on:
 jobs:
   unit-tests:
     uses: salesforcecli/github-workflows/.github/workflows/unitTest.yml@main
-  
+
+  # macOS build validation (build + basic tests)
+  macos-build-check:
+    name: macOS Build & Test Validation
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Run unit tests
+        run: npm test
+
   nuts:
-    needs: unit-tests
+    needs: [unit-tests, macos-build-check]
     uses: salesforcecli/github-workflows/.github/workflows/nut.yml@main
     secrets: inherit
     strategy:
@@ -24,7 +48,7 @@ jobs:
       fail-fast: false
     with:
       os: ${{ matrix.os }}
-  
+
   # E2E tests with real Salesforce org (optional)
   # Only runs when manually triggered with run_e2e=true
   e2e:
