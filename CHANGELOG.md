@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **operations**: New compareMultiSource() operation for parallel multi-org comparison
 - **operations**: retrieveFromMultipleSources() for concurrent profile retrieval
 - **operations**: buildComparisonMatrix() for cross-environment comparison structuring
+- **compare**: `--output-format` flag to choose output format (table, json, html)
+- **compare**: `--output-file` flag to export comparison results to file
+- **formatters**: New matrix-formatter module with 3 output formats:
+  - Table: ASCII table with UTF-8 box drawing for terminal
+  - JSON: Machine-readable structured data for automation
+  - HTML: Web-friendly formatted output with Bootstrap-style CSS
 
 ### Changed
 
