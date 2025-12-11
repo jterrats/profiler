@@ -3,10 +3,17 @@ on:
   push:
     branches-ignore: [main]
   workflow_dispatch:
+    inputs:
+      run_e2e:
+        description: 'Run E2E tests with real org (requires SF_AUTH_URL_E2E_ORG secret)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   unit-tests:
     uses: salesforcecli/github-workflows/.github/workflows/unitTest.yml@main
+  
   nuts:
     needs: unit-tests
     uses: salesforcecli/github-workflows/.github/workflows/nut.yml@main
@@ -17,3 +24,12 @@ jobs:
       fail-fast: false
     with:
       os: ${{ matrix.os }}
+  
+  # E2E tests with real Salesforce org (optional)
+  # Only runs when manually triggered with run_e2e=true
+  e2e:
+    needs: nuts
+    if: github.event.inputs.run_e2e == 'true'
+    uses: ./.github/workflows/e2e.yml
+    secrets:
+      SF_AUTH_URL_E2E_ORG: ${{ secrets.SF_AUTH_URL_E2E_ORG }}
