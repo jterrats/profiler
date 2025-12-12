@@ -4,4 +4,12 @@
 # Fix wireit worker pool issue in git hooks
 export WIREIT_PARALLEL=1
 
+# Validate GitHub Actions workflows (detect deprecated actions)
+if command -v actionlint &> /dev/null; then
+  echo "🔍 Validating GitHub Actions workflows..."
+  # Disable shellcheck to avoid failing on style warnings in existing workflows
+  # Focus on detecting deprecated actions and syntax errors
+  actionlint -shellcheck= || exit 1
+fi
+
 yarn lint && yarn pretty-quick --staged

@@ -53,7 +53,29 @@ fi
 
 echo ""
 echo "═══════════════════════════════════════════════════"
-echo "🔍 STEP 1: VALIDATE HOOKS"
+echo "🔍 STEP 1: VALIDATE GITHUB ACTIONS WORKFLOWS"
+echo "═══════════════════════════════════════════════════"
+echo ""
+
+# Validate workflows with actionlint (detects deprecated actions)
+if command -v actionlint &> /dev/null; then
+    echo -e "${BLUE}Running actionlint...${NC}"
+    # Disable shellcheck to focus on deprecated actions and syntax errors
+    if actionlint -shellcheck=; then
+        echo -e "${GREEN}✓${NC} Workflows validation passed"
+    else
+        echo -e "${RED}✗${NC} Workflow validation failed"
+        echo "Fix workflow issues (deprecated actions, syntax, etc)"
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}⚠${NC}  actionlint not found, skipping workflow validation"
+    echo "   Install: brew install actionlint"
+fi
+
+echo ""
+echo "═══════════════════════════════════════════════════"
+echo "🔍 STEP 2: VALIDATE HOOKS"
 echo "═══════════════════════════════════════════════════"
 echo ""
 
@@ -82,7 +104,7 @@ fi
 
 echo ""
 echo "═══════════════════════════════════════════════════"
-echo "🚀 STEP 2: RUNNING ACT (CI/CD Simulation)..."
+echo "🚀 STEP 3: RUNNING ACT (CI/CD Simulation)..."
 echo "═══════════════════════════════════════════════════"
 echo ""
 echo -e "${YELLOW}Note:${NC} This will:"

@@ -9,6 +9,7 @@
 ```
 
 This will save you from:
+
 - ❌ Commits that break CI/CD
 - ❌ Wasted GitHub Actions minutes
 - ❌ Time waiting for GitHub Actions to fail
@@ -22,31 +23,53 @@ This will save you from:
 
 ### Benefits
 
-✅ **Immediate feedback** - Don't wait for GitHub Actions  
-✅ **Save minutes** - Don't consume GitHub Actions quota  
-✅ **Easy debugging** - Inspect containers, logs, etc.  
-✅ **Offline testing** - Work without internet  
+✅ **Immediate feedback** - Don't wait for GitHub Actions
+✅ **Save minutes** - Don't consume GitHub Actions quota
+✅ **Easy debugging** - Inspect containers, logs, etc.
+✅ **Offline testing** - Work without internet
 ✅ **Reproducibility** - Same environment as GitHub Actions
 
 ---
 
 ## Installation
 
-### macOS (Homebrew)
+### ACT (GitHub Actions local runner)
+
+**macOS (Homebrew)**:
 
 ```bash
 brew install act
 ```
 
-### Linux
+**Linux**:
 
 ```bash
 curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
 ```
 
-### Manual
+**Manual**: See https://github.com/nektos/act#installation
 
-See: https://github.com/nektos/act#installation
+---
+
+### actionlint (Workflow validator)
+
+**Important**: actionlint detects **deprecated actions** (like `actions/upload-artifact@v3`), which ACT doesn't catch.
+
+**macOS (Homebrew)**:
+
+```bash
+brew install actionlint
+```
+
+**Linux**:
+
+```bash
+# Binary install
+bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+sudo mv actionlint /usr/local/bin/
+```
+
+**Manual**: See https://github.com/rhysd/actionlint#installation
 
 ---
 
@@ -96,6 +119,7 @@ Or use the default image by removing `.actrc` configuration.
 ```
 
 This simulates a **pull request** and runs the complete workflow:
+
 1. quick-check (lint, type, error tests)
 2. official-tests (unit, macOS, nuts)
 3. e2e-tests (with real org, if secrets configured)
@@ -178,20 +202,55 @@ ACT simulates GitHub Actions but has some differences:
 ### ❌ Not Supported
 
 - Reusable workflows with `uses: org/repo/.github/workflows/...@main`
+
   - Salesforce CLI workflows cannot run with ACT
   - Solution: Run specific jobs or local workflows
 
 - Some GitHub services (GitHub Packages, etc.)
 
+- **Deprecation policies** ⚠️ **IMPORTANT**
+  - ACT does NOT enforce GitHub's deprecation policies
+  - Example: `actions/upload-artifact@v3` works in ACT but fails on GitHub
+  - **Solution**: Use `actionlint` (included in validation script)
+
 ### ⚠️ Differences
 
 - **Runners**: ACT uses Docker images, not official GitHub runners
+
   - May have differences in installed tools
   - Use `catthehacker/ubuntu:act-latest` (more complete)
 
 - **Secrets**: Must configure locally in `.secrets`
 
 - **Performance**: May be slower on first run (Docker)
+
+---
+
+## actionlint Integration
+
+To catch issues ACT doesn't detect (like deprecated actions), we use **actionlint**:
+
+### What actionlint Detects
+
+✅ **Deprecated actions** (e.g., `actions/upload-artifact@v3`)
+✅ **Syntax errors** in workflows
+✅ **Type checking** for expressions
+✅ **Security issues** (e.g., script injection)
+✅ **Best practices** violations
+
+### Where It Runs
+
+1. **Pre-commit hook**: Validates workflows before commit
+2. **validate-ci.sh**: Runs before ACT validation
+3. **Manual**: `actionlint` in project root
+
+### Example Output
+
+```bash
+$ actionlint
+.github/workflows/e2e.yml:110:14: "actions/upload-artifact@v3" is deprecated.
+Use "actions/upload-artifact@v4" instead [action]
+```
 
 ---
 
@@ -224,6 +283,7 @@ act pull_request --workflows $(pwd)/.github/workflows/edd-ci.yml
 ### E2E Tests Fail Locally
 
 E2E tests require:
+
 1. Secrets configured in `.secrets`
 2. Authenticated and accessible Salesforce org
 3. Network enabled in Docker
@@ -279,15 +339,33 @@ act pull_request \
 
 ## Summary
 
-| Command | Purpose |
-|---------|---------|
-| `./scripts/validate-ci.sh` | Full validation (GOLDEN RULE) |
-| `act pull_request` | Run workflow manually |
-| `act pull_request -l` | List jobs without running |
-| `act pull_request -j <job>` | Run specific job |
-| `act pull_request --dryrun` | Preview without running |
-| `act pull_request -v` | Verbose logs |
+| Command                     | Purpose                                                 |
+| --------------------------- | ------------------------------------------------------- |
+| `./scripts/validate-ci.sh`  | Full validation: actionlint + hooks + ACT (GOLDEN RULE) |
+| `actionlint`                | Validate workflows (deprecated actions, syntax, etc.)   |
+| `act pull_request`          | Run workflow locally with ACT                           |
+| `act pull_request -l`       | List jobs without running                               |
+| `act pull_request -j <job>` | Run specific job                                        |
+| `act pull_request --dryrun` | Preview without running                                 |
+| `act pull_request -v`       | Verbose logs                                            |
 
 ---
 
-**Remember**: 🔥 **VALIDATE WITH ACT BEFORE EVERY PUSH** 🔥
+### Validation Layers
+
+```
+┌─────────────────────────────────────────────┐
+│  ./scripts/validate-ci.sh (GOLDEN RULE)    │
+└─────────────────────────────────────────────┘
+                    │
+        ┌───────────┼───────────┐
+        │           │           │
+        ▼           ▼           ▼
+  ┌─────────┐  ┌────────┐  ┌────────┐
+  │actionlint│  │ Hooks  │  │  ACT   │
+  └─────────┘  └────────┘  └────────┘
+  Deprecated   Lint/Test   Simulate
+  actions      quality     GitHub
+```
+
+**Remember**: 🔥 **VALIDATE BEFORE EVERY PUSH** 🔥
