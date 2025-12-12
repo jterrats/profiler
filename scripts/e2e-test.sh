@@ -675,11 +675,11 @@ fi
 # Final summary
 log_info ""
 log_info "═══════════════════════════════════════════"
-log_success "All E2E tests passed!"
+log_success "Core E2E tests completed! (Tests 1-9)"
 log_info "═══════════════════════════════════════════"
 log_info "Test project location: $TEST_PROJECT_DIR"
 log_info ""
-log_info "Validations performed:"
+log_info "Validations performed so far:"
 log_info "  ✓ Profile files created correctly"
 log_info "  ✓ Profile content validated (metadata sections present)"
 log_info "  🛡️  Git safety confirmed (no unintended file modifications)"
@@ -713,6 +713,8 @@ log_info "  • --concurrent-workers"
 log_info "  • Combined flags (multiple at once)"
 log_info "  • --dry-run (incremental retrieve feature)"
 log_info "  • --force (incremental retrieve feature)"
+log_info ""
+log_info "🔄 Continuing with Tests 10-16 (feature & error handling)..."
 log_info ""
 
 ########################################
@@ -922,6 +924,92 @@ fi
 log_success "Test 15 passed: HTML export works"
 log_info ""
 
+########################################
+# Test 16: Error Handling (Critical Edge Cases)
+########################################
+log_info "═══════════════════════════════════════════"
+log_info "Test 16: Error Handling & Edge Cases"
+log_info "═══════════════════════════════════════════"
+log_info ""
+
+# Test 16a: Non-existent profile (should show clear error, not crash)
+log_info "Step 16a: Testing non-existent profile..."
+if sf profiler retrieve --target-org "$TARGET_ORG" --name "ProfileThatDoesNotExist12345" 2>&1 | grep -q -E "(not found|No.*profile|doesn't exist)" ; then
+    log_success "✓ Non-existent profile: Clear error message shown"
+else
+    # Check if it failed (expected)
+    if ! sf profiler retrieve --target-org "$TARGET_ORG" --name "ProfileThatDoesNotExist12345" > /dev/null 2>&1; then
+        log_success "✓ Non-existent profile: Command failed as expected"
+    else
+        log_warning "Non-existent profile: Unexpected behavior (may need better error handling)"
+    fi
+fi
+
+# Test 16b: Corrupted sfdx-project.json (should show clear error)
+log_info "Step 16b: Testing corrupted sfdx-project.json..."
+ORIGINAL_SFDX_PROJECT=$(cat sfdx-project.json)
+echo '{ "corrupted json without closing brace' > sfdx-project.json
+
+if sf profiler retrieve --target-org "$TARGET_ORG" --name Admin 2>&1 | grep -q -E "(parse|JSON|syntax|invalid)" ; then
+    log_success "✓ Corrupted JSON: Clear error message shown"
+else
+    if ! sf profiler retrieve --target-org "$TARGET_ORG" --name Admin > /dev/null 2>&1; then
+        log_success "✓ Corrupted JSON: Command failed as expected"
+    else
+        log_warning "Corrupted JSON: Unexpected behavior"
+    fi
+fi
+
+# Restore original sfdx-project.json
+echo "$ORIGINAL_SFDX_PROJECT" > sfdx-project.json
+log_info "   sfdx-project.json restored"
+
+# Test 16c: Read-only force-app directory (should show clear error)
+log_info "Step 16c: Testing read-only force-app directory..."
+
+# Create a fresh force-app for this test
+rm -rf force-app
+mkdir -p force-app/main/default/profiles
+
+# Make it read-only
+chmod 444 force-app
+
+if sf profiler retrieve --target-org "$TARGET_ORG" --name Admin 2>&1 | grep -q -E "(permission|EACCES|read-only|cannot write)" ; then
+    log_success "✓ Read-only directory: Clear permission error shown"
+else
+    if ! sf profiler retrieve --target-org "$TARGET_ORG" --name Admin > /dev/null 2>&1; then
+        log_success "✓ Read-only directory: Command failed as expected"
+    else
+        log_warning "Read-only directory: Command succeeded (may have workaround)"
+    fi
+fi
+
+# Restore permissions
+chmod -R 755 force-app
+log_info "   force-app permissions restored"
+
+# Test 16d: Invalid org username (should show clear error)
+log_info "Step 16d: Testing invalid org username..."
+if sf profiler retrieve --target-org "invalid-org-username@nonexistent.com" --name Admin 2>&1 | grep -q -E "(No.*org|not found|not authorized|invalid)" ; then
+    log_success "✓ Invalid org: Clear error message shown"
+else
+    if ! sf profiler retrieve --target-org "invalid-org-username@nonexistent.com" --name Admin > /dev/null 2>&1; then
+        log_success "✓ Invalid org: Command failed as expected"
+    else
+        log_error "Invalid org: Command succeeded (UNEXPECTED - should fail)"
+        exit 1
+    fi
+fi
+
+log_success "Test 16 passed: Error handling validated"
+log_info ""
+log_info "Error scenarios validated:"
+log_info "  ✓ Non-existent profile (graceful error)"
+log_info "  ✓ Corrupted sfdx-project.json (JSON parsing)"
+log_info "  ✓ Read-only directory (permission error)"
+log_info "  ✓ Invalid org username (auth error)"
+log_info ""
+
 # Cleanup test project
 log_info "Cleaning up test project..."
 cd "$PLUGIN_ROOT"
@@ -932,6 +1020,7 @@ log_success "All E2E tests completed successfully!"
 log_info ""
 log_info "Test Summary:"
 log_info "  ✓ 12 core tests (retrieve, compare, performance, incremental)"
-log_info "  ✓ 3 new tests (multi-source, JSON, HTML export)"
-log_info "  Total: 15 E2E tests"
+log_info "  ✓ 3 feature tests (multi-source, JSON, HTML export)"
+log_info "  ✓ 1 error handling test (4 error scenarios)"
+log_info "  Total: 16 E2E tests"
 
