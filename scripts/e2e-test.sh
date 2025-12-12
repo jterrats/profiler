@@ -144,6 +144,7 @@ cat > force-app/main/default/classes/DummyTest.cls-meta.xml << 'EOF'
 EOF
 
 # Create dummy CustomObject
+mkdir -p force-app/main/default/objects/DummyObject__c
 cat > force-app/main/default/objects/DummyObject__c/DummyObject__c.object-meta.xml << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
