@@ -113,6 +113,11 @@ log_success "Working directory: $(pwd)"
 # Initialize git (optional, to test git-safety)
 log_info "Initializing git repository..."
 git init > /dev/null 2>&1
+
+# Configure git user (required for GitHub Actions)
+git config user.email "e2e-tests@profiler.local" > /dev/null 2>&1
+git config user.name "E2E Test Bot" > /dev/null 2>&1
+
 git add . > /dev/null 2>&1
 git commit -m "Initial commit" > /dev/null 2>&1
 log_success "Git repository initialized"
