@@ -280,7 +280,8 @@ sf profiler retrieve --target-org "$TARGET_ORG" --name "Admin" 2>&1 | grep -v "M
 
 if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
     PROFILE_FILE="force-app/main/default/profiles/Admin.profile-meta.xml"
-    FLS_WITHOUT=$(grep -c "<fieldPermissions>" "$PROFILE_FILE" || echo "0")
+    FLS_WITHOUT=$(grep -c "<fieldPermissions>" "$PROFILE_FILE" 2>/dev/null || echo "0")
+    FLS_WITHOUT=$(echo "$FLS_WITHOUT" | tr -d '\n' | tr -d ' ')
     log_info "  Field permissions WITHOUT --all-fields: $FLS_WITHOUT"
 
     if [ "$FLS_WITHOUT" -eq 0 ]; then
@@ -298,7 +299,8 @@ sf profiler retrieve --target-org "$TARGET_ORG" --name "Admin" --all-fields 2>&1
 
 if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
     PROFILE_FILE="force-app/main/default/profiles/Admin.profile-meta.xml"
-    FLS_WITH=$(grep -c "<fieldPermissions>" "$PROFILE_FILE" || echo "0")
+    FLS_WITH=$(grep -c "<fieldPermissions>" "$PROFILE_FILE" 2>/dev/null || echo "0")
+    FLS_WITH=$(echo "$FLS_WITH" | tr -d '\n' | tr -d ' ')
     log_info "  Field permissions WITH --all-fields: $FLS_WITH"
 
     if [ "$FLS_WITH" -gt 0 ]; then
