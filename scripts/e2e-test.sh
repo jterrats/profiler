@@ -718,7 +718,7 @@ log_info ""
 ########################################
 # Test 10: --dry-run flag
 ########################################
-log_test "Test 10: --dry-run flag (preview without executing)"
+log_info "Test 10: --dry-run flag (preview without executing)"
 
 log_info "Running dry run..."
 sf profiler retrieve --target-org "$TARGET_ORG" --dry-run
@@ -748,7 +748,7 @@ log_info ""
 ########################################
 # Test 11: --force flag (bypass incremental)
 ########################################
-log_test "Test 11: --force flag (force full retrieve)"
+log_info "Test 11: --force flag (force full retrieve)"
 
 log_info "First retrieve (creates baseline)..."
 sf profiler retrieve --target-org "$TARGET_ORG" > /dev/null 2>&1
@@ -789,7 +789,7 @@ log_info ""
 ########################################
 # Test 12: Incremental retrieve (default behavior)
 ########################################
-log_test "Test 12: Incremental retrieve (default - no flags)"
+log_info "Test 12: Incremental retrieve (default - no flags)"
 
 log_info "First retrieve (creates baseline)..."
 sf profiler retrieve --target-org "$TARGET_ORG" > /dev/null 2>&1
@@ -833,7 +833,7 @@ log_info ""
 ########################################
 # Test 13: Multi-source comparison (--sources flag)
 ########################################
-log_test "Test 13: Multi-source comparison"
+log_info "Test 13: Multi-source comparison"
 
 # Check if multiple orgs are available
 log_info "Checking for multiple authorized orgs..."
@@ -868,7 +868,7 @@ log_info ""
 ########################################
 # Test 14: Output format JSON
 ########################################
-log_test "Test 14: Output format JSON"
+log_info "Test 14: Output format JSON"
 
 log_info "Testing JSON output format..."
 OUTPUT=$(sf profiler compare --target-org "$TARGET_ORG" --name Admin --output-format json 2>&1 || true)
@@ -886,7 +886,7 @@ log_info ""
 ########################################
 # Test 15: Output format HTML with file export
 ########################################
-log_test "Test 15: HTML output with file export"
+log_info "Test 15: HTML output with file export"
 
 REPORT_FILE="$TEST_PROJECT_DIR/comparison-report.html"
 
