@@ -2,7 +2,8 @@ name: EDD CI Pipeline
 
 # Optimized for GitHub Actions Free Tier
 # Philosophy: Run error tests first (cheap), full tests only when needed
-# Architecture: Main workflow that orchestrates all testing (calls tests.yml and e2e.yml)
+# Architecture: Main workflow orchestrates testing (calls tests.yml for unit/NUT tests)
+# Note: E2E tests run separately on package.json changes (version bumps for release)
 
 on:
   push:
@@ -10,9 +11,9 @@ on:
       - main
       - develop
     paths-ignore:
-      - "**.md" # Skip docs-only changes
-      - "docs/**"
-      - "LICENSE"
+      - '**.md' # Skip docs-only changes
+      - 'docs/**'
+      - 'LICENSE'
   pull_request:
     branches:
       - main
@@ -36,8 +37,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
-          cache: "yarn"
+          node-version: '24'
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -66,22 +67,13 @@ jobs:
 
   # Tier 2: Official Salesforce CLI tests (runs on PRs, ~7 min)
   # Calls the reusable tests workflow (unit-tests, nuts, macOS)
+  # NUT tests cover scenarios not reproducible in E2E (auth expiration, network errors, etc.)
   official-tests:
     name: Unit & Integration Tests
     needs: quick-check
     if: github.event_name == 'pull_request'
     uses: ./.github/workflows/test.yml
     secrets: inherit
-
-  # Tier 3: E2E Tests (runs on PRs, ~10-15 min)
-  # Calls the e2e.yml workflow with real Salesforce org
-  e2e-tests:
-    name: End-to-End Tests
-    needs: official-tests
-    if: github.event_name == 'pull_request'
-    uses: ./.github/workflows/e2e.yml
-    secrets:
-      SF_AUTH_URL_E2E_ORG: ${{ secrets.SF_AUTH_URL_E2E_ORG }}
 
   # Build check on push to main/develop (calls official tests which include macOS build)
   build-check:

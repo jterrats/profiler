@@ -1,10 +1,16 @@
 name: E2E Tests
 
 # Triggers:
-#   - Called by main test workflow (workflow_call)
+#   - Push to main/develop when package.json changes (version bump for release)
 #   - Manually triggered (workflow_dispatch)
-#   - Scheduled runs (optional)
+#   - Called by other workflows (workflow_call)
 on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'package.json'
   workflow_call:
     inputs:
       profile_name:
@@ -20,9 +26,6 @@ on:
         description: 'Profile name to test (leave empty for all)'
         required: false
         type: string
-  # Uncomment to enable scheduled runs (every Monday at 9 AM UTC)
-  # schedule:
-  #   - cron: '0 9 * * 1'
 
 jobs:
   e2e:
@@ -77,7 +80,7 @@ jobs:
 
       - name: Run E2E tests
         env:
-          PROFILE_NAME: ${{ inputs.profile_name }}
+          PROFILE_NAME: ${{ inputs.profile_name || '' }}
         run: |
           echo "🧪 Running E2E Tests"
           echo "═══════════════════════════════════════════════════"
