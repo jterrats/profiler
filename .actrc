@@ -1,0 +1,18 @@
+# .actrc - ACT local configuration
+# This file configures ACT to use custom Docker image with yarn support
+
+# Use custom local image (built from ~/dev/act)
+-P ubuntu-latest=act-local:latest
+
+# Don't pull images on every run (faster)
+--pull=false
+
+# Clean up containers after run
+--rm
+
+# Use local secrets file if it exists
+--secret-file .secrets
+
+# Container architecture (use host architecture)
+--container-architecture linux/amd64
+

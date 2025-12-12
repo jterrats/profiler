@@ -244,6 +244,6 @@ Use `--verbose-performance` to see detailed metrics:
 
 ## 🔗 Related Documentation
 
-- [Error Catalog](../ERROR_CATALOG.md) - Complete error reference
+- [Error Catalog](development/ERROR_CATALOG.md) - Complete error reference
 - [Development Guide](./DEVELOPMENT.md) - Contributing guidelines
 - [Salesforce API Docs](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/)

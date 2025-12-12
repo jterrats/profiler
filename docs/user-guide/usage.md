@@ -142,6 +142,113 @@ Get the results in JSON format:
 sf profiler retrieve --target-org myOrg --json
 ```
 
+### `sf profiler compare`
+
+Compare Profile metadata between your local project and a Salesforce org, or across multiple Salesforce environments.
+
+#### Basic Usage - Local vs. Org
+
+Compare local profiles with their versions in the target org:
+
+```bash
+# Compare all profiles
+sf profiler compare --target-org myOrg
+
+# Compare specific profile
+sf profiler compare --target-org myOrg --name Admin
+
+# Compare multiple profiles
+sf profiler compare --target-org myOrg --name "Admin,Sales Profile,Custom"
+```
+
+#### Multi-Source Comparison
+
+**NEW in v2.4.0**: Compare the same profiles across multiple Salesforce environments in parallel.
+
+```bash
+# Compare Admin profile across 3 environments
+sf profiler compare --name Admin --sources "dev,qa,prod"
+
+# Compare multiple profiles across environments
+sf profiler compare --name "Admin,Sales Profile" --sources "dev,qa,uat,prod"
+
+# Compare all profiles across environments
+sf profiler compare --sources "dev,qa,prod"
+```
+
+**Key Features:**
+
+- **Parallel Retrieval**: Fetches profiles from all orgs concurrently for maximum speed
+- **Graceful Degradation**: Continues with successful orgs if some fail
+- **Comparison Matrix**: Shows differences across all environments side-by-side
+
+**Requirements:**
+
+- All org aliases must be pre-authenticated using `sf org login`
+- Minimum 2 org aliases required
+- Flag `--sources` is mutually exclusive with `--target-org`
+
+#### Exclude Managed Packages
+
+Filter out metadata from managed packages during comparison:
+
+```bash
+sf profiler compare --target-org myOrg --name Admin --exclude-managed
+```
+
+#### Custom API Version
+
+Specify a custom API version for the comparison:
+
+```bash
+sf profiler compare --target-org myOrg --api-version 60.0
+```
+
+#### Comparison Modes
+
+**Local vs. Org (Single-Source)**:
+
+- Compares your local profile files with their versions in a single org
+- Shows additions, deletions, and changes
+- Useful for validating changes before deployment
+
+**Multi-Source Comparison**:
+
+- Compares the same profiles across multiple environments
+- Identifies configuration drift between environments
+- Helps ensure consistency across dev/qa/uat/prod
+
+#### Example Workflows
+
+**Pre-deployment Validation:**
+
+```bash
+# Verify local changes before deploying to QA
+sf profiler compare --target-org qa --name "Admin,Sales"
+
+# If no differences, safe to deploy
+sf project deploy start --target-org qa
+```
+
+**Environment Consistency Check:**
+
+```bash
+# Check if Admin profile is consistent across all environments
+sf profiler compare --name Admin --sources "dev,qa,uat,prod"
+
+# Review differences and sync environments as needed
+```
+
+**Change Detection:**
+
+```bash
+# Compare all profiles to detect recent org changes
+sf profiler compare --target-org myOrg
+
+# Retrieve any profiles with differences
+sf profiler retrieve --target-org myOrg --name "ProfileWithChanges"
+```
+
 ## What Gets Retrieved
 
 The plugin automatically retrieves the following metadata types along with profiles:

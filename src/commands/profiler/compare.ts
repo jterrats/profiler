@@ -1,11 +1,22 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import { Messages, SfError, SfProject } from '@salesforce/core';
+import { Messages, SfError, SfProject, AuthInfo, Connection, Org, StateAggregator } from '@salesforce/core';
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 
-import { compareProfileOperation, type CompareInput } from '../../operations/index.js';
-import { PERFORMANCE_FLAGS, parsePerformanceFlags, resolvePerformanceConfig, displayConfigWarnings } from '../../core/performance/index.js';
+import {
+  compareProfileOperation,
+  compareMultiSource,
+  type CompareInput,
+  type MultiSourceCompareInput,
+} from '../../operations/index.js';
+import {
+  PERFORMANCE_FLAGS,
+  parsePerformanceFlags,
+  resolvePerformanceConfig,
+  displayConfigWarnings,
+} from '../../core/performance/index.js';
+import { formatComparisonMatrix, exportComparisonMatrix } from '../../core/formatters/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.compare');
@@ -33,9 +44,9 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   public static readonly flags = {
-    'target-org': Flags.requiredOrg({
+    'target-org': Flags.string({
+      char: 'o',
       summary: messages.getMessage('flags.target-org.summary'),
-      required: true,
     }),
     name: Flags.string({
       char: 'n',
@@ -50,6 +61,20 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       summary: messages.getMessage('flags.exclude-managed.summary'),
       description: messages.getMessage('flags.exclude-managed.description'),
       default: false,
+    }),
+    sources: Flags.string({
+      summary: messages.getMessage('flags.sources.summary'),
+      description: messages.getMessage('flags.sources.description'),
+    }),
+    'output-file': Flags.string({
+      summary: messages.getMessage('flags.output-file.summary'),
+      description: messages.getMessage('flags.output-file.description'),
+    }),
+    'output-format': Flags.string({
+      summary: messages.getMessage('flags.output-format.summary'),
+      description: messages.getMessage('flags.output-format.description'),
+      options: ['table', 'json', 'html'],
+      default: 'table',
     }),
     // Performance flags
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
@@ -79,8 +104,51 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
   /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
   public async run(): Promise<ProfilerCompareResult> {
     const { flags } = await this.parse(ProfilerCompare);
-    const org = flags['target-org'];
+    const sources = flags.sources;
+    const targetOrg = flags['target-org'];
+
+    // Validate that exactly one of target-org or sources is provided
+    if (!sources && !targetOrg) {
+      throw new SfError(
+        'Either --target-org or --sources must be specified. Use --target-org for single-org comparison or --sources for multi-source comparison.'
+      );
+    }
+
+    if (sources && targetOrg) {
+      throw new SfError(
+        'Cannot use both --target-org and --sources together. Use --target-org for single-org comparison or --sources for multi-source comparison.'
+      );
+    }
+
+    // Detect comparison mode
+    if (sources) {
+      return this.runMultiSourceComparison(flags);
+    } else {
+      return this.runSingleOrgComparison(flags);
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async runSingleOrgComparison(flags: any): Promise<ProfilerCompareResult> {
+    const targetOrgAlias = flags['target-org'] as string;
     const profileName = flags.name;
+
+    // Resolve org from alias/username (same logic as multi-source)
+    let org: Org;
+    try {
+      // Resolve alias to username if needed
+      const aliases = await StateAggregator.getInstance();
+      const username = aliases.aliases.getUsername(targetOrgAlias) ?? targetOrgAlias;
+
+      const authInfo = await AuthInfo.create({ username });
+      const connection = await Connection.create({ authInfo });
+      org = await Org.create({ connection });
+    } catch (error) {
+      throw new SfError(
+        `Failed to authenticate to org '${targetOrgAlias}': ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+
     const apiVersion = flags['api-version'] ?? (await org.retrieveMaxApiVersion());
 
     // Parse performance flags
@@ -159,8 +227,119 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       profilesWithDifferences,
       comparisons,
     };
-    /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async runMultiSourceComparison(flags: any): Promise<ProfilerCompareResult> {
+    const sources = flags.sources as string;
+    const profileName = flags.name;
+
+    // Parse org aliases
+    const orgAliases = sources
+      .split(',')
+      .map((alias) => alias.trim())
+      .filter((alias) => alias.length > 0);
+
+    if (orgAliases.length < 2) {
+      throw new SfError(
+        'Multi-source comparison requires at least 2 org aliases. Use comma-separated format: "dev,qa,prod"'
+      );
+    }
+
+    this.log(messages.getMessage('info.multi-source-mode', [orgAliases.length.toString()]));
+    this.log(`Comparing across environments: ${orgAliases.join(', ')}\n`);
+
+    // Resolve orgs from aliases (try alias first, fallback to username)
+    const orgSources = await Promise.all(
+      orgAliases.map(async (aliasOrUsername) => {
+        try {
+          // Try to get org using StateAggregator to resolve alias
+          const aliasesInstance = await StateAggregator.getInstance();
+          const username = aliasesInstance.aliases.getUsername(aliasOrUsername) ?? aliasOrUsername;
+
+          const authInfo = await AuthInfo.create({ username });
+          const connection = await Connection.create({ authInfo });
+          const org = await Org.create({ connection });
+          return { alias: aliasOrUsername, org };
+        } catch (error) {
+          throw new SfError(
+            `Failed to authenticate to org '${aliasOrUsername}': ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+      })
+    );
+
+    // Get API version from first org
+    const apiVersion = flags['api-version'] ?? (await orgSources[0].org.retrieveMaxApiVersion());
+
+    // Get project path for profile names
+    const project = await SfProject.resolve();
+    const projectPath = project.getPath();
+
+    // Determine which profiles to compare
+    const profileNames = await ProfilerCompare.getProfilesToCompare(projectPath, profileName);
+
+    if (profileNames.length === 0) {
+      throw new SfError(messages.getMessage('error.no-profiles-found'));
+    }
+
+    this.log(`Comparing ${profileNames.length} profile(s): ${profileNames.join(', ')}`);
+
+    // Execute multi-source comparison
+    const input: MultiSourceCompareInput = {
+      profileNames,
+      sources: orgSources,
+      apiVersion,
+      projectPath,
+    };
+
+    const result = await compareMultiSource(input).run();
+
+    if (result.isFailure()) {
+      throw new SfError(`Multi-source comparison failed: ${result.error.message}`);
+    }
+
+    const multiResult = result.value;
+
+    // Get output format preferences
+    const outputFormat = (flags['output-format'] as 'table' | 'json' | 'html') ?? 'table';
+    const outputFile = flags['output-file'] as string | undefined;
+
+    // Format the comparison matrix
+    const formatted = formatComparisonMatrix(multiResult, {
+      format: outputFormat,
+      includeDetails: false,
+      compact: false,
+    });
+
+    // Export to file if requested
+    if (outputFile) {
+      await exportComparisonMatrix(multiResult, outputFile, {
+        format: outputFormat,
+        includeDetails: false,
+        compact: false,
+      });
+      this.log(`\n📄 Comparison matrix exported to: ${outputFile}`);
+    }
+
+    // Display results (unless it's JSON format which is handled by --json flag)
+    if (outputFormat === 'table') {
+      this.log(formatted.content);
+    } else if (!outputFile) {
+      // If JSON/HTML and no output file, still display it
+      this.log(formatted.content);
+    }
+
+    return {
+      success: true,
+      totalProfilesCompared: profileNames.length,
+      profilesWithDifferences: 0, // TODO: Calculate from matrix
+      comparisons: [],
+    };
+  }
+  /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 
   private displayResults(comparisons: ProfileComparison[]): void {
     this.log('\n=== Comparison Results ===\n');

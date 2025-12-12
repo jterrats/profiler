@@ -65,3 +65,4 @@ node_modules
 
 # act local configuration (Docker image for local CI testing)
 .act/
+.secrets

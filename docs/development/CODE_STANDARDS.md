@@ -414,5 +414,3 @@ Before committing, ensure:
 ---
 
 **Last Updated**: 2024-12-02
-
-
