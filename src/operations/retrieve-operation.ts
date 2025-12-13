@@ -738,6 +738,8 @@ export function retrieveProfiles(input: RetrieveInput): ProfilerMonad<RetrieveRe
         }
         // eslint-disable-next-line no-console
         console.log(`\n   Total: ${metadataList.totalMembers} components\n`);
+        // eslint-disable-next-line no-console
+        console.log('✨ Dry run completed - no files were modified');
 
         return new ProfilerMonad(() =>
           Promise.resolve(
@@ -765,6 +767,8 @@ export function retrieveProfiles(input: RetrieveInput): ProfilerMonad<RetrieveRe
 
           // Create temp retrieve directory with minimal SFDX project structure
           await fs.mkdir(tempRetrieveDir, { recursive: true });
+          // Create force-app directory (required by sf project retrieve)
+          await fs.mkdir(path.join(tempRetrieveDir, 'force-app'), { recursive: true });
 
           // Create minimal sfdx-project.json in temp directory
           const sfdxProjectJson = {

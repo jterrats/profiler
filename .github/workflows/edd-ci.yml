@@ -2,16 +2,11 @@ name: EDD CI Pipeline
 
 # Optimized for GitHub Actions Free Tier
 # Philosophy: Run error tests first (cheap), full tests only when needed
+# Architecture: Main workflow orchestrates testing (calls tests.yml for unit/NUT tests)
+# Note: E2E tests run separately on package.json changes (version bumps for release)
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-    paths-ignore:
-      - "**.md" # Skip docs-only changes
-      - "docs/**"
-      - "LICENSE"
+  # Only runs on PRs (push events use build-check.yml workflow)
   pull_request:
     branches:
       - main
@@ -35,8 +30,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
-          cache: "yarn"
+          node-version: '24'
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -63,106 +58,15 @@ jobs:
         if: success()
         run: echo "All error scenarios properly handled!"
 
-  # Tier 2: Unit & Integration (runs on PRs only, ~5-7 min)
-  unit-tests:
+  # Tier 2: Official Salesforce CLI tests (runs on PRs, ~7 min)
+  # Calls the reusable tests workflow (unit-tests, nuts, macOS)
+  # NUT tests cover scenarios not reproducible in E2E (auth expiration, network errors, etc.)
+  official-tests:
     name: Unit & Integration Tests
     needs: quick-check
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
 
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: "yarn"
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      # Now run happy path tests
-      - name: Run Unit Tests
-        run: yarn test:unit --maxWorkers=2
-
-      - name: Run Integration Tests
-        run: yarn test:integration --maxWorkers=2
-        continue-on-error: true # Optional - integration tests may not exist yet
-
-      # Generate coverage report
-      - name: Upload Coverage
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-
-  # Tier 3: E2E Tests (runs only on main merge, ~10-15 min)
-  e2e-tests:
-    name: End-to-End Tests
-    needs: quick-check
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: "yarn"
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      # Install Salesforce CLI for E2E tests
-      - name: Install Salesforce CLI
-        run: npm install -g @salesforce/cli
-
-      - name: Verify SF CLI
-        run: sf --version
-
-      - name: Build
-        run: yarn build
-
-      # E2E tests use actual SF org
-      - name: Run E2E Tests
-        run: yarn test:e2e
-        env:
-          SALESFORCE_CLIENT_ID: ${{ secrets.SALESFORCE_CLIENT_ID }}
-          SALESFORCE_CLIENT_SECRET: ${{ secrets.SALESFORCE_CLIENT_SECRET }}
-          TESTKIT_AUTH_URL: ${{ secrets.TESTKIT_AUTH_URL }}
-
-  # Optional: Build check (only on main/develop, ~3-5 min)
-  build:
-    name: Build Check
-    needs: quick-check
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: "yarn"
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build
-        run: yarn build
-
-      - name: Verify build artifacts
-        run: |
-          if [ ! -d "lib" ]; then
-            echo "Build failed: lib directory not found"
-            exit 1
-          fi
+  # Note: Build check for push events is in separate workflow (build-check.yml)
+  # This prevents "waiting" jobs from appearing in PRs

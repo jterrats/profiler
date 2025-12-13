@@ -16,9 +16,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic fallback to full retrieve on any error (safe by default)
 - **retrieve**: `--force` flag to bypass incremental optimization and force full retrieve
 - **retrieve**: `--dry-run` flag to preview what would be retrieved without executing
+- **compare**: `--sources` flag for multi-source profile comparison across multiple Salesforce environments
+  - Compare same profiles across dev/qa/uat/prod in parallel
+  - Automatic graceful degradation if some orgs fail
+  - Comparison matrix showing differences across all environments
+  - Mutually exclusive with `--target-org` (use one or the other)
+  - Requires minimum 2 pre-authenticated org aliases
+- **compare**: `--no-cache` flag to bypass cache and force fresh retrieval
+- **errors**: 4 new error types for multi-source comparison (MultipleEnvironmentFailureError, PartialRetrievalError, MatrixBuildError, ParallelExecutionError)
 - **errors**: 3 new error types for incremental retrieve (LocalMetadataReadError, MetadataComparisonError, IncrementalRetrieveError)
-- **tests**: 5 new integration tests for incremental retrieve logic
-- **tests**: 3 new e2e tests for --force, --dry-run, and default incremental behavior
+- **tests**: 44 integration tests total (27 error tests + 12 incremental retrieve + 5 multi-source happy path)
+- **tests**: 3 new e2e tests for incremental retrieve (--force, --dry-run, default behavior)
+- **tests**: 3 new e2e tests for multi-source comparison (--sources, JSON format, HTML export)
+- **tests**: Total 15 E2E tests covering all major features
+- **operations**: New compareMultiSource() operation for parallel multi-org comparison
+- **operations**: retrieveFromMultipleSources() for concurrent profile retrieval
+- **operations**: buildComparisonMatrix() for cross-environment comparison structuring
+- **compare**: `--output-format` flag to choose output format (table, json, html)
+- **compare**: `--output-file` flag to export comparison results to file
+- **formatters**: New matrix-formatter module with 3 output formats:
+  - Table: ASCII table with UTF-8 box drawing for terminal
+  - JSON: Machine-readable structured data for automation
+  - HTML: Web-friendly formatted output with Bootstrap-style CSS
 
 ### Changed
 
@@ -34,6 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - No changes: ~3s (vs ~30s) = **10x faster** ⚡
   - Few changes: ~12s (vs ~30s) = **2.5x faster**
   - Many changes: ~30s (same as full retrieve)
+- **Multi-source comparison**:
+  - Parallel retrieval from all orgs concurrently (not sequential)
+  - Example: 4 orgs comparison ~30s total vs ~120s sequential = **4x faster**
+  - Scales linearly with number of environments
 
 ## [2.3.0] - 2024-12-09
 

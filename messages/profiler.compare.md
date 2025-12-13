@@ -34,6 +34,30 @@ Exclude metadata from managed packages (with namespace prefixes).
 
 When enabled, filters out all metadata components that belong to managed packages (identified by namespace prefixes like "namespace\_\_ComponentName"). This helps avoid errors when comparing profiles that reference components from uninstalled or inaccessible managed packages.
 
+# flags.sources.summary
+
+Compare profiles across multiple Salesforce environments (comma-separated org aliases).
+
+# flags.sources.description
+
+Enables multi-source comparison by specifying a comma-separated list of org aliases. Instead of comparing local vs. org, this compares the same profile across multiple environments. Example: "dev,qa,uat,prod". Requires authenticated orgs. Retrieves profiles in parallel for performance.
+
+# flags.output-file.summary
+
+Export comparison results to a file.
+
+# flags.output-file.description
+
+Specify a file path to export the comparison matrix results. The output format is determined by the --output-format flag. Example: "./comparison-report.html". Useful for documentation, reports, or sharing results with team members.
+
+# flags.output-format.summary
+
+Output format for comparison results (table, json, html).
+
+# flags.output-format.description
+
+Choose the output format for displaying or exporting comparison matrices. Options: "table" (ASCII table for terminal), "json" (machine-readable structured data), "html" (web-friendly formatted output with styling). Default is "table" for terminal display. Use "json" for automation or "html" for reports.
+
 # examples
 
 - Compare a specific profile:
@@ -51,6 +75,22 @@ When enabled, filters out all metadata components that belong to managed package
 - Compare excluding managed package metadata:
 
   <%= config.bin %> <%= command.id %> --target-org myOrg --name "Admin" --exclude-managed
+
+- Compare profiles across multiple environments:
+
+  <%= config.bin %> <%= command.id %> --name "Admin" --sources "dev,qa,prod"
+
+- Multi-source comparison with multiple profiles:
+
+  <%= config.bin %> <%= command.id %> --name "Admin,Sales Profile" --sources "dev,qa,uat,prod"
+
+- Export comparison matrix to HTML file:
+
+  <%= config.bin %> <%= command.id %> --name "Admin" --sources "dev,qa,prod" --output-format html --output-file "./comparison-report.html"
+
+- Get comparison results as JSON:
+
+  <%= config.bin %> <%= command.id %> --name "Admin" --sources "dev,qa,prod" --output-format json
 
 # info.starting
 
@@ -79,6 +119,14 @@ Total profiles compared: %s
 # info.profiles-with-differences
 
 Profiles with differences: %s
+
+# info.multi-source-mode
+
+🌍 Multi-source comparison mode enabled (%s environments)
+
+# info.retrieving-from-source
+
+Retrieving from %s...
 
 # info.line-added
 

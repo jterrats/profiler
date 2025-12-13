@@ -9,25 +9,26 @@
 ### Current State of "Error-Driven Development"
 
 **Research Results** (Dec 2024):
+
 - ✅ **Term exists** but with different meanings
 - ❌ **No one does it proactively** (all reactive approaches)
 - ✅ **We have the UNIQUE interpretation**
 
 ### Comparison
 
-| Approach | Existing EDD | **Our EDD** |
-|----------|--------------|-------------|
-| **When** | After error occurs | **Before implementation** |
-| **Source** | Production errors | **Error catalog (all possible)** |
-| **Tests** | Bug → Test → Fix | **Error tests → Code → Happy tests** |
-| **Coverage** | Only encountered errors | **ALL anticipated errors** |
+| Approach     | Existing EDD            | **Our EDD**                          |
+| ------------ | ----------------------- | ------------------------------------ |
+| **When**     | After error occurs      | **Before implementation**            |
+| **Source**   | Production errors       | **Error catalog (all possible)**     |
+| **Tests**    | Bug → Test → Fix        | **Error tests → Code → Happy tests** |
+| **Coverage** | Only encountered errors | **ALL anticipated errors**           |
 
 ### Not Chaos Engineering
 
-| | Chaos Engineering | Our EDD |
-|---|---|---|
-| **Goal** | Test resilience | **Design for errors** |
-| **When** | Post-deployment | **Pre-code** |
+|          | Chaos Engineering     | Our EDD                      |
+| -------- | --------------------- | ---------------------------- |
+| **Goal** | Test resilience       | **Design for errors**        |
+| **When** | Post-deployment       | **Pre-code**                 |
 | **What** | Infrastructure faults | **Application logic errors** |
 
 ---
@@ -37,6 +38,7 @@
 ### The EDD Advantage
 
 **Without EDD:**
+
 ```
 Push 1: ❌ Uncaught ProfileNotFoundError (10 min)
 Push 2: ❌ Timeout not handled (10 min)
@@ -47,6 +49,7 @@ Total: 40 GitHub Actions minutes wasted
 ```
 
 **With EDD:**
+
 ```
 Push 1: ✅ All errors pre-defined, tests pass (10 min)
 
@@ -56,6 +59,7 @@ Total: 10 minutes (75% savings!)
 ### CI/CD Strategy
 
 **3-Tier Testing:**
+
 ```yaml
 # Tier 1: Always (2-3 min)
 - Lint
@@ -72,6 +76,7 @@ Total: 10 minutes (75% savings!)
 ```
 
 **Result:**
+
 - Regular pushes: 3 min
 - PRs: 10 min
 - Main merges: 20 min
@@ -84,11 +89,14 @@ Total: 10 minutes (75% savings!)
 ### Phase 1: Foundation (Sprint 1-2, 20 points)
 
 #### Issue #1: Result Monad (3 pts)
+
 **Errors to handle:**
+
 - UnwrapError
 - TypeGuardError
 
 **Deliverables:**
+
 - [x] ERROR_CATALOG.md entry
 - [ ] Error classes defined
 - [ ] Error tests written (must fail)
@@ -97,13 +105,16 @@ Total: 10 minutes (75% savings!)
 - [ ] 100% coverage
 
 #### Issue #2: ProfilerMonad (5 pts)
+
 **Errors to handle:**
+
 - ComputationError
 - FlatMapError
 - RecoveryError
 - ChainError
 
 **Deliverables:**
+
 - [x] ERROR_CATALOG.md entries
 - [ ] Error classes defined
 - [ ] Error tests written (must fail)
@@ -112,13 +123,16 @@ Total: 10 minutes (75% savings!)
 - [ ] 100% coverage
 
 #### Issue #3: Metadata Cache (3 pts)
+
 **Errors to handle:**
+
 - CacheCorruptedError
 - CacheWriteError
 - CacheReadError
 - CacheDiskFullError
 
 **Deliverables:**
+
 - [x] ERROR_CATALOG.md entries
 - [ ] Error classes defined
 - [ ] Error tests with graceful degradation
@@ -127,12 +141,15 @@ Total: 10 minutes (75% savings!)
 - [ ] Performance benchmarks (5s improvement)
 
 #### Issue #4: Incremental Retrieve (5 pts)
+
 **Errors to handle:**
+
 - LocalMetadataReadError
 - MetadataComparisonError
 - IncrementalRetrieveError
 
 **Deliverables:**
+
 - [x] ERROR_CATALOG.md entries
 - [ ] Error classes defined
 - [ ] Error tests with fallback
@@ -140,7 +157,9 @@ Total: 10 minutes (75% savings!)
 - [ ] Performance benchmarks (10x improvement)
 
 #### Issue #5: Error Testing Setup (4 pts)
+
 **Tasks:**
+
 - [ ] Create `test/errors/` directory structure
 - [ ] Setup `.errors.test.ts` naming convention
 - [ ] Configure `test:errors` script
@@ -152,7 +171,9 @@ Total: 10 minutes (75% savings!)
 ### Phase 2: Core Operations (Sprint 3-4, 25 points)
 
 #### Issue #6: Refactor Retrieve Operation (8 pts)
+
 **Errors to handle (8 total):**
+
 - ProfileNotFoundError
 - OrgNotAuthenticatedError
 - MetadataApiError
@@ -163,6 +184,7 @@ Total: 10 minutes (75% savings!)
 - ManagedPackageError
 
 **EDD Process:**
+
 1. Define ALL 8 errors in ERROR_CATALOG.md ✅
 2. Create error classes
 3. Write 8 error tests (must fail)
@@ -173,13 +195,16 @@ Total: 10 minutes (75% savings!)
 8. Verify backward compatibility
 
 #### Issue #7: Refactor Compare Operation (5 pts)
+
 **Errors to handle (4 total):**
+
 - NoLocalProfileError
 - NoOrgProfileError
 - InvalidXmlError
 - ComparisonTimeoutError
 
 **EDD Process:**
+
 1. Define ALL 4 errors in ERROR_CATALOG.md ✅
 2. Create error classes
 3. Write 4 error tests (must fail)
@@ -190,13 +215,16 @@ Total: 10 minutes (75% savings!)
 8. Verify backward compatibility
 
 #### Issue #8: Multi-Source Compare (8 pts)
+
 **Errors to handle (4 total):**
+
 - MultipleEnvironmentFailureError
 - PartialRetrievalError
 - MatrixBuildError
 - ParallelExecutionError
 
 **EDD Process:**
+
 1. Define ALL 4 errors in ERROR_CATALOG.md ✅
 2. Create error classes
 3. Write error tests for partial failures
@@ -207,11 +235,14 @@ Total: 10 minutes (75% savings!)
 8. Performance test (3 orgs in 35s)
 
 #### Issue #9: Pipeline DSL (4 pts)
+
 **Errors to handle:**
+
 - PipelineStepFailedError
 - PipelineInterruptedError
 
 **Deliverables:**
+
 - [ ] PipelineBuilder class
 - [ ] Fluent API over monads
 - [ ] Error propagation through pipeline
@@ -222,7 +253,9 @@ Total: 10 minutes (75% savings!)
 ### Phase 3: Advanced Features (Sprint 5-6, 20 points)
 
 #### Issue #10: Profile Merge Command (8 pts)
+
 **Errors to handle (6 total):**
+
 - MergeConflictError
 - BackupFailedError
 - InvalidMergeStrategyError
@@ -231,6 +264,7 @@ Total: 10 minutes (75% savings!)
 - RollbackError
 
 **EDD Process:**
+
 1. Define ALL 6 errors in ERROR_CATALOG.md ✅
 2. Create error classes
 3. Write error tests (conflicts, backup failure, rollback)
@@ -241,13 +275,16 @@ Total: 10 minutes (75% savings!)
 8. Documentation
 
 #### Issue #11: Profile Validation Command (5 pts)
+
 **Errors to handle (4 total):**
+
 - MissingMetadataReferenceError
 - DuplicateEntryError
 - InvalidPermissionError
 - SchemaValidationError
 
 **EDD Process:**
+
 1. Define ALL 4 errors in ERROR_CATALOG.md ✅
 2. Create error classes
 3. Write error tests
@@ -257,14 +294,18 @@ Total: 10 minutes (75% savings!)
 7. CI/CD integration (exit codes)
 
 #### Issue #12: Interactive Merge Mode (5 pts)
+
 **Enhancements:**
+
 - [ ] CLI prompts with checkboxes
 - [ ] Real-time preview
 - [ ] Inline validation
 - [ ] Better UX for error display
 
 #### Issue #13: Progress Indicators (2 pts)
+
 **Tasks:**
+
 - [ ] Spinners for long operations
 - [ ] Progress bars for parallel ops
 - [ ] ETA calculations
@@ -275,24 +316,28 @@ Total: 10 minutes (75% savings!)
 ## 📈 Success Metrics
 
 ### Code Quality
+
 - [ ] 100% error path coverage
 - [ ] 90%+ happy path coverage
 - [ ] All errors documented in ERROR_CATALOG.md
 - [ ] All errors have actionable messages
 
 ### Performance
+
 - [ ] 75% reduction in CI/CD minutes
 - [ ] 5s improvement with cache
 - [ ] 10x improvement with incremental
 - [ ] 3x improvement with multi-source parallelism
 
 ### Developer Experience
+
 - [ ] Clear error messages
 - [ ] Specific recovery actions
 - [ ] Consistent error handling
 - [ ] Type-safe error propagation
 
 ### Community Impact
+
 - [ ] Blog post on EDD methodology
 - [ ] Conference talk proposal
 - [ ] Open source ERROR_CATALOG.md template
@@ -305,11 +350,13 @@ Total: 10 minutes (75% savings!)
 ### For Contributors
 
 1. **Read the docs:**
+
    - [ERROR_DRIVEN_DEVELOPMENT.md](../development/ERROR_DRIVEN_DEVELOPMENT.md)
-   - [ERROR_CATALOG.md](../../ERROR_CATALOG.md)
+   - [ERROR_CATALOG.md](../development/ERROR_CATALOG.md)
    - [EDD_COMPARISON.md](../development/EDD_COMPARISON.md)
 
 2. **Setup your environment:**
+
    ```bash
    git clone https://github.com/jterrats/profiler.git
    cd profiler
@@ -318,6 +365,7 @@ Total: 10 minutes (75% savings!)
    ```
 
 3. **Pick an issue:**
+
    - Start with errors (define them first!)
    - Write error tests (must fail)
    - Implement (make tests pass)
@@ -332,11 +380,13 @@ Total: 10 minutes (75% savings!)
 ### For Users
 
 1. **Install:**
+
    ```bash
    sf plugins install @jterrats/profiler
    ```
 
 2. **Try it:**
+
    ```bash
    sf profiler retrieve --target-org qa --name Admin
    ```
@@ -351,7 +401,8 @@ Total: 10 minutes (75% savings!)
 ## 📚 Resources
 
 ### Internal Documentation
-- [ERROR_CATALOG.md](../../ERROR_CATALOG.md) - All error definitions
+
+- [ERROR_CATALOG.md](../development/ERROR_CATALOG.md) - All error definitions
 - [ERROR_DRIVEN_DEVELOPMENT.md](../development/ERROR_DRIVEN_DEVELOPMENT.md) - Full methodology
 - [EDD_COMPARISON.md](../development/EDD_COMPARISON.md) - How we're different
 - [ISSUES_V2.2.0.md](./ISSUES_V2.2.0.md) - Detailed issue specs
@@ -359,6 +410,7 @@ Total: 10 minutes (75% savings!)
 - [DEVELOPMENT.md](../../DEVELOPMENT.md) - Development guide
 
 ### External References
+
 - [developertoolkit.ai/error-driven-development](https://developertoolkit.ai/en/shared-workflows/development-workflows/error-driven-development/) - AI-focused EDD
 - [testRigor.com/what-is-error-driven-development](https://testrigor.com/blog/what-is-error-driven-development) - Production-focused EDD
 - [Roc Boronat's EDD Presentation](https://www.slideshare.net/slideshow/introducing-edd-error-driven-development/77829470) - Bug-first testing
@@ -371,6 +423,7 @@ Total: 10 minutes (75% savings!)
 > If you think about the happy path first, errors become an afterthought."
 
 **Core Principles:**
+
 1. **Errors are first-class citizens**
 2. **Define before implement**
 3. **Test errors before success**
@@ -384,6 +437,7 @@ Total: 10 minutes (75% savings!)
 We believe Error-Driven Development (our version - proactive, catalog-driven) should become standard practice.
 
 **Help us spread it:**
+
 - ⭐ Star the repo
 - 📝 Write about your EDD experience
 - 🗣️ Present at meetups/conferences
@@ -391,6 +445,3 @@ We believe Error-Driven Development (our version - proactive, catalog-driven) sh
 - 📱 Share with #ErrorDrivenDevelopment
 
 **Together, we make software more robust, one error at a time.** 🔥
-
-
-

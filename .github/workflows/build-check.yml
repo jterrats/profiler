@@ -1,0 +1,21 @@
+name: Build Check
+
+# Separate workflow for push events (main/develop)
+# This prevents "waiting" jobs from appearing in PRs
+# Only runs on push to main/develop (not on PRs)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+
+jobs:
+  build-check:
+    name: Build Check
+    uses: ./.github/workflows/test.yml
+    secrets: inherit

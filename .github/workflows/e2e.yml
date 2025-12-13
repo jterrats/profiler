@@ -1,0 +1,122 @@
+name: E2E Tests
+
+# Triggers:
+#   - Push to main/develop when package.json changes (version bump for release)
+#   - Manually triggered (workflow_dispatch)
+#   - Called by other workflows (workflow_call)
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'package.json'
+  workflow_call:
+    inputs:
+      profile_name:
+        description: 'Profile name to test (leave empty for all)'
+        required: false
+        type: string
+    secrets:
+      SF_AUTH_URL_E2E_ORG:
+        required: true
+  workflow_dispatch:
+    inputs:
+      profile_name:
+        description: 'Profile name to test (leave empty for all)'
+        required: false
+        type: string
+
+jobs:
+  e2e:
+    name: E2E Tests with Real Org
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: Authenticate to test org
+        env:
+          SF_AUTH_URL: ${{ secrets.SF_AUTH_URL_E2E_ORG }}
+        run: |
+          if [ -z "$SF_AUTH_URL" ]; then
+            echo "❌ ERROR: SF_AUTH_URL_E2E_ORG secret is not configured"
+            echo ""
+            echo "To configure the test org:"
+            echo "1. Authenticate locally: sf org login web --alias e2e-test-org"
+            echo "2. Get auth URL: sf org display --target-org e2e-test-org --verbose --json | jq -r '.result.sfdxAuthUrl'"
+            echo "3. Add as GitHub secret: SF_AUTH_URL_E2E_ORG"
+            echo ""
+            exit 1
+          fi
+
+          echo "Authenticating to test org..."
+          echo "$SF_AUTH_URL" > authfile.txt
+          sf org login sfdx-url --sfdx-url-file authfile.txt --alias e2e-test-org --set-default
+          rm authfile.txt
+
+          echo "✅ Successfully authenticated to test org"
+          sf org display --target-org e2e-test-org
+
+      - name: Link plugin locally
+        run: sf plugins link .
+
+      - name: Run E2E tests
+        env:
+          PROFILE_NAME: ${{ inputs.profile_name || '' }}
+        run: |
+          echo "🧪 Running E2E Tests"
+          echo "═══════════════════════════════════════════════════"
+          echo ""
+
+          if [ -n "$PROFILE_NAME" ]; then
+            echo "Testing specific profile: $PROFILE_NAME"
+            export TEST_PROFILE_NAME="$PROFILE_NAME"
+          else
+            echo "Testing all profiles (default Admin)"
+          fi
+
+          echo ""
+          chmod +x scripts/e2e-test.sh
+
+          # Run E2E tests
+          if ./scripts/e2e-test.sh; then
+            echo ""
+            echo "═══════════════════════════════════════════════════"
+            echo "✅ E2E Tests PASSED"
+            echo "═══════════════════════════════════════════════════"
+          else
+            echo ""
+            echo "═══════════════════════════════════════════════════"
+            echo "❌ E2E Tests FAILED"
+            echo "═══════════════════════════════════════════════════"
+            exit 1
+          fi
+
+      - name: Upload test artifacts (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-artifacts
+          path: |
+            force-app/
+            profile-docs/
+            *.log
+          retention-days: 7
