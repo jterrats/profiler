@@ -6,14 +6,7 @@ name: EDD CI Pipeline
 # Note: E2E tests run separately on package.json changes (version bumps for release)
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-    paths-ignore:
-      - '**.md' # Skip docs-only changes
-      - 'docs/**'
-      - 'LICENSE'
+  # Only runs on PRs (push events use build-check.yml workflow)
   pull_request:
     branches:
       - main
@@ -75,10 +68,5 @@ jobs:
     uses: ./.github/workflows/test.yml
     secrets: inherit
 
-  # Build check on push to main/develop (calls official tests which include macOS build)
-  build-check:
-    name: Build Check
-    needs: quick-check
-    if: github.event_name == 'push'
-    uses: ./.github/workflows/test.yml
-    secrets: inherit
+  # Note: Build check for push events is in separate workflow (build-check.yml)
+  # This prevents "waiting" jobs from appearing in PRs
