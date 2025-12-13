@@ -30,7 +30,7 @@ The Profiler plugin is an essential Salesforce CLI extension engineered to guara
 **Key Features**:
 
 - ✅ **Safe retrieval** - Uses temporary directories, never overwrites local changes
-- ⚡ **Incremental retrieve** (v2.4.0) - 10x faster when no changes (~3s vs ~3s)
+- ⚡ **Incremental retrieve** (v2.4.0) - 10x faster when no changes (~3s vs ~30s)
 - 🌍 **Multi-source comparison** (v2.4.0) - Compare profiles across multiple environments in parallel
 - 🔒 Field Level Security (FLS) control
 - 🚀 No git operations required
@@ -170,13 +170,14 @@ Compare local Profile metadata with the version in Salesforce org.
 
 ```
 USAGE
-  $ sf profiler compare -o <value> [--json] [--flags-dir <value>] [-n <value>] [--api-version <value>]
-    [--exclude-managed] [--max-profiles <value>] [--max-api-calls <value>] [--max-memory <value>] [--operation-timeout
-    <value>] [--concurrent-workers <value>] [--verbose-performance]
+  $ sf profiler compare [--json] [--flags-dir <value>] [-o <value>] [-n <value>] [--api-version <value>]
+    [--exclude-managed] [--sources <value>] [--output-file <value>] [--output-format table|json|html] [--max-profiles
+    <value>] [--max-api-calls <value>] [--max-memory <value>] [--operation-timeout <value>] [--concurrent-workers
+    <value>] [--verbose-performance]
 
 FLAGS
   -n, --name=<value>                The name of a specific profile or comma-separated list of profiles to compare.
-  -o, --target-org=<value>          (required) The target org to compare profiles against.
+  -o, --target-org=<value>          The target org to compare profiles against.
       --api-version=<value>         Override the API version used for metadata operations.
       --concurrent-workers=<value>  Number of concurrent workers for parallel operations
       --exclude-managed             Exclude metadata from managed packages (with namespace prefixes).
@@ -184,6 +185,11 @@ FLAGS
       --max-memory=<value>          Maximum memory usage in MB
       --max-profiles=<value>        Maximum number of profiles to process in a single operation
       --operation-timeout=<value>   Operation timeout in milliseconds
+      --output-file=<value>         Export comparison results to a file.
+      --output-format=<option>      [default: table] Output format for comparison results (table, json, html).
+                                    <options: table|json|html>
+      --sources=<value>             Compare profiles across multiple Salesforce environments (comma-separated org
+                                    aliases).
       --verbose-performance         Show detailed performance metrics
 
 GLOBAL FLAGS
@@ -213,6 +219,23 @@ EXAMPLES
   Compare excluding managed package metadata:
 
     $ sf profiler compare --target-org myOrg --name "Admin" --exclude-managed
+
+  Compare profiles across multiple environments:
+
+    $ sf profiler compare --name "Admin" --sources "dev,qa,prod"
+
+  Multi-source comparison with multiple profiles:
+
+    $ sf profiler compare --name "Admin,Sales Profile" --sources "dev,qa,uat,prod"
+
+  Export comparison matrix to HTML file:
+
+    $ sf profiler compare --name "Admin" --sources "dev,qa,prod" --output-format html --output-file \
+      "./comparison-report.html"
+
+  Get comparison results as JSON:
+
+    $ sf profiler compare --name "Admin" --sources "dev,qa,prod" --output-format json
 
 FLAG DESCRIPTIONS
   -n, --name=<value>  The name of a specific profile or comma-separated list of profiles to compare.
@@ -252,12 +275,29 @@ FLAG DESCRIPTIONS
 
     Overrides the default timeout of 300000ms (5 minutes).
 
+  --output-file=<value>  Export comparison results to a file.
+
+    Specify a file path to export the comparison matrix results. The output format is determined by the --output-format
+    flag. Example: "./comparison-report.html". Useful for documentation, reports, or sharing results with team members.
+
+  --output-format=table|json|html  Output format for comparison results (table, json, html).
+
+    Choose the output format for displaying or exporting comparison matrices. Options: "table" (ASCII table for
+    terminal), "json" (machine-readable structured data), "html" (web-friendly formatted output with styling). Default
+    is "table" for terminal display. Use "json" for automation or "html" for reports.
+
+  --sources=<value>  Compare profiles across multiple Salesforce environments (comma-separated org aliases).
+
+    Enables multi-source comparison by specifying a comma-separated list of org aliases. Instead of comparing local vs.
+    org, this compares the same profile across multiple environments. Example: "dev,qa,uat,prod". Requires authenticated
+    orgs. Retrieves profiles in parallel for performance.
+
   --verbose-performance  Show detailed performance metrics
 
     Displays detailed information about worker pool configuration, API calls, memory usage, and operation timings.
 ```
 
-_See code: [src/commands/profiler/compare.ts](https://github.com/jterrats/profiler/blob/v2.3.0/src/commands/profiler/compare.ts)_
+_See code: [src/commands/profiler/compare.ts](https://github.com/jterrats/profiler/blob/v2.4.0/src/commands/profiler/compare.ts)_
 
 ## `sf profiler docs`
 
@@ -340,7 +380,7 @@ FLAG DESCRIPTIONS
     package permissions that may not be relevant to your implementation.
 ```
 
-_See code: [src/commands/profiler/docs.ts](https://github.com/jterrats/profiler/blob/v2.3.0/src/commands/profiler/docs.ts)_
+_See code: [src/commands/profiler/docs.ts](https://github.com/jterrats/profiler/blob/v2.4.0/src/commands/profiler/docs.ts)_
 
 ## `sf profiler retrieve`
 
@@ -349,8 +389,8 @@ Retrieve Profile metadata with all required dependencies.
 ```
 USAGE
   $ sf profiler retrieve -o <value> [--json] [--flags-dir <value>] [-n <value>] [--all-fields] [--api-version <value>]
-    [-f] [--exclude-managed] [--max-profiles <value>] [--max-api-calls <value>] [--max-memory <value>]
-    [--operation-timeout <value>] [--concurrent-workers <value>] [--verbose-performance]
+    [-f] [--exclude-managed] [--force] [--dry-run] [--max-profiles <value>] [--max-api-calls <value>] [--max-memory
+    <value>] [--operation-timeout <value>] [--concurrent-workers <value>] [--verbose-performance]
 
 FLAGS
   -f, --from-project                Use local project metadata to build the package.xml instead of listing from org.
@@ -359,7 +399,9 @@ FLAGS
       --all-fields                  Include Field Level Security (FLS) in the retrieved profiles.
       --api-version=<value>         Override the API version used for metadata operations.
       --concurrent-workers=<value>  Number of concurrent workers for parallel operations
+      --dry-run                     Preview what would be retrieved without executing the retrieve.
       --exclude-managed             Exclude metadata from managed packages (with namespace prefixes).
+      --force                       Force full retrieve, bypassing incremental optimization.
       --max-api-calls=<value>       Maximum API calls per minute
       --max-memory=<value>          Maximum memory usage in MB
       --max-profiles=<value>        Maximum number of profiles to process in a single operation
@@ -424,6 +466,18 @@ EXAMPLES
 
     $ sf profiler retrieve --target-org myOrg --name Admin --exclude-managed
 
+  Force full retrieve (bypass incremental optimization):
+
+    $ sf profiler retrieve --target-org myOrg --force
+
+  Preview what would be retrieved (dry run):
+
+    $ sf profiler retrieve --target-org myOrg --dry-run
+
+  Combine dry run with specific profile:
+
+    $ sf profiler retrieve --target-org myOrg --name Admin --dry-run
+
 FLAG DESCRIPTIONS
   -f, --from-project  Use local project metadata to build the package.xml instead of listing from org.
 
@@ -450,12 +504,23 @@ FLAG DESCRIPTIONS
 
     Overrides the auto-detected worker count. Max recommended: 5 for metadata operations, 10 for API operations.
 
+  --dry-run  Preview what would be retrieved without executing the retrieve.
+
+    When enabled, shows a detailed preview of what metadata would be retrieved without actually executing the retrieve
+    operation. Useful for verifying the scope of a retrieve before making changes. Combines well with incremental
+    retrieve to see what has changed.
+
   --exclude-managed  Exclude metadata from managed packages (with namespace prefixes).
 
     When enabled, filters out all metadata components that belong to managed packages (identified by namespace prefixes
     like "namespace**ComponentName"). This helps avoid errors when retrieving profiles that reference components from
     uninstalled or inaccessible managed packages. Custom objects ending in "**c" are always included even with this
     flag.
+
+  --force  Force full retrieve, bypassing incremental optimization.
+
+    When enabled, skips the incremental retrieve optimization and always performs a full retrieve of all specified
+    metadata. Use this flag if you suspect local metadata is out of sync or if incremental retrieve is causing issues.
 
   --max-api-calls=<value>  Maximum API calls per minute
 
@@ -479,6 +544,6 @@ FLAG DESCRIPTIONS
     Displays detailed information about worker pool configuration, API calls, memory usage, and operation timings.
 ```
 
-_See code: [src/commands/profiler/retrieve.ts](https://github.com/jterrats/profiler/blob/v2.3.0/src/commands/profiler/retrieve.ts)_
+_See code: [src/commands/profiler/retrieve.ts](https://github.com/jterrats/profiler/blob/v2.4.0/src/commands/profiler/retrieve.ts)_
 
 <!-- commandsstop -->
