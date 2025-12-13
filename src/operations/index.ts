@@ -29,10 +29,20 @@ export {
   retrieveOrgProfile,
   parseProfileXml,
   compareProfiles,
+  // Multi-Source Comparison (Issue #14)
+  compareMultiSource,
+  retrieveFromMultipleSources,
+  buildComparisonMatrix,
   type CompareInput,
   type CompareResult,
   type ProfileXml,
   type ProfileComparison,
+  // Multi-Source Types
+  type MultiSourceCompareInput,
+  type MultiSourceCompareResult,
+  type OrgSource,
+  type OrgProfileResult,
+  type ComparisonMatrix,
 } from './compare-operation.js';
 
 // Merge Operation
