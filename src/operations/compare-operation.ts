@@ -404,9 +404,9 @@ export type MultiSourceCompareResult = {
  * @param org - Salesforce org
  * @param apiVersion - API version
  * @param userProjectPath - User's SFDX project path (validated by requiresProject)
- * @returns ProfilerMonad<string> - Profile XML content with full metadata
+ * @returns Promise<string> - Profile XML content with full metadata
  */
-async function retrieveProfileWithMetadata(
+export async function retrieveProfileWithMetadata(
   profileName: string,
   org: Org,
   apiVersion: string,

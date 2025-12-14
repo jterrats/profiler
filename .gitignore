@@ -66,3 +66,6 @@ node_modules
 # act local configuration (Docker image for local CI testing)
 .act/
 .secrets
+
+# Profile merge test files (not tracked)
+test-merge-profiles/
