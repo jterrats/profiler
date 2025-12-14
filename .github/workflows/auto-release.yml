@@ -1,0 +1,148 @@
+name: Auto Release on Version Bump
+
+# Automatically create GitHub Release when package.json version changes on main
+# This triggers publish-npm.yml workflow to publish to npm
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+
+permissions:
+  contents: write # Required to create releases
+  id-token: write # Required for provenance
+
+jobs:
+  create-release:
+    name: Create Release on Version Change
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Need full history to compare versions
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Get previous version
+        id: previous_version
+        run: |
+          # Get the version from the previous commit
+          PREVIOUS_VERSION=$(git show HEAD~1:package.json 2>/dev/null | node -p "require('fs').readFileSync('/dev/stdin', 'utf-8')" | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin', 'utf-8')).version" 2>/dev/null || echo "")
+          if [ -z "$PREVIOUS_VERSION" ]; then
+            # If we can't get previous version, check if tag exists
+            PREVIOUS_VERSION=$(git tag -l "v${{ steps.current_version.outputs.version }}" | head -1 | sed 's/v//' || echo "")
+          fi
+          echo "previous_version=$PREVIOUS_VERSION" >> $GITHUB_OUTPUT
+          echo "Previous version: $PREVIOUS_VERSION"
+
+      - name: Check if version changed
+        id: version_check
+        run: |
+          CURRENT="${{ steps.current_version.outputs.version }}"
+          PREVIOUS="${{ steps.previous_version.outputs.previous_version }}"
+
+          if [ "$CURRENT" != "$PREVIOUS" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "✅ Version changed: $PREVIOUS → $CURRENT"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Version unchanged: $CURRENT"
+          fi
+
+      - name: Check if tag exists
+        id: tag_check
+        if: steps.version_check.outputs.changed == 'true'
+        run: |
+          VERSION="${{ steps.current_version.outputs.version }}"
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Tag v${VERSION} already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "✅ Tag v${VERSION} does not exist"
+          fi
+
+      - name: Extract changelog notes
+        id: changelog
+        if: steps.version_check.outputs.changed == 'true' && steps.tag_check.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.current_version.outputs.version }}"
+
+          # Try to extract notes from CHANGELOG.md
+          if [ -f "CHANGELOG.md" ]; then
+            # Extract content between ## [VERSION] and next ##
+            CHANGELOG_NOTES=$(sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$d' | tail -n +2 || echo "")
+          fi
+
+          # If no changelog notes found, use generic message
+          if [ -z "$CHANGELOG_NOTES" ]; then
+            CHANGELOG_NOTES="Release v${VERSION}
+
+          See CHANGELOG.md for details."
+          fi
+
+          # Save to output (multiline)
+          {
+            echo "notes<<EOF"
+            echo "$CHANGELOG_NOTES"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Create Git tag
+        if: steps.version_check.outputs.changed == 'true' && steps.tag_check.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.current_version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${VERSION}" -m "Release v${VERSION}"
+          git push origin "v${VERSION}"
+
+      - name: Create GitHub Release
+        if: steps.version_check.outputs.changed == 'true' && steps.tag_check.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.current_version.outputs.version }}"
+          NOTES="${{ steps.changelog.outputs.notes }}"
+
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes "$NOTES" \
+            --verify-tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.version_check.outputs.changed }}" == "true" ]; then
+            if [ "${{ steps.tag_check.outputs.exists }}" == "true" ]; then
+              echo "## ⚠️ Release Skipped" >> $GITHUB_STEP_SUMMARY
+              echo "Tag v${{ steps.current_version.outputs.version }} already exists." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "## ✅ Release Created Successfully" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**Version:** v${{ steps.current_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+              echo "**Previous Version:** ${{ steps.previous_version.outputs.previous_version }}" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "GitHub Actions will now publish to npm automatically." >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "Monitor progress: https://github.com/${{ github.repository }}/actions" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "## ℹ️ No Version Change" >> $GITHUB_STEP_SUMMARY
+            echo "Version unchanged: ${{ steps.current_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "No release created." >> $GITHUB_STEP_SUMMARY
+          fi
