@@ -33,6 +33,8 @@ export {
   compareMultiSource,
   retrieveFromMultipleSources,
   buildComparisonMatrix,
+  // Internal function exported for merge operation
+  retrieveProfileWithMetadata,
   type CompareInput,
   type CompareResult,
   type ProfileXml,
