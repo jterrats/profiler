@@ -1191,6 +1191,10 @@ log_info "Test Summary:"
 log_info "  ✓ 12 core tests (retrieve, compare, performance, incremental)"
 log_info "  ✓ 3 feature tests (multi-source, JSON, HTML export)"
 log_info "  ✓ 1 error handling test (4 error scenarios)"
+<<<<<<< HEAD
 log_info "  ✓ 1 validation test (5 validation scenarios)"
 log_info "  Total: 17 E2E tests"
+=======
+log_info "  Total: 16 E2E tests"
+>>>>>>> origin/main
 
