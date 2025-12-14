@@ -184,6 +184,42 @@ yarn test
 # Open coverage/index.html in browser
 ```
 
+### Error Tests (Error-Driven Development)
+
+Error tests are a core part of Error-Driven Development (EDD). They test error scenarios BEFORE happy path tests.
+
+```bash
+# Run error tests only
+yarn test:errors
+```
+
+Error tests are located in `test/errors/` and follow the naming convention `*.errors.test.ts`.
+
+**Key Principles:**
+
+1. **Errors First**: Write error tests BEFORE implementation
+2. **Tests Must Fail Initially**: Error tests should fail until error handling is implemented
+3. **Comprehensive Coverage**: Test all error types, codes, exit codes, and actions
+
+**Example:**
+
+```typescript
+import { expectError, expectErrorCode } from '../helpers/error-assertions.js';
+import { ProfileNotFoundError } from '../../src/core/errors/index.js';
+
+it('should fail when profile does not exist', async () => {
+  const result = await retrieveProfile('NonExistent').run();
+  expectError(result, ProfileNotFoundError);
+  expectErrorCode(result, 'PROFILE_NOT_FOUND');
+});
+```
+
+**See Also:**
+
+- [Error Testing Guide](./ERROR_TESTING_GUIDE.md) - Complete guide to error testing
+- [Error-Driven Development](./ERROR_DRIVEN_DEVELOPMENT.md) - EDD methodology
+- [Error Catalog](./ERROR_CATALOG.md) - All error definitions
+
 ---
 
 ## 🔨 Development Workflow
