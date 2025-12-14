@@ -55,7 +55,7 @@ jobs:
         run: |
           CURRENT="${{ steps.current_version.outputs.version }}"
           PREVIOUS="${{ steps.previous_version.outputs.previous_version }}"
-          
+
           if [ "$CURRENT" != "$PREVIOUS" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "✅ Version changed: $PREVIOUS → $CURRENT"
@@ -82,20 +82,20 @@ jobs:
         if: steps.version_check.outputs.changed == 'true' && steps.tag_check.outputs.exists == 'false'
         run: |
           VERSION="${{ steps.current_version.outputs.version }}"
-          
+
           # Try to extract notes from CHANGELOG.md
           if [ -f "CHANGELOG.md" ]; then
             # Extract content between ## [VERSION] and next ##
             CHANGELOG_NOTES=$(sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$d' | tail -n +2 || echo "")
           fi
-          
+
           # If no changelog notes found, use generic message
           if [ -z "$CHANGELOG_NOTES" ]; then
             CHANGELOG_NOTES="Release v${VERSION}
 
           See CHANGELOG.md for details."
           fi
-          
+
           # Save to output (multiline)
           {
             echo "notes<<EOF"
@@ -117,7 +117,7 @@ jobs:
         run: |
           VERSION="${{ steps.current_version.outputs.version }}"
           NOTES="${{ steps.changelog.outputs.notes }}"
-          
+
           gh release create "v${VERSION}" \
             --title "v${VERSION}" \
             --notes "$NOTES" \
@@ -146,4 +146,3 @@ jobs:
             echo "Version unchanged: ${{ steps.current_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
             echo "No release created." >> $GITHUB_STEP_SUMMARY
           fi
-

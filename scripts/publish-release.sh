@@ -52,6 +52,41 @@ if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
     exit 1
 fi
 
+# Verificar que el commit HEAD tiene la versión correcta en package.json
+echo -e "${BLUE}Verificando que el commit actual tiene la versión correcta...${NC}"
+HEAD_VERSION=$(git show HEAD:package.json 2>/dev/null | grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' || echo "")
+
+if [[ -z "$HEAD_VERSION" ]]; then
+    echo -e "${YELLOW}⚠${NC}  No se pudo verificar la versión en el commit HEAD."
+    echo "   Continuando con la versión del working directory..."
+elif [[ "$HEAD_VERSION" != "$VERSION" ]]; then
+    echo -e "${RED}✗${NC} Versión en el commit HEAD no coincide con package.json actual."
+    echo "   Versión en HEAD:     ${RED}${HEAD_VERSION}${NC}"
+    echo "   Versión en package.json: ${GREEN}${VERSION}${NC}"
+    echo ""
+    echo "   Esto puede causar que se publique la versión incorrecta."
+    echo "   Asegúrate de hacer commit de los cambios en package.json antes de crear el tag."
+    echo ""
+    read -p "¿Deseas continuar de todas formas? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Cancelado. Por favor, haz commit de los cambios en package.json primero."
+        exit 1
+    fi
+else
+    echo -e "${GREEN}✓${NC} Versión en HEAD coincide: ${GREEN}${HEAD_VERSION}${NC}"
+fi
+
+# Mostrar información del commit donde se creará el tag
+echo ""
+echo -e "${BLUE}Información del commit donde se creará el tag:${NC}"
+HEAD_COMMIT=$(git rev-parse HEAD)
+HEAD_SHORT=$(git rev-parse --short HEAD)
+HEAD_MESSAGE=$(git log -1 --pretty=format:"%s" HEAD)
+echo "   Commit: ${BLUE}${HEAD_SHORT}${NC} (${HEAD_COMMIT})"
+echo "   Mensaje: ${HEAD_MESSAGE}"
+echo ""
+
 # Confirmar publicación
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${YELLOW}  ¿Listo para publicar v${VERSION}?${NC}"
@@ -72,8 +107,36 @@ fi
 
 echo ""
 echo -e "${BLUE}Paso 1: Creando tag v${VERSION}...${NC}"
+
+# Verificar una última vez que la versión en HEAD coincide antes de crear el tag
+FINAL_CHECK_VERSION=$(git show HEAD:package.json 2>/dev/null | grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' || echo "$VERSION")
+
+if [[ "$FINAL_CHECK_VERSION" != "$VERSION" ]]; then
+    echo -e "${RED}✗${NC} ERROR: La versión en el commit HEAD (${FINAL_CHECK_VERSION}) no coincide con la versión esperada (${VERSION})."
+    echo "   No se creará el tag para evitar publicar la versión incorrecta."
+    echo ""
+    echo "   Por favor:"
+    echo "   1. Asegúrate de que package.json tenga la versión ${VERSION}"
+    echo "   2. Haz commit de los cambios: git add package.json && git commit -m 'chore: bump version to ${VERSION}'"
+    echo "   3. Ejecuta este script nuevamente"
+    exit 1
+fi
+
 git tag -a "v${VERSION}" -m "Release v${VERSION}"
-echo -e "${GREEN}✓${NC} Tag creado"
+echo -e "${GREEN}✓${NC} Tag v${VERSION} creado en commit ${BLUE}${HEAD_SHORT}${NC}"
+
+# Verificar que el tag tiene la versión correcta
+TAG_VERSION=$(git show "v${VERSION}:package.json" 2>/dev/null | grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' || echo "")
+if [[ -n "$TAG_VERSION" && "$TAG_VERSION" == "$VERSION" ]]; then
+    echo -e "${GREEN}✓${NC} Verificación: El tag contiene la versión correcta (${TAG_VERSION})"
+elif [[ -n "$TAG_VERSION" ]]; then
+    echo -e "${RED}✗${NC} ERROR: El tag contiene versión ${TAG_VERSION}, pero se esperaba ${VERSION}"
+    echo "   Eliminando el tag incorrecto..."
+    git tag -d "v${VERSION}" 2>/dev/null || true
+    exit 1
+else
+    echo -e "${YELLOW}⚠${NC}  No se pudo verificar la versión en el tag (esto no debería pasar)"
+fi
 
 echo ""
 echo -e "${BLUE}Paso 2: Pushing tag a GitHub...${NC}"
