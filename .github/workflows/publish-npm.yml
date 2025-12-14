@@ -26,6 +26,33 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           cache: 'yarn'
 
+      - name: Verify version matches release tag
+        run: |
+          # Get the release tag name (e.g., v2.4.0)
+          RELEASE_TAG="${GITHUB_REF#refs/tags/}"
+          echo "Release tag: $RELEASE_TAG"
+
+          # Extract version from tag (remove 'v' prefix)
+          EXPECTED_VERSION="${RELEASE_TAG#v}"
+          echo "Expected version from tag: $EXPECTED_VERSION"
+
+          # Get actual version from package.json
+          ACTUAL_VERSION=$(node -p "require('./package.json').version")
+          echo "Actual version in package.json: $ACTUAL_VERSION"
+
+          # Verify they match
+          if [ "$EXPECTED_VERSION" != "$ACTUAL_VERSION" ]; then
+            echo "❌ ERROR: Version mismatch!"
+            echo "   Tag version:    $EXPECTED_VERSION"
+            echo "   package.json:   $ACTUAL_VERSION"
+            echo ""
+            echo "The release tag version does not match the version in package.json."
+            echo "Please ensure the tag was created after updating package.json to the correct version."
+            exit 1
+          fi
+
+          echo "✅ Version verification passed: $ACTUAL_VERSION"
+
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
