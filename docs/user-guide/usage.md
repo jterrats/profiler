@@ -142,6 +142,16 @@ Get the results in JSON format:
 sf profiler retrieve --target-org myOrg --json
 ```
 
+#### Quiet Mode
+
+Disable progress indicators for scripting or CI/CD:
+
+```bash
+sf profiler retrieve --target-org myOrg --quiet
+```
+
+See [Progress Indicators](progress-indicators.md) for detailed information about progress indicators and quiet mode.
+
 ### `sf profiler compare`
 
 Compare Profile metadata between your local project and a Salesforce org, or across multiple Salesforce environments.
