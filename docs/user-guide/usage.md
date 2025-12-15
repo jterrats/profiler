@@ -214,6 +214,16 @@ Specify a custom API version for the comparison:
 sf profiler compare --target-org myOrg --api-version 60.0
 ```
 
+#### Quiet Mode
+
+Disable progress indicators for scripting or CI/CD:
+
+```bash
+sf profiler compare --name Admin --target-org myOrg --quiet
+```
+
+See [Progress Indicators](progress-indicators.md) for detailed information about progress indicators and quiet mode.
+
 #### Comparison Modes
 
 **Local vs. Org (Single-Source)**:
@@ -340,6 +350,12 @@ sf profiler retrieve --target-org myOrg --all-fields
 # Deploy to another org
 sf project deploy start --target-org targetOrg
 ```
+
+## Progress Indicators
+
+The plugin provides visual feedback during operations through progress indicators (spinners, progress bars, and status messages). Use the `--quiet` flag to disable them for scripting.
+
+**See [Progress Indicators Guide](progress-indicators.md) for complete documentation.**
 
 ## Best Practices
 
