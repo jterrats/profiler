@@ -9,6 +9,8 @@ import { Messages, SfError, SfProject, AuthInfo, Connection, Org, StateAggregato
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 
 import { validateProfileOperation, type ValidateInput, type ValidationResult } from '../../operations/index.js';
+import { Spinner, StatusMessage, type ProgressOptions } from '../../core/ui/progress.js';
+import type { Result } from '../../core/monad/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.validate');
@@ -61,6 +63,11 @@ export default class ProfilerValidate extends SfCommand<ProfilerValidateResult> 
       description: messages.getMessage('flags.strict.description'),
       default: false,
     }),
+    quiet: Flags.boolean({
+      summary: messages.getMessage('flags.quiet.summary'),
+      description: messages.getMessage('flags.quiet.description'),
+      default: false,
+    }),
   };
 
   /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
@@ -68,7 +75,11 @@ export default class ProfilerValidate extends SfCommand<ProfilerValidateResult> 
     const { flags } = await this.parse(ProfilerValidate);
     const profileName = flags.name;
     const strictMode = flags.strict ?? false;
+    const quiet = flags.quiet ?? false;
     const apiVersion = flags['api-version'];
+
+    const progressOptions: ProgressOptions = { quiet };
+    const status = new StatusMessage(progressOptions);
 
     const project = await SfProject.resolve();
     const projectPath = project.getPath();
@@ -76,21 +87,63 @@ export default class ProfilerValidate extends SfCommand<ProfilerValidateResult> 
     // Resolve org if provided
     let org: Org | undefined;
     if (flags['target-org']) {
-      try {
-        const aliases = await StateAggregator.getInstance();
-        const username = aliases.aliases.getUsername(flags['target-org']) ?? flags['target-org'];
-        const authInfo = await AuthInfo.create({ username });
-        const connection = await Connection.create({ authInfo });
-        org = await Org.create({ connection });
-      } catch (error) {
-        throw new SfError(
-          `Failed to authenticate to org '${flags['target-org']}': ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
+      org = await this.resolveOrg(flags['target-org']);
     }
 
+    const profileNames = this.getProfilesToValidate(profileName);
+    const resolvedApiVersion = apiVersion ?? (org ? await org.retrieveMaxApiVersion() : undefined);
+
+    const spinner = new Spinner(
+      profileNames.length === 1
+        ? `Validating profile '${profileNames[0]}'...`
+        : `Validating ${profileNames.length} profiles...`,
+      progressOptions
+    );
+    const startTime = Date.now();
+
+    if (org && !quiet) {
+      status.info(`Validating against org: ${org.getUsername() ?? org.getOrgId()}`);
+    }
+
+    const validationResults = await this.executeValidations(
+      profileNames,
+      projectPath,
+      org,
+      resolvedApiVersion,
+      spinner
+    );
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+    const { results, stats } = this.processValidationResults(
+      validationResults,
+      strictMode,
+      spinner,
+      elapsed,
+      profileNames.length,
+      quiet
+    );
+
+    const success = stats.profilesInvalid === 0;
+    const finalResult: ProfilerValidateResult = {
+      success,
+      profilesValidated: profileNames.length,
+      profilesValid: stats.profilesValid,
+      profilesInvalid: stats.profilesInvalid,
+      totalIssues: stats.totalIssues,
+      totalErrors: stats.totalErrors,
+      totalWarnings: stats.totalWarnings,
+      results,
+    };
+
+    if (!success || (strictMode && stats.totalWarnings > 0)) {
+      process.exitCode = 1;
+    }
+
+    return finalResult;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private getProfilesToValidate(profileName?: string): string[] {
     const profileNames = profileName
       ? profileName
           .split(',')
@@ -102,31 +155,75 @@ export default class ProfilerValidate extends SfCommand<ProfilerValidateResult> 
       throw new SfError(messages.getMessage('error.profile-not-found', ['<none specified>']));
     }
 
-    const resolvedApiVersion = apiVersion ?? (org ? await org.retrieveMaxApiVersion() : undefined);
+    return profileNames;
+  }
 
-    if (profileNames.length === 1) {
-      this.log(messages.getMessage('info.starting', [profileNames[0]]));
-    } else {
-      this.log(messages.getMessage('info.starting-multiple', [profileNames.length.toString()]));
+  // eslint-disable-next-line class-methods-use-this
+  private async resolveOrg(targetOrg: string): Promise<Org> {
+    try {
+      const aliases = await StateAggregator.getInstance();
+      const username = aliases.aliases.getUsername(targetOrg) ?? targetOrg;
+      const authInfo = await AuthInfo.create({ username });
+      const connection = await Connection.create({ authInfo });
+      return await Org.create({ connection });
+    } catch (error) {
+      throw new SfError(
+        `Failed to authenticate to org '${targetOrg}': ${error instanceof Error ? error.message : String(error)}`
+      );
     }
+  }
 
-    if (org) {
-      this.log(messages.getMessage('info.validating-with-org', [org.getUsername() ?? org.getOrgId()]));
-    }
-
-    const validationPromises = profileNames.map(async (name) => {
+  // eslint-disable-next-line class-methods-use-this
+  private async executeValidations(
+    profileNames: string[],
+    projectPath: string,
+    org: Org | undefined,
+    apiVersion: string | undefined,
+    spinner: Spinner
+  ): Promise<
+    Array<{
+      name: string;
+      result: Result<ValidationResult>;
+    }>
+  > {
+    const validationPromises = profileNames.map(async (name, index) => {
+      if (profileNames.length > 1) {
+        spinner.updateText(`Validating ${index + 1}/${profileNames.length}: ${name}...`);
+      }
       const validateInput: ValidateInput = {
         profileName: name,
         projectPath,
         org,
-        apiVersion: resolvedApiVersion,
+        apiVersion,
       };
       const result = await validateProfileOperation(validateInput).run();
       return { name, result };
     });
 
-    const validationResults = await Promise.all(validationPromises);
+    return Promise.all(validationPromises);
+  }
 
+  private processValidationResults(
+    validationResults: Array<{
+      name: string;
+      result: Result<ValidationResult>;
+    }>,
+    strictMode: boolean,
+    spinner: Spinner,
+    elapsed: string,
+    totalProfiles: number,
+    quiet: boolean
+  ): {
+    results: Array<{ profileName: string; valid: boolean; issues: ValidationResult['issues'] }>;
+    stats: {
+      profilesValid: number;
+      profilesInvalid: number;
+      totalIssues: number;
+      totalErrors: number;
+      totalWarnings: number;
+    };
+  } {
+    const status = new StatusMessage({ quiet });
     let profilesValid = 0;
     let profilesInvalid = 0;
     let totalIssues = 0;
@@ -198,24 +295,23 @@ export default class ProfilerValidate extends SfCommand<ProfilerValidateResult> 
       return { profileName: name, valid: isValid, issues };
     });
 
-    this.log(messages.getMessage('info.validation-complete'));
-
-    const success = profilesInvalid === 0;
-    const finalResult: ProfilerValidateResult = {
-      success,
-      profilesValidated: profileNames.length,
-      profilesValid,
-      profilesInvalid,
-      totalIssues,
-      totalErrors,
-      totalWarnings,
-      results,
-    };
-
-    if (!success || (strictMode && totalWarnings > 0)) {
-      process.exitCode = 1;
+    if (profilesValid === totalProfiles) {
+      spinner.succeed(`All ${profilesValid} profile(s) valid (${elapsed}s)`);
+      status.success(`Validation complete: ${profilesValid} profile(s) valid, ${totalIssues} issue(s) found`);
+    } else {
+      spinner.fail(`${profilesInvalid} profile(s) invalid (${elapsed}s)`);
+      status.error(
+        `Validation failed: ${profilesInvalid} profile(s) invalid, ${totalErrors} error(s), ${totalWarnings} warning(s)`
+      );
     }
 
-    return finalResult;
+    if (!quiet) {
+      this.log(messages.getMessage('info.validation-complete'));
+    }
+
+    return {
+      results,
+      stats: { profilesValid, profilesInvalid, totalIssues, totalErrors, totalWarnings },
+    };
   }
 }

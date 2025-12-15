@@ -68,6 +68,14 @@ Preview what would be retrieved without executing the retrieve.
 
 When enabled, shows a detailed preview of what metadata would be retrieved without actually executing the retrieve operation. Useful for verifying the scope of a retrieve before making changes. Combines well with incremental retrieve to see what has changed.
 
+# flags.quiet.summary
+
+Disable progress indicators and status messages.
+
+# flags.quiet.description
+
+When enabled, suppresses spinners, progress bars, and status messages. Useful for scripting and CI/CD environments where minimal output is desired.
+
 # examples
 
 - Retrieve all profiles with metadata (without FLS):

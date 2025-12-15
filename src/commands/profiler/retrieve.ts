@@ -8,6 +8,7 @@ import {
   resolvePerformanceConfig,
   displayConfigWarnings,
 } from '../../core/performance/index.js';
+import { Spinner, StatusMessage, type ProgressOptions } from '../../core/ui/progress.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.retrieve');
@@ -66,6 +67,11 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       description: messages.getMessage('flags.dry-run.description'),
       default: false,
     }),
+    quiet: Flags.boolean({
+      summary: messages.getMessage('flags.quiet.summary'),
+      description: messages.getMessage('flags.quiet.description'),
+      default: false,
+    }),
     // Performance flags
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
     ...(PERFORMANCE_FLAGS as any),
@@ -81,7 +87,11 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     const excludeManaged = flags['exclude-managed'];
     const forceFullRetrieve = flags.force;
     const dryRun = flags['dry-run'];
+    const quiet = flags.quiet ?? false;
     const apiVersion = flags['api-version'] ?? (await org.retrieveMaxApiVersion());
+
+    const progressOptions: ProgressOptions = { quiet };
+    const status = new StatusMessage(progressOptions);
 
     // Parse performance flags
     const perfConfig = parsePerformanceFlags(flags);
@@ -133,25 +143,34 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
 
     // Show incremental retrieve info
     if (!forceFullRetrieve && !fromProject && !dryRun) {
-      this.log('🚀 Incremental retrieve enabled (faster if no changes)');
-      this.log('   Use --force to bypass incremental optimization');
+      status.info('Incremental retrieve enabled (faster if no changes)');
+      if (!quiet) {
+        this.log('   Use --force to bypass incremental optimization');
+      }
     }
 
     if (dryRun) {
-      this.log('🔍 Dry run mode - previewing without executing...');
+      status.search('Dry run mode - previewing without executing...');
     }
 
-    // Execute monadic operation
-    this.log('Building package.xml...');
+    // Execute monadic operation with spinners
+    const spinner = new Spinner('Building package.xml...', progressOptions);
+    const startTime = Date.now();
+
     const result = await retrieveProfiles(input).run();
 
     if (result.isFailure()) {
+      spinner.fail('Failed to retrieve profiles');
       throw new SfError(result.error.message, result.error.name);
     }
 
     const retrieveResult = result.value;
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-    this.log(`Successfully retrieved ${retrieveResult.profilesRetrieved.length} profile(s)`);
+    spinner.succeed(`Retrieved ${retrieveResult.profilesRetrieved.length} profile(s) (${elapsed}s)`);
+    status.success(
+      `Retrieved ${retrieveResult.profilesRetrieved.length} profile(s) with ${retrieveResult.totalComponents} total components`
+    );
 
     return {
       success: true,

@@ -14,6 +14,7 @@ import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 import { type MergeStrategy } from '../../operations/index.js';
 import { readLocalProfile, parseProfileXml, retrieveProfileWithMetadata } from '../../operations/index.js';
 import type { ProfileXml } from '../../operations/index.js';
+import { Spinner, StatusMessage, type ProgressOptions } from '../../core/ui/progress.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.merge');
@@ -69,6 +70,11 @@ export default class ProfilerMerge extends SfCommand<ProfilerMergeResult> {
       description: messages.getMessage('flags.skip-backup.description'),
       default: false,
     }),
+    quiet: Flags.boolean({
+      summary: messages.getMessage('flags.quiet.summary'),
+      description: messages.getMessage('flags.quiet.description'),
+      default: false,
+    }),
   };
 
   /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
@@ -78,19 +84,28 @@ export default class ProfilerMerge extends SfCommand<ProfilerMergeResult> {
     const strategy = (flags.strategy ?? 'local-wins') as MergeStrategy;
     const dryRun = flags['dry-run'] ?? false;
     const skipBackup = flags['skip-backup'] ?? false;
+    const quiet = flags.quiet ?? false;
     const apiVersion = flags['api-version'];
+
+    const progressOptions: ProgressOptions = { quiet };
+    const status = new StatusMessage(progressOptions);
 
     const project = await SfProject.resolve();
     const projectPath = project.getPath();
 
-    this.log(messages.getMessage('info.starting', [profileName]));
+    const spinner = new Spinner(`Merging profile '${profileName}'...`, progressOptions);
+    const startTime = Date.now();
 
     const org = await this.resolveOrg(flags['target-org']);
     const resolvedApiVersion = apiVersion ?? (await org.retrieveMaxApiVersion());
 
+    spinner.updateText('Validating local profile...');
     await this.validateLocalProfile(profileName, projectPath);
 
+    spinner.updateText('Loading local profile...');
     const localProfile = await this.loadLocalProfile(profileName, projectPath);
+
+    spinner.updateText('Retrieving org profile...');
     const orgProfile = await this.loadOrgProfile(
       profileName,
       org,
@@ -99,10 +114,11 @@ export default class ProfilerMerge extends SfCommand<ProfilerMergeResult> {
       flags['target-org']
     );
 
+    spinner.updateText('Detecting conflicts...');
     const conflicts = await this.detectConflicts(localProfile, orgProfile);
 
     if (conflicts.length === 0) {
-      this.log(messages.getMessage('info.no-conflicts'));
+      spinner.succeed('No conflicts detected - profiles are identical');
       return {
         success: true,
         profileName,
@@ -113,8 +129,17 @@ export default class ProfilerMerge extends SfCommand<ProfilerMergeResult> {
       };
     }
 
-    this.log(messages.getMessage('info.conflicts-detected', [conflicts.length.toString()]));
+    spinner.updateText(`Detected ${conflicts.length} conflict(s)`);
+    if (!quiet) {
+      this.log(messages.getMessage('info.conflicts-detected', [conflicts.length.toString()]));
+    }
     this.displayDryRunPreview(dryRun, conflicts);
+
+    if (dryRun) {
+      spinner.succeed('Dry run complete - no changes applied');
+    } else {
+      spinner.updateText(`Merging with strategy '${strategy}'...`);
+    }
 
     const result = await this.executeMerge(
       org,
@@ -129,8 +154,16 @@ export default class ProfilerMerge extends SfCommand<ProfilerMergeResult> {
       orgProfile
     );
 
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    if (!dryRun) {
+      spinner.succeed(`Merge complete (${elapsed}s)`);
+    }
+
     this.displayMergeResults(result, dryRun);
-    this.log(messages.getMessage('info.merge-complete'));
+    if (result.backupPath && !quiet) {
+      status.info(`Backup created: ${result.backupPath}`);
+    }
+    status.success('Merge operation completed successfully');
 
     return {
       success: true,
