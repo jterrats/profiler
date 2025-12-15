@@ -31,3 +31,6 @@ export * from './errors/index.js';
 // UI/Progress exports
 export * from './ui/progress.js';
 export * from './ui/interactive.js';
+
+// Pipeline DSL exports
+export * from './dsl/pipeline-builder.js';
