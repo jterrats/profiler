@@ -38,6 +38,14 @@ Treat warnings as errors.
 
 When enabled, any validation warnings (such as missing metadata references) are treated as errors, causing the command to exit with code 1. Useful for CI/CD pipelines where you want to fail on any issues.
 
+# flags.quiet.summary
+
+Disable progress indicators and status messages.
+
+# flags.quiet.description
+
+When enabled, suppresses spinners, progress bars, and status messages. Useful for scripting and CI/CD environments where minimal output is desired.
+
 # examples
 
 - Validate a specific profile:

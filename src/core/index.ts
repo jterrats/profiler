@@ -10,7 +10,7 @@ export {
   Failure,
   success,
   failure,
-  pure as pureResult,  // Rename to avoid conflict
+  pure as pureResult, // Rename to avoid conflict
   tryCatch,
   tryCatchAsync,
 } from './monad/result.js';
@@ -19,7 +19,7 @@ export {
 export {
   ProfilerMonad,
   profilerMonad,
-  pure as pureMonad,  // Rename to avoid conflict
+  pure as pureMonad, // Rename to avoid conflict
   liftAsync,
   sequence,
   traverse,
@@ -28,3 +28,5 @@ export {
 // Error exports
 export * from './errors/index.js';
 
+// UI/Progress exports
+export * from './ui/progress.js';

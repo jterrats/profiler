@@ -142,6 +142,16 @@ Get the results in JSON format:
 sf profiler retrieve --target-org myOrg --json
 ```
 
+#### Quiet Mode
+
+Disable progress indicators for scripting or CI/CD:
+
+```bash
+sf profiler retrieve --target-org myOrg --quiet
+```
+
+See [Progress Indicators](progress-indicators.md) for detailed information about progress indicators and quiet mode.
+
 ### `sf profiler compare`
 
 Compare Profile metadata between your local project and a Salesforce org, or across multiple Salesforce environments.
@@ -203,6 +213,16 @@ Specify a custom API version for the comparison:
 ```bash
 sf profiler compare --target-org myOrg --api-version 60.0
 ```
+
+#### Quiet Mode
+
+Disable progress indicators for scripting or CI/CD:
+
+```bash
+sf profiler compare --name Admin --target-org myOrg --quiet
+```
+
+See [Progress Indicators](progress-indicators.md) for detailed information about progress indicators and quiet mode.
 
 #### Comparison Modes
 
@@ -330,6 +350,12 @@ sf profiler retrieve --target-org myOrg --all-fields
 # Deploy to another org
 sf project deploy start --target-org targetOrg
 ```
+
+## Progress Indicators
+
+The plugin provides visual feedback during operations through progress indicators (spinners, progress bars, and status messages). Use the `--quiet` flag to disable them for scripting.
+
+**See [Progress Indicators Guide](progress-indicators.md) for complete documentation.**
 
 ## Best Practices
 

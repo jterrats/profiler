@@ -58,6 +58,14 @@ Output format for comparison results (table, json, html).
 
 Choose the output format for displaying or exporting comparison matrices. Options: "table" (ASCII table for terminal), "json" (machine-readable structured data), "html" (web-friendly formatted output with styling). Default is "table" for terminal display. Use "json" for automation or "html" for reports.
 
+# flags.quiet.summary
+
+Disable progress indicators and status messages.
+
+# flags.quiet.description
+
+When enabled, suppresses spinners, progress bars, and status messages. Useful for scripting and CI/CD environments where minimal output is desired.
+
 # examples
 
 - Compare a specific profile:

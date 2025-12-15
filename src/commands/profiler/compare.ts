@@ -17,6 +17,7 @@ import {
   displayConfigWarnings,
 } from '../../core/performance/index.js';
 import { formatComparisonMatrix, exportComparisonMatrix } from '../../core/formatters/index.js';
+import { Spinner, StatusMessage, MultiProgressBar, type ProgressOptions } from '../../core/ui/progress.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.compare');
@@ -76,6 +77,11 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       options: ['table', 'json', 'html'],
       default: 'table',
     }),
+    quiet: Flags.boolean({
+      summary: messages.getMessage('flags.quiet.summary'),
+      description: messages.getMessage('flags.quiet.description'),
+      default: false,
+    }),
     // Performance flags
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
     ...(PERFORMANCE_FLAGS as any),
@@ -132,6 +138,9 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
   private async runSingleOrgComparison(flags: any): Promise<ProfilerCompareResult> {
     const targetOrgAlias = flags['target-org'] as string;
     const profileName = flags.name;
+    const quiet = flags.quiet ?? false;
+    const progressOptions: ProgressOptions = { quiet };
+    const status = new StatusMessage(progressOptions);
 
     // Resolve org from alias/username (same logic as multi-source)
     let org: Org;
@@ -177,6 +186,11 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
 
     // Compare profiles in parallel
     const comparisons: ProfileComparison[] = [];
+
+    // Compare each profile with spinner
+    const spinner = new Spinner(`Comparing ${profileNames.length} profile(s)...`, progressOptions);
+    const startTime = Date.now();
+
     const comparisonPromises = profileNames.map(async (profile) => {
       const input: CompareInput = {
         profileName: profile,
@@ -212,14 +226,20 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
     const results = await Promise.all(comparisonPromises);
     comparisons.push(...results.filter((c): c is ProfileComparison => c !== null));
 
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    const profilesWithDifferences = comparisons.filter((c) => c.hasDifferences).length;
+
+    spinner.succeed(`Compared ${comparisons.length} profile(s) (${elapsed}s)`);
+
     // Display results
     this.displayResults(comparisons);
 
-    const profilesWithDifferences = comparisons.filter((c) => c.hasDifferences).length;
-
-    this.log(messages.getMessage('info.total-profiles-compared', [comparisons.length.toString()]));
-    this.log(messages.getMessage('info.profiles-with-differences', [profilesWithDifferences.toString()]));
-    this.log(messages.getMessage('success.comparison-complete'));
+    status.info(`Total profiles compared: ${comparisons.length}`);
+    if (profilesWithDifferences > 0) {
+      status.warn(`${profilesWithDifferences} profile(s) have differences`);
+    } else {
+      status.success('All profiles match - no differences found');
+    }
 
     return {
       success: true,
@@ -233,6 +253,9 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
   private async runMultiSourceComparison(flags: any): Promise<ProfilerCompareResult> {
     const sources = flags.sources as string;
     const profileName = flags.name;
+    const quiet = flags.quiet ?? false;
+    const progressOptions: ProgressOptions = { quiet };
+    const status = new StatusMessage(progressOptions);
 
     // Parse org aliases
     const orgAliases = sources
@@ -246,10 +269,13 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       );
     }
 
-    this.log(messages.getMessage('info.multi-source-mode', [orgAliases.length.toString()]));
-    this.log(`Comparing across environments: ${orgAliases.join(', ')}\n`);
+    status.info(`Multi-source comparison mode: ${orgAliases.length} environment(s)`);
+    if (!quiet) {
+      this.log(`Comparing across environments: ${orgAliases.join(', ')}\n`);
+    }
 
-    // Resolve orgs from aliases (try alias first, fallback to username)
+    // Resolve orgs from aliases with spinner
+    const spinner = new Spinner('Resolving org connections...', progressOptions);
     const orgSources = await Promise.all(
       orgAliases.map(async (aliasOrUsername) => {
         try {
@@ -270,6 +296,7 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
         }
       })
     );
+    spinner.succeed(`Resolved ${orgSources.length} org connection(s)`);
 
     // Get API version from first org
     const apiVersion = flags['api-version'] ?? (await orgSources[0].org.retrieveMaxApiVersion());
@@ -285,9 +312,20 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       throw new SfError(messages.getMessage('error.no-profiles-found'));
     }
 
-    this.log(`Comparing ${profileNames.length} profile(s): ${profileNames.join(', ')}`);
+    status.info(`Comparing ${profileNames.length} profile(s): ${profileNames.join(', ')}`);
 
-    // Execute multi-source comparison
+    // Execute multi-source comparison with progress bars
+    const multiProgress = new MultiProgressBar(progressOptions);
+    const progressBars = new Map<string, ReturnType<typeof multiProgress.createBar>>();
+
+    // Create progress bars for each org
+    for (const source of orgSources) {
+      const bar = multiProgress.createBar(source.alias, profileNames.length);
+      if (bar) {
+        progressBars.set(source.alias, bar);
+      }
+    }
+
     const input: MultiSourceCompareInput = {
       profileNames,
       sources: orgSources,
@@ -295,13 +333,33 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       projectPath,
     };
 
+    const startTime = Date.now();
     const result = await compareMultiSource(input).run();
 
+    // Update progress bars as profiles are processed
+    // Note: This is a simplified version - in a full implementation,
+    // we'd track progress within the operation itself
+    for (let i = 0; i < profileNames.length; i++) {
+      for (const source of orgSources) {
+        const bar = progressBars.get(source.alias);
+        if (bar) {
+          bar.update(i + 1);
+        } else {
+          multiProgress.update(source.alias, i + 1, profileNames.length);
+        }
+      }
+    }
+
+    multiProgress.stop();
+
     if (result.isFailure()) {
+      status.error('Multi-source comparison failed');
       throw new SfError(`Multi-source comparison failed: ${result.error.message}`);
     }
 
     const multiResult = result.value;
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    status.success(`Multi-source comparison complete (${elapsed}s)`);
 
     // Get output format preferences
     const outputFormat = (flags['output-format'] as 'table' | 'json' | 'html') ?? 'table';
