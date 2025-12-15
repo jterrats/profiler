@@ -11,7 +11,7 @@
 
 import type { Org } from '@salesforce/core';
 import { expect } from 'chai';
-import { pipeline, type PipelineContext } from '../../../../src/core/dsl/pipeline-builder.js';
+import { pipeline, type PipelineContext } from '../../../src/core/dsl/pipeline-builder.js';
 
 describe('Pipeline DSL - Happy Path', () => {
   // Mock org and context for testing
@@ -36,10 +36,10 @@ describe('Pipeline DSL - Happy Path', () => {
 
       // Assert
       expect(builder).to.exist;
-      expect(builder.compare).to.be.a('function');
-      expect(builder.merge).to.be.a('function');
-      expect(builder.validate).to.be.a('function');
-      expect(builder.run).to.be.a('function');
+      expect(typeof builder.compare).to.equal('function');
+      expect(typeof builder.merge).to.equal('function');
+      expect(typeof builder.validate).to.equal('function');
+      expect(typeof builder.run).to.equal('function');
     });
 
     it('should accept multiple profile names', () => {
