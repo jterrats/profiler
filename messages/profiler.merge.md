@@ -35,6 +35,7 @@ Specify how to resolve conflicts between local and org versions:
 - **union**: Combine all permissions (additive merge, never removes permissions)
 - **local**: Keep entire local version, discard all org changes
 - **org**: Use entire org version, discard all local changes
+- **interactive**: Prompt user to select which changes to apply (requires TTY)
 - **abort-on-conflict**: Fail if any conflicts are detected (safe mode)
 
 # flags.api-version.summary
@@ -90,6 +91,10 @@ When enabled, suppresses spinners, progress bars, and status messages. Useful fo
 - Merge and fail if conflicts detected:
 
   <%= config.bin %> <%= command.id %> --target-org myOrg --name Admin --strategy abort-on-conflict
+
+- Interactive merge (select changes to apply):
+
+  <%= config.bin %> <%= command.id %> --target-org myOrg --name Admin --strategy interactive
 
 - Merge without creating backup:
 

@@ -15,6 +15,12 @@ import { type MergeStrategy } from '../../operations/index.js';
 import { readLocalProfile, parseProfileXml, retrieveProfileWithMetadata } from '../../operations/index.js';
 import type { ProfileXml } from '../../operations/index.js';
 import { Spinner, StatusMessage, type ProgressOptions } from '../../core/ui/progress.js';
+import {
+  conflictsToChanges,
+  promptForChanges,
+  promptForPreview,
+  isInteractiveTerminal,
+} from '../../core/ui/interactive.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@jterrats/profiler', 'profiler.merge');
@@ -53,7 +59,7 @@ export default class ProfilerMerge extends SfCommand<ProfilerMergeResult> {
     strategy: Flags.string({
       summary: messages.getMessage('flags.strategy.summary'),
       description: messages.getMessage('flags.strategy.description'),
-      options: ['local-wins', 'org-wins', 'union', 'local', 'org', 'abort-on-conflict'],
+      options: ['local-wins', 'org-wins', 'union', 'local', 'org', 'interactive', 'abort-on-conflict'],
       default: 'local-wins',
     }),
     'api-version': Flags.string({
@@ -133,7 +139,55 @@ export default class ProfilerMerge extends SfCommand<ProfilerMergeResult> {
     if (!quiet) {
       this.log(messages.getMessage('info.conflicts-detected', [conflicts.length.toString()]));
     }
-    this.displayDryRunPreview(dryRun, conflicts);
+
+    // Handle interactive mode
+    let conflictsToMerge = conflicts;
+    if (strategy === 'interactive') {
+      if (!isInteractiveTerminal()) {
+        throw new SfError(
+          'Interactive mode requires a TTY. Use a non-interactive strategy or run in an interactive terminal.'
+        );
+      }
+
+      spinner.succeed('Conflicts detected - switching to interactive mode');
+      const changes = conflictsToChanges(conflicts);
+      const selectedChangeIds = await promptForChanges(changes);
+
+      if (selectedChangeIds.length === 0) {
+        status.info('No changes selected - merge cancelled');
+        return {
+          success: true,
+          profileName,
+          merged: false,
+          conflicts: conflicts.length,
+          strategy,
+          dryRun,
+        };
+      }
+
+      // Filter conflicts based on selection
+      conflictsToMerge = conflicts.filter((_, index) => selectedChangeIds.includes(`change-${index}`));
+
+      // Show preview and confirm
+      const confirmed = await promptForPreview(selectedChangeIds, changes);
+      if (!confirmed) {
+        status.info('Merge cancelled by user');
+        return {
+          success: true,
+          profileName,
+          merged: false,
+          conflicts: conflicts.length,
+          strategy,
+          dryRun,
+        };
+      }
+
+      if (!quiet) {
+        this.log(`\nApplying ${selectedChangeIds.length} selected change(s)...`);
+      }
+    } else {
+      this.displayDryRunPreview(dryRun, conflicts);
+    }
 
     if (dryRun) {
       spinner.succeed('Dry run complete - no changes applied');
@@ -149,7 +203,7 @@ export default class ProfilerMerge extends SfCommand<ProfilerMergeResult> {
       resolvedApiVersion,
       skipBackup,
       dryRun,
-      conflicts,
+      conflictsToMerge,
       localProfile,
       orgProfile
     );

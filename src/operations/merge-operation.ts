@@ -589,13 +589,11 @@ export function mergeProfiles(
       return Promise.resolve(failure(conflictError));
     }
 
-    // Handle interactive strategy (not supported in non-TTY)
-    if (strategy === 'interactive') {
-      const conflictElements = conflicts.map((c) => c.element);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-      const conflictError = new MergeConflictError(profileName, conflictElements);
-      return Promise.resolve(failure(conflictError));
-    }
+    // Handle interactive strategy
+    // Note: Interactive mode is handled at the command level, not here.
+    // By the time we reach this function, conflicts have already been filtered
+    // based on user selection. We treat it as 'local-wins' for the actual merge.
+    const effectiveStrategy = strategy === 'interactive' ? 'local-wins' : strategy;
 
     try {
       const localXml = (localProfile.profile as { raw?: string }).raw ?? '';
@@ -616,7 +614,7 @@ export function mergeProfiles(
       const orgXml = (orgProfile.profile as { raw?: string }).raw ?? '';
 
       let mergedContent = '';
-      if (strategy === 'local' || strategy === 'local-wins') {
+      if (effectiveStrategy === 'local' || effectiveStrategy === 'local-wins') {
         mergedContent = localXml;
       } else {
         mergedContent = orgXml;

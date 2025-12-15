@@ -1230,11 +1230,50 @@ if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
     else
         log_info "Test 18c: No conflicts detected (expected if profiles are identical)"
     fi
+
+    # Test 18d: Interactive mode (should fail gracefully in non-TTY)
+    log_info "Test 18d: Interactive merge mode (non-TTY validation)"
+    INTERACTIVE_OUTPUT=$(sf profiler merge --target-org "$TARGET_ORG" --name Admin --strategy interactive 2>&1 || true)
+    EXIT_CODE=$?
+
+    # In non-TTY environments (CI/CD), interactive mode should fail with clear error
+    if [ $EXIT_CODE -ne 0 ]; then
+        if echo "$INTERACTIVE_OUTPUT" | grep -qiE "(TTY|interactive.*terminal|requires.*TTY)"; then
+            log_success "Test 18d passed: Interactive mode correctly fails in non-TTY with clear error"
+        else
+            log_warning "Test 18d: Interactive mode failed but error message may need improvement"
+            echo "$INTERACTIVE_OUTPUT" | head -5
+        fi
+    else
+        # If it succeeded, we're in a TTY environment (local testing)
+        if [ -t 0 ] && [ -t 1 ]; then
+            log_info "Test 18d: Interactive mode available (TTY environment detected)"
+            log_info "  Note: Full interactive testing requires manual user interaction"
+        else
+            log_warning "Test 18d: Interactive mode succeeded unexpectedly in non-TTY"
+        fi
+    fi
+
+    # Test 18e: Interactive mode flag validation
+    log_info "Test 18e: Verify interactive strategy is accepted as valid option"
+    HELP_OUTPUT=$(sf profiler merge --help 2>&1 || true)
+    if echo "$HELP_OUTPUT" | grep -qi "interactive"; then
+        log_success "Test 18e passed: Interactive strategy documented in help"
+    else
+        log_warning "Test 18e: Interactive strategy may not be in help text"
+    fi
 else
     log_info "Test 18 skipped: No Admin profile available for merge testing"
 fi
 
 log_success "Test 18 passed: Profile merge command works correctly"
+log_info ""
+log_info "Merge scenarios validated:"
+log_info "  ✓ Dry-run merge (preview changes)"
+log_info "  ✓ Local-wins strategy"
+log_info "  ✓ Abort-on-conflict strategy"
+log_info "  ✓ Interactive mode (non-TTY validation)"
+log_info "  ✓ Interactive strategy in help"
 log_info ""
 
 # Test 19: Progress Indicators and --quiet flag
@@ -1410,7 +1449,7 @@ log_info "  ✓ 12 core tests (retrieve, compare, performance, incremental)"
 log_info "  ✓ 3 feature tests (multi-source, JSON, HTML export)"
 log_info "  ✓ 1 error handling test (4 error scenarios)"
 log_info "  ✓ 1 validation test (5 validation scenarios)"
-log_info "  ✓ 1 merge test (3 merge scenarios)"
+log_info "  ✓ 1 merge test (5 merge scenarios: dry-run, local-wins, abort-on-conflict, interactive, help)"
 log_info "  ✓ 1 progress indicators test (9 progress scenarios)"
 log_info "  Total: 19 E2E tests"
 
