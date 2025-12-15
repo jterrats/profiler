@@ -61,6 +61,14 @@ Skip creating a backup of the local profile before merging.
 
 By default, a backup file (.backup) is created before merging. Use this flag to skip backup creation. Not recommended unless you're certain about the merge result.
 
+# flags.quiet.summary
+
+Disable progress indicators and status messages.
+
+# flags.quiet.description
+
+When enabled, suppresses spinners, progress bars, and status messages. Useful for scripting and CI/CD environments where minimal output is desired.
+
 # examples
 
 - Merge a profile using default strategy (local-wins):

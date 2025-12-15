@@ -11,14 +11,17 @@ The complete documentation is also available online with a modern, searchable in
 ## 📚 Documentation Structure
 
 ### 🎯 User Guide
+
 Documentation for plugin users.
 
 - **[Quick Start](user-guide/quick-start.md)** - Get started in 5 minutes
 - **[Usage Guide](user-guide/usage.md)** - Complete usage documentation
 - **[Safety Guarantees](user-guide/SAFETY.md)** - How your code is protected 🔒
 - **[Compare Command](user-guide/compare-command.md)** - Detailed compare command guide
+- **[Progress Indicators](user-guide/progress-indicators.md)** - Visual feedback and quiet mode
 
 ### 💻 Development
+
 Documentation for contributors and developers.
 
 - **[Contributing](development/contributing.md)** - How to contribute to the project
@@ -27,6 +30,7 @@ Documentation for contributors and developers.
 - **[GitHub Actions](development/github-actions.md)** - CI/CD workflow documentation
 
 ### 🔧 Technical
+
 Technical documentation and analysis.
 
 - **[Profile XML Elements](technical/profile-xml-elements.md)** - Complete XML element reference (15 types)
@@ -34,6 +38,7 @@ Technical documentation and analysis.
 - **[Analysis Summary](technical/analysis-summary.md)** - Technical analysis executive summary
 
 ### 📋 Project
+
 Project information and history.
 
 - **[Features](project/features.md)** - Complete feature list and comparisons
@@ -49,29 +54,34 @@ Project information and history.
 ### For Users
 
 **Getting Started**:
+
 1. [Quick Start Guide](user-guide/quick-start.md)
 2. [Installation & Usage](user-guide/usage.md)
 3. [Safety Guarantees](user-guide/SAFETY.md) 🔒
 4. [Command Examples](user-guide/compare-command.md)
 
 **Commands**:
+
 - `sf profiler retrieve` - Retrieve profiles with dependencies
 - `sf profiler compare` - Compare local vs org profiles
 
 ### For Developers
 
 **Contributing**:
+
 1. [Contributing Guide](development/contributing.md)
 2. [Testing Locally](development/testing-and-publishing.md#-local-testing-before-publishing)
 3. [Running Tests](development/testing-and-publishing.md#-testing-checklist)
 
 **Publishing**:
+
 1. [Publish to npm](development/testing-and-publishing.md#-publishing-to-npm)
 2. [Push to GitHub](development/push-to-github.md)
 
 ### For Technical Analysis
 
 **Understanding Profiles**:
+
 1. [XML Element Types](technical/profile-xml-elements.md)
 2. [What to Aggregate](technical/element-aggregation-analysis.md)
 3. [Technical Summary](technical/analysis-summary.md)
@@ -83,27 +93,32 @@ Project information and history.
 ### I want to...
 
 #### Use the Plugin
+
 - ✅ [Install and get started](user-guide/quick-start.md)
 - ✅ [Learn all commands](user-guide/usage.md)
 - ✅ [Understand safety guarantees](user-guide/SAFETY.md) 🔒
 - ✅ [Compare profiles](user-guide/compare-command.md)
 
 #### Develop
+
 - ✅ [Set up development environment](development/testing-and-publishing.md#local-testing-before-publishing)
 - ✅ [Run tests](development/testing-and-publishing.md#-testing-checklist)
 - ✅ [Contribute code](development/contributing.md)
 
 #### Publish
+
 - ✅ [Publish to npm](development/testing-and-publishing.md#-publishing-to-npm)
 - ✅ [Push to GitHub](development/push-to-github.md)
 - ✅ [Set up CI/CD](development/github-actions.md)
 
 #### Understand Profiles
+
 - ✅ [Profile XML structure](technical/profile-xml-elements.md)
 - ✅ [Element analysis](technical/element-aggregation-analysis.md)
 - ✅ [Aggregation strategies](technical/element-aggregation-analysis.md#elements-that-should-be-aggregated)
 
 #### Learn About the Project
+
 - ✅ [Feature list](project/features.md)
 - ✅ [Version history](project/changelog.md)
 - ✅ [Project overview](project/project-summary.md)
@@ -113,6 +128,7 @@ Project information and history.
 ## 🎓 Learning Paths
 
 ### Beginner Path
+
 1. Start: [Quick Start Guide](user-guide/quick-start.md)
 2. Learn: [Usage Guide](user-guide/usage.md)
 3. Safety: [Safety Guarantees](user-guide/SAFETY.md) 🔒
@@ -120,12 +136,14 @@ Project information and history.
 5. Explore: [Compare Command](user-guide/compare-command.md)
 
 ### Developer Path
+
 1. Setup: [Testing & Publishing](development/testing-and-publishing.md)
 2. Code: [Contributing Guide](development/contributing.md)
 3. Test: Run local tests
 4. Share: [Push to GitHub](development/push-to-github.md)
 
 ### Technical Path
+
 1. Understand: [Profile XML Elements](technical/profile-xml-elements.md)
 2. Analyze: [Element Aggregation](technical/element-aggregation-analysis.md)
 3. Apply: [Analysis Summary](technical/analysis-summary.md)
@@ -149,18 +167,22 @@ Project information and history.
 ### By Topic
 
 **Profile Metadata**:
+
 - [XML Elements](technical/profile-xml-elements.md)
 - [Aggregation](technical/element-aggregation-analysis.md)
 
 **Commands**:
+
 - [Retrieve](user-guide/usage.md#sf-profiler-retrieve)
 - [Compare](user-guide/compare-command.md)
 
 **Development**:
+
 - [Testing](development/testing-and-publishing.md)
 - [CI/CD](development/github-actions.md)
 
 **Publishing**:
+
 - [npm](development/testing-and-publishing.md#-publishing-to-npm)
 - [GitHub](development/push-to-github.md)
 
@@ -219,6 +241,7 @@ All documentation is written in Markdown and follows GitHub-flavored syntax.
 ## 🎉 Documentation Complete!
 
 This comprehensive documentation covers:
+
 - ✅ User guides
 - ✅ Development setup
 - ✅ Technical analysis
@@ -233,4 +256,3 @@ This comprehensive documentation covers:
 **Last Updated**: 2024
 **Version**: 1.0.0
 **Author**: Jaime Terrats
-
