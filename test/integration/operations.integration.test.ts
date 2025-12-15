@@ -13,6 +13,7 @@
  * - compare
  * - merge
  * - validate
+ * - pipeline DSL
  *
  * These tests validate the functional pipeline approach.
  */
