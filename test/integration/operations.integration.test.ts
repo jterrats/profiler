@@ -562,4 +562,73 @@ describe('Operations Integration Tests', () => {
       }
     });
   });
+
+  describe('Pipeline DSL Integration', () => {
+    it('should create pipeline builder with context', () => {
+      // Arrange
+      const mockOrg = {
+        getUsername: () => 'test@example.com',
+      } as unknown as Org;
+
+      const context: PipelineContext = {
+        org: mockOrg,
+        projectPath: testProjectPath,
+        profileNames: ['Admin'],
+        apiVersion: '60.0',
+      };
+
+      // Act
+      const builder = pipeline(context);
+
+      // Assert
+      expect(builder).to.exist;
+      expect(builder.compare).to.be.a('function');
+      expect(builder.merge).to.be.a('function');
+      expect(builder.validate).to.be.a('function');
+      expect(builder.run).to.be.a('function');
+    });
+
+    it('should allow chaining operations', () => {
+      // Arrange
+      const mockOrg = {
+        getUsername: () => 'test@example.com',
+      } as unknown as Org;
+
+      const context: PipelineContext = {
+        org: mockOrg,
+        projectPath: testProjectPath,
+        profileNames: ['Admin'],
+        apiVersion: '60.0',
+      };
+
+      // Act
+      const builder = pipeline(context);
+      const chained = builder.compare().merge().validate();
+
+      // Assert
+      expect(chained).to.equal(builder); // Should return same instance
+    });
+
+    it('should have run method that returns Promise', () => {
+      // Arrange
+      const mockOrg = {
+        getUsername: () => 'test@example.com',
+      } as unknown as Org;
+
+      const context: PipelineContext = {
+        org: mockOrg,
+        projectPath: testProjectPath,
+        profileNames: ['Admin'],
+        apiVersion: '60.0',
+      };
+
+      // Act
+      const builder = pipeline(context);
+      builder.compare();
+      const result = builder.run();
+
+      // Assert
+      expect(result).to.be.a('promise');
+    });
+  });
 });
