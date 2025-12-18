@@ -1,7 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import { Messages, SfError, SfProject, AuthInfo, Connection, Org, StateAggregator } from '@salesforce/core';
+import { Messages, SfError, SfProject, Org, AuthInfo, Connection, StateAggregator } from '@salesforce/core';
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 
 import {
@@ -142,16 +142,11 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
     const progressOptions: ProgressOptions = { quiet };
     const status = new StatusMessage(progressOptions);
 
-    // Resolve org from alias/username (same logic as multi-source)
+    // Resolve org from alias/username
     let org: Org;
     try {
-      // Resolve alias to username if needed
-      const aliases = await StateAggregator.getInstance();
-      const username = aliases.aliases.getUsername(targetOrgAlias) ?? targetOrgAlias;
-
-      const authInfo = await AuthInfo.create({ username });
-      const connection = await Connection.create({ authInfo });
-      org = await Org.create({ connection });
+      // Use Org.create which handles alias resolution automatically
+      org = await Org.create({ aliasOrUsername: targetOrgAlias });
     } catch (error) {
       throw new SfError(
         `Failed to authenticate to org '${targetOrgAlias}': ${error instanceof Error ? error.message : String(error)}`

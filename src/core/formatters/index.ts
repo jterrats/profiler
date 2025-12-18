@@ -13,3 +13,10 @@ export {
   type MatrixFormatOptions,
   type FormattedOutput,
 } from './matrix-formatter.js';
+
+export {
+  formatMigrationPreview,
+  exportMigrationPreview,
+  type MigrationFormatOptions,
+  type FormattedMigrationOutput,
+} from './migration-formatter.js';

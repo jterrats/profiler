@@ -76,6 +76,24 @@ Disable progress indicators and status messages.
 
 When enabled, suppresses spinners, progress bars, and status messages. Useful for scripting and CI/CD environments where minimal output is desired.
 
+# flags.no-cache.summary
+
+Bypass metadata cache and fetch fresh data from the org.
+
+# flags.no-cache.description
+
+When enabled, skips the metadata cache and always fetches fresh data from the Salesforce org. Useful when you suspect cached data is stale or when debugging cache-related issues.
+
+By default, the cache is enabled to improve performance (saves ~5s on repeated operations). The cache automatically expires after 1 hour and gracefully degrades if there are any issues.
+
+# flags.clear-cache.summary
+
+Clear all cached metadata before retrieving.
+
+# flags.clear-cache.description
+
+When enabled, clears all cached metadata entries before executing the retrieve operation. Useful for resetting the cache or when switching between different orgs frequently.
+
 # examples
 
 - Retrieve all profiles with metadata (without FLS):

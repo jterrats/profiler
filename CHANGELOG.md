@@ -5,6 +5,74 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2025-01-XX
+
+### Added
+
+- **migrate**: New command to migrate permissions from Profiles to Permission Sets
+  - Migrate specific permission types: FLS, Apex, Flows, Tabs, Record Types, Object Access, Connected Apps, Custom Permissions, User Permissions, Visualforce, Custom Metadata Types, External Credentials, Data Spaces, Applications, Custom Settings
+  - Support for 15 different metadata types total
+  - `--from` flag to specify source Profile
+  - `--section` flag to specify permission types to migrate (comma-separated)
+  - `--name` flag to specify Permission Set name (auto-generated if not provided)
+  - `--dry-run` flag to preview migration without executing
+  - `--format` flag with 6 output formats: table, json, html, markdown, csv, yaml
+  - `--output-file` flag to export preview to file
+  - `--create-if-missing` flag to auto-create Permission Set if it doesn't exist
+  - Automatic Permission Set XML generation and writing to project
+  - Duplicate detection to prevent adding existing permissions
+  - HTML output automatically opens in browser when using `--format html --output-file`
+- **migrate**: Permission Set XML generation with proper metadata structure
+  - Merges with existing Permission Set data to avoid overwriting
+  - Supports all 15 permission types in XML format
+  - Proper XML structure following Salesforce metadata API standards
+- **migrate**: Multiple output formatters for migration preview
+  - Table format for terminal display
+  - JSON format for automation and scripting
+  - HTML format with web-friendly styling (auto-opens in browser)
+  - Markdown format for documentation
+  - CSV format for Excel compatibility
+  - YAML format for structured data
+- **merge**: Profile merge command (previously implemented but now fully documented)
+  - Merge org changes into local profiles
+  - Multiple merge strategies (local-wins, org-wins, selective)
+  - Automatic backup and rollback on errors
+  - Conflict detection and resolution
+  - Dry-run mode for preview
+  - Interactive mode for selective merging
+- **validate**: Profile validation command (previously implemented but now fully documented)
+  - Validate profiles before deployment
+  - Detect missing metadata references
+  - Detect duplicate entries
+  - Schema validation
+  - CI/CD integration with exit codes
+- **retrieve**: `--no-cache` and `--clear-cache` flags for cache management
+- **tests**: 18 new e2e tests for migrate command covering all formats, types, and scenarios
+- **operations**: New migratePermissionsOperation() for Profile to Permission Set migration
+- **formatters**: New migration-formatter module with 6 output formats
+
+### Changed
+
+- **Architecture**: Major architectural improvements
+  - **Cache System**: New filesystem metadata cache (`src/core/cache/`)
+    - Persistent cache for `listMetadata` results with graceful degradation
+    - Singleton pattern with in-memory fallback
+    - Error recovery strategies (CacheCorruptedError, CacheWriteError, CacheReadError, CacheDiskFullError)
+    - Cache location: `~/.sf/profiler-cache/`
+    - Never fails operations - all cache errors are non-fatal
+  - **Formatter Architecture**: New formatter modules (`src/core/formatters/`)
+    - `migration-formatter.ts`: 6 output formats for migration preview (table, json, html, markdown, csv, yaml)
+    - `matrix-formatter.ts`: 3 output formats for multi-source comparison (table, json, html)
+    - Centralized formatting logic for consistent output across commands
+  - **Error Handling**: New error types for cache and migration operations
+    - Cache errors: `CacheCorruptedError`, `CacheWriteError`, `CacheReadError`, `CacheDiskFullError`
+    - Migration errors: `PermissionSetWriteError`, `PermissionSetReadError`
+  - **Operations Structure**: New operation modules
+    - `migrate-operation.ts`: Complete migration logic with XML generation
+    - Enhanced `retrieve-operation.ts`: Integrated with cache system
+- **migrate**: HTML files automatically open in browser when generated (no flag needed)
+- **retrieve**: Integrated with filesystem cache for improved performance (5s improvement on repeated operations)
+
 ## [Unreleased]
 
 ### Added
@@ -16,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic fallback to full retrieve on any error (safe by default)
 - **retrieve**: `--force` flag to bypass incremental optimization and force full retrieve
 - **retrieve**: `--dry-run` flag to preview what would be retrieved without executing
+- **retrieve**: `--no-cache` and `--clear-cache` flags for cache management
 - **compare**: `--sources` flag for multi-source profile comparison across multiple Salesforce environments
   - Compare same profiles across dev/qa/uat/prod in parallel
   - Automatic graceful degradation if some orgs fail
@@ -25,15 +94,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **compare**: `--no-cache` flag to bypass cache and force fresh retrieval
 - **errors**: 4 new error types for multi-source comparison (MultipleEnvironmentFailureError, PartialRetrievalError, MatrixBuildError, ParallelExecutionError)
 - **errors**: 3 new error types for incremental retrieve (LocalMetadataReadError, MetadataComparisonError, IncrementalRetrieveError)
+- **errors**: New error types for migration (PermissionSetWriteError, PermissionSetReadError)
 - **tests**: 44 integration tests total (27 error tests + 12 incremental retrieve + 5 multi-source happy path)
 - **tests**: 3 new e2e tests for incremental retrieve (--force, --dry-run, default behavior)
 - **tests**: 3 new e2e tests for multi-source comparison (--sources, JSON format, HTML export)
-- **tests**: Total 15 E2E tests covering all major features
+- **tests**: 18 new e2e tests for migrate command covering all formats, types, and scenarios
+- **tests**: Total 33+ E2E tests covering all major features
+- **operations**: New migratePermissionsOperation() for Profile to Permission Set migration
 - **operations**: New compareMultiSource() operation for parallel multi-org comparison
 - **operations**: retrieveFromMultipleSources() for concurrent profile retrieval
 - **operations**: buildComparisonMatrix() for cross-environment comparison structuring
 - **compare**: `--output-format` flag to choose output format (table, json, html)
 - **compare**: `--output-file` flag to export comparison results to file
+- **formatters**: New migration-formatter module with 6 output formats
 - **formatters**: New matrix-formatter module with 3 output formats:
   - Table: ASCII table with UTF-8 box drawing for terminal
   - JSON: Machine-readable structured data for automation

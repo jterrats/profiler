@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "profilesCompared": 1,
+  "orgsInvolved": [],
+  "allOrgsSucceeded": true,
+  "successfulOrgs": [],
+  "failedOrgs": [],
+  "matrices": [
+    {
+      "profileName": "Admin",
+      "successfulOrgs": [],
+      "failedOrgs": [],
+      "orgCount": 0
+    }
+  ]
+}
+

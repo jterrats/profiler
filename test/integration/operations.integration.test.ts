@@ -23,6 +23,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/unbound-method */
 
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
@@ -30,6 +31,7 @@ import * as path from 'node:path';
 
 import { expect } from 'chai';
 
+import type { Org } from '@salesforce/core';
 import { ProfilerMonad } from '../../src/core/monad/profiler-monad.js';
 import {
   validateProfileOperation,
@@ -38,6 +40,7 @@ import {
   detectInvalidPermissions,
 } from '../../src/operations/validate-operation.js';
 import { validateMergeStrategy, type MergeStrategy } from '../../src/operations/merge-operation.js';
+import { pipeline, type PipelineContext } from '../../src/core/dsl/pipeline-builder.js';
 
 describe('Operations Integration Tests', () => {
   let testProjectPath: string;
@@ -582,10 +585,10 @@ describe('Operations Integration Tests', () => {
 
       // Assert
       expect(builder).to.exist;
-      expect(builder.compare).to.be.a('function');
-      expect(builder.merge).to.be.a('function');
-      expect(builder.validate).to.be.a('function');
-      expect(builder.run).to.be.a('function');
+      expect(typeof builder.compare).to.equal('function');
+      expect(typeof builder.merge).to.equal('function');
+      expect(typeof builder.validate).to.equal('function');
+      expect(typeof builder.run).to.equal('function');
     });
 
     it('should allow chaining operations', () => {
