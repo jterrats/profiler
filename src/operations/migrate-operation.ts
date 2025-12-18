@@ -750,6 +750,270 @@ function comparePermissions(
  * Main migration operation
  */
 /**
+ * Helper function to build fieldPermissions array
+ */
+function buildFieldPermissions(
+  flsPermissions: ExtractedPermission[],
+  existingFieldPermissions: unknown[]
+): Record<string, unknown>[] {
+  const existingFieldMap = new Map<string, Record<string, unknown>>();
+  for (const fp of existingFieldPermissions) {
+    if (typeof fp === 'object' && fp !== null) {
+      const fpObj = fp as Record<string, unknown>;
+      const field = fpObj.field as string | undefined;
+      if (field) {
+        existingFieldMap.set(field, fpObj);
+      }
+    }
+  }
+
+  for (const perm of flsPermissions) {
+    const metadata = perm.metadata as { readable?: boolean; editable?: boolean } | undefined;
+    const existing = existingFieldMap.get(perm.name);
+    if (existing) {
+      existing.readable = metadata?.readable ?? existing.readable;
+      existing.editable = metadata?.editable ?? existing.editable;
+    } else {
+      existingFieldMap.set(perm.name, {
+        field: perm.name,
+        readable: metadata?.readable ?? false,
+        editable: metadata?.editable ?? false,
+      });
+    }
+  }
+  return Array.from(existingFieldMap.values());
+}
+
+/**
+ * Helper function to build classAccesses array
+ */
+function buildClassAccesses(
+  apexPermissions: ExtractedPermission[],
+  existingClassAccesses: unknown[]
+): Record<string, unknown>[] {
+  const existingClassMap = new Map<string, Record<string, unknown>>();
+  for (const ca of existingClassAccesses) {
+    if (typeof ca === 'object' && ca !== null) {
+      const caObj = ca as Record<string, unknown>;
+      const apexClass = caObj.apexClass as string | undefined;
+      if (apexClass) {
+        existingClassMap.set(apexClass, caObj);
+      }
+    }
+  }
+
+  for (const perm of apexPermissions) {
+    if (!existingClassMap.has(perm.name)) {
+      existingClassMap.set(perm.name, {
+        apexClass: perm.name,
+        enabled: perm.enabled,
+      });
+    }
+  }
+  return Array.from(existingClassMap.values());
+}
+
+/**
+ * Helper function to build flowAccesses array
+ */
+function buildFlowAccesses(
+  flowPermissions: ExtractedPermission[],
+  existingFlowAccesses: unknown[]
+): Record<string, unknown>[] {
+  const existingFlowMap = new Map<string, Record<string, unknown>>();
+  for (const fa of existingFlowAccesses) {
+    if (typeof fa === 'object' && fa !== null) {
+      const faObj = fa as Record<string, unknown>;
+      const flow = faObj.flow as string | undefined;
+      if (flow) {
+        existingFlowMap.set(flow, faObj);
+      }
+    }
+  }
+
+  for (const perm of flowPermissions) {
+    if (!existingFlowMap.has(perm.name)) {
+      existingFlowMap.set(perm.name, {
+        flow: perm.name,
+        enabled: perm.enabled,
+      });
+    }
+  }
+  return Array.from(existingFlowMap.values());
+}
+
+/**
+ * Helper function to build tabVisibilities array
+ */
+function buildTabVisibilities(
+  tabPermissions: ExtractedPermission[],
+  existingTabVisibilities: unknown[]
+): Record<string, unknown>[] {
+  const existingTabMap = new Map<string, Record<string, unknown>>();
+  for (const tv of existingTabVisibilities) {
+    if (typeof tv === 'object' && tv !== null) {
+      const tvObj = tv as Record<string, unknown>;
+      const tab = tvObj.tab as string | undefined;
+      if (tab) {
+        existingTabMap.set(tab, tvObj);
+      }
+    }
+  }
+
+  for (const perm of tabPermissions) {
+    if (!existingTabMap.has(perm.name)) {
+      existingTabMap.set(perm.name, {
+        tab: perm.name,
+        visibility: 'Visible',
+      });
+    }
+  }
+  return Array.from(existingTabMap.values());
+}
+
+/**
+ * Helper function to build recordTypeVisibilities array
+ */
+function buildRecordTypeVisibilities(
+  recordTypePermissions: ExtractedPermission[],
+  existingRecordTypeVisibilities: unknown[]
+): Record<string, unknown>[] {
+  const existingRecordTypeMap = new Map<string, Record<string, unknown>>();
+  for (const rtv of existingRecordTypeVisibilities) {
+    if (typeof rtv === 'object' && rtv !== null) {
+      const rtvObj = rtv as Record<string, unknown>;
+      const recordType = rtvObj.recordType as string | undefined;
+      if (recordType) {
+        existingRecordTypeMap.set(recordType, rtvObj);
+      }
+    }
+  }
+
+  for (const perm of recordTypePermissions) {
+    if (!existingRecordTypeMap.has(perm.name)) {
+      existingRecordTypeMap.set(perm.name, {
+        recordType: perm.name,
+        visible: perm.enabled,
+      });
+    }
+  }
+  return Array.from(existingRecordTypeMap.values());
+}
+
+/**
+ * Helper function to build objectPermissions array
+ */
+function buildObjectPermissions(
+  objectPermissions: ExtractedPermission[],
+  existingObjectPermissions: unknown[]
+): Record<string, unknown>[] {
+  const existingObjectMap = new Map<string, Record<string, unknown>>();
+  for (const op of existingObjectPermissions) {
+    if (typeof op === 'object' && op !== null) {
+      const opObj = op as Record<string, unknown>;
+      const object = opObj.object as string | undefined;
+      if (object) {
+        existingObjectMap.set(object, opObj);
+      }
+    }
+  }
+
+  for (const perm of objectPermissions) {
+    const metadata = perm.metadata as {
+      allowRead?: boolean;
+      allowCreate?: boolean;
+      allowEdit?: boolean;
+      allowDelete?: boolean;
+      viewAllRecords?: boolean;
+      modifyAllRecords?: boolean;
+    } | undefined;
+    const existing = existingObjectMap.get(perm.name);
+    if (existing) {
+      if (metadata?.allowRead !== undefined) existing.allowRead = metadata.allowRead;
+      if (metadata?.allowCreate !== undefined) existing.allowCreate = metadata.allowCreate;
+      if (metadata?.allowEdit !== undefined) existing.allowEdit = metadata.allowEdit;
+      if (metadata?.allowDelete !== undefined) existing.allowDelete = metadata.allowDelete;
+      if (metadata?.viewAllRecords !== undefined) existing.viewAllRecords = metadata.viewAllRecords;
+      if (metadata?.modifyAllRecords !== undefined) existing.modifyAllRecords = metadata.modifyAllRecords;
+    } else {
+      existingObjectMap.set(perm.name, {
+        object: perm.name,
+        allowRead: metadata?.allowRead ?? false,
+        allowCreate: metadata?.allowCreate ?? false,
+        allowEdit: metadata?.allowEdit ?? false,
+        allowDelete: metadata?.allowDelete ?? false,
+        viewAllRecords: metadata?.viewAllRecords ?? false,
+        modifyAllRecords: metadata?.modifyAllRecords ?? false,
+      });
+    }
+  }
+  return Array.from(existingObjectMap.values());
+}
+
+/**
+ * Helper function to build simple permission arrays (connectedApps, customPermissions, etc.)
+ */
+function buildSimplePermissions(
+  permissions: ExtractedPermission[],
+  existingPermissions: unknown[],
+  keyName: string,
+  enabledKey = 'enabled'
+): Record<string, unknown>[] {
+  const existingMap = new Map<string, Record<string, unknown>>();
+  for (const ep of existingPermissions) {
+    if (typeof ep === 'object' && ep !== null) {
+      const epObj = ep as Record<string, unknown>;
+      const name = epObj[keyName] as string | undefined;
+      if (name) {
+        existingMap.set(name, epObj);
+      }
+    }
+  }
+
+  for (const perm of permissions) {
+    if (!existingMap.has(perm.name)) {
+      const newPerm: Record<string, unknown> = { [keyName]: perm.name };
+      if (enabledKey === 'enabled') {
+        newPerm.enabled = perm.enabled;
+      }
+      existingMap.set(perm.name, newPerm);
+    }
+  }
+  return Array.from(existingMap.values());
+}
+
+/**
+ * Helper function to build applicationVisibilities array
+ */
+function buildApplicationVisibilities(
+  applicationPermissions: ExtractedPermission[],
+  existingApplicationVisibilities: unknown[]
+): Record<string, unknown>[] {
+  const existingApplicationMap = new Map<string, Record<string, unknown>>();
+  for (const av of existingApplicationVisibilities) {
+    if (typeof av === 'object' && av !== null) {
+      const avObj = av as Record<string, unknown>;
+      const application = avObj.application as string | undefined;
+      if (application) {
+        existingApplicationMap.set(application, avObj);
+      }
+    }
+  }
+
+  for (const perm of applicationPermissions) {
+    const metadata = perm.metadata as { default?: boolean; visible?: boolean } | undefined;
+    if (!existingApplicationMap.has(perm.name)) {
+      existingApplicationMap.set(perm.name, {
+        application: perm.name,
+        default: metadata?.default ?? false,
+        visible: metadata?.visible ?? true,
+      });
+    }
+  }
+  return Array.from(existingApplicationMap.values());
+}
+
+/**
  * Generates Permission Set XML from extracted permissions
  */
 function generatePermissionSetXml(
@@ -761,7 +1025,7 @@ function generatePermissionSetXml(
     ? { ...existingPermissionSetData }
     : {
         fullName: permissionSetName,
-        description: `Permission Set migrated from Profile`,
+        description: 'Permission Set migrated from Profile',
       };
 
   // Group permissions by type
@@ -783,416 +1047,130 @@ function generatePermissionSetXml(
 
   // Build fieldPermissions array
   if (flsPermissions.length > 0) {
-    const existingFieldPermissions = normalizeToArray(permissionSetData.fieldPermissions || []);
-    const existingFieldMap = new Map<string, Record<string, unknown>>();
-    for (const fp of existingFieldPermissions) {
-      if (typeof fp === 'object' && fp !== null) {
-        const fpObj = fp as Record<string, unknown>;
-        const field = fpObj.field as string | undefined;
-        if (field) {
-          existingFieldMap.set(field, fpObj);
-        }
-      }
-    }
-
-    // Add or update FLS permissions
-    for (const perm of flsPermissions) {
-      const metadata = perm.metadata as { readable?: boolean; editable?: boolean } | undefined;
-      const existing = existingFieldMap.get(perm.name);
-      if (existing) {
-        // Update existing
-        existing.readable = metadata?.readable ?? existing.readable;
-        existing.editable = metadata?.editable ?? existing.editable;
-      } else {
-        // Add new
-        existingFieldMap.set(perm.name, {
-          field: perm.name,
-          readable: metadata?.readable ?? false,
-          editable: metadata?.editable ?? false,
-        });
-      }
-    }
-    permissionSetData.fieldPermissions = Array.from(existingFieldMap.values());
+    permissionSetData.fieldPermissions = buildFieldPermissions(
+      flsPermissions,
+      normalizeToArray(permissionSetData.fieldPermissions || [])
+    );
   }
 
   // Build classAccesses array
   if (apexPermissions.length > 0) {
-    const existingClassAccesses = normalizeToArray(permissionSetData.classAccesses || []);
-    const existingClassMap = new Map<string, Record<string, unknown>>();
-    for (const ca of existingClassAccesses) {
-      if (typeof ca === 'object' && ca !== null) {
-        const caObj = ca as Record<string, unknown>;
-        const apexClass = caObj.apexClass as string | undefined;
-        if (apexClass) {
-          existingClassMap.set(apexClass, caObj);
-        }
-      }
-    }
-
-    // Add new Apex permissions
-    for (const perm of apexPermissions) {
-      if (!existingClassMap.has(perm.name)) {
-        existingClassMap.set(perm.name, {
-          apexClass: perm.name,
-          enabled: perm.enabled,
-        });
-      }
-    }
-    permissionSetData.classAccesses = Array.from(existingClassMap.values());
+    permissionSetData.classAccesses = buildClassAccesses(
+      apexPermissions,
+      normalizeToArray(permissionSetData.classAccesses || [])
+    );
   }
 
   // Build flowAccesses array
   if (flowPermissions.length > 0) {
-    const existingFlowAccesses = normalizeToArray(permissionSetData.flowAccesses || []);
-    const existingFlowMap = new Map<string, Record<string, unknown>>();
-    for (const fa of existingFlowAccesses) {
-      if (typeof fa === 'object' && fa !== null) {
-        const faObj = fa as Record<string, unknown>;
-        const flow = faObj.flow as string | undefined;
-        if (flow) {
-          existingFlowMap.set(flow, faObj);
-        }
-      }
-    }
-
-    // Add new Flow permissions
-    for (const perm of flowPermissions) {
-      if (!existingFlowMap.has(perm.name)) {
-        existingFlowMap.set(perm.name, {
-          flow: perm.name,
-          enabled: perm.enabled,
-        });
-      }
-    }
-    permissionSetData.flowAccesses = Array.from(existingFlowMap.values());
+    permissionSetData.flowAccesses = buildFlowAccesses(
+      flowPermissions,
+      normalizeToArray(permissionSetData.flowAccesses || [])
+    );
   }
 
   // Build tabVisibilities array
   if (tabPermissions.length > 0) {
-    const existingTabVisibilities = normalizeToArray(permissionSetData.tabVisibilities || []);
-    const existingTabMap = new Map<string, Record<string, unknown>>();
-    for (const tv of existingTabVisibilities) {
-      if (typeof tv === 'object' && tv !== null) {
-        const tvObj = tv as Record<string, unknown>;
-        const tab = tvObj.tab as string | undefined;
-        if (tab) {
-          existingTabMap.set(tab, tvObj);
-        }
-      }
-    }
-
-    // Add new Tab permissions
-    for (const perm of tabPermissions) {
-      if (!existingTabMap.has(perm.name)) {
-        existingTabMap.set(perm.name, {
-          tab: perm.name,
-          visibility: 'Visible',
-        });
-      }
-    }
-    permissionSetData.tabVisibilities = Array.from(existingTabMap.values());
+    permissionSetData.tabVisibilities = buildTabVisibilities(
+      tabPermissions,
+      normalizeToArray(permissionSetData.tabVisibilities || [])
+    );
   }
 
   // Build recordTypeVisibilities array
   if (recordTypePermissions.length > 0) {
-    const existingRecordTypeVisibilities = normalizeToArray(permissionSetData.recordTypeVisibilities || []);
-    const existingRecordTypeMap = new Map<string, Record<string, unknown>>();
-    for (const rtv of existingRecordTypeVisibilities) {
-      if (typeof rtv === 'object' && rtv !== null) {
-        const rtvObj = rtv as Record<string, unknown>;
-        const recordType = rtvObj.recordType as string | undefined;
-        if (recordType) {
-          existingRecordTypeMap.set(recordType, rtvObj);
-        }
-      }
-    }
-
-    // Add new Record Type permissions
-    for (const perm of recordTypePermissions) {
-      if (!existingRecordTypeMap.has(perm.name)) {
-        existingRecordTypeMap.set(perm.name, {
-          recordType: perm.name,
-          visible: perm.enabled,
-        });
-      }
-    }
-    permissionSetData.recordTypeVisibilities = Array.from(existingRecordTypeMap.values());
+    permissionSetData.recordTypeVisibilities = buildRecordTypeVisibilities(
+      recordTypePermissions,
+      normalizeToArray(permissionSetData.recordTypeVisibilities || [])
+    );
   }
 
   // Build objectPermissions array
   if (objectPermissions.length > 0) {
-    const existingObjectPermissions = normalizeToArray(permissionSetData.objectPermissions || []);
-    const existingObjectMap = new Map<string, Record<string, unknown>>();
-    for (const op of existingObjectPermissions) {
-      if (typeof op === 'object' && op !== null) {
-        const opObj = op as Record<string, unknown>;
-        const object = opObj.object as string | undefined;
-        if (object) {
-          existingObjectMap.set(object, opObj);
-        }
-      }
-    }
-
-    // Add or update Object permissions
-    for (const perm of objectPermissions) {
-      const metadata = perm.metadata as {
-        allowRead?: boolean;
-        allowCreate?: boolean;
-        allowEdit?: boolean;
-        allowDelete?: boolean;
-        viewAllRecords?: boolean;
-        modifyAllRecords?: boolean;
-      } | undefined;
-      const existing = existingObjectMap.get(perm.name);
-      if (existing) {
-        // Update existing
-        if (metadata?.allowRead !== undefined) existing.allowRead = metadata.allowRead;
-        if (metadata?.allowCreate !== undefined) existing.allowCreate = metadata.allowCreate;
-        if (metadata?.allowEdit !== undefined) existing.allowEdit = metadata.allowEdit;
-        if (metadata?.allowDelete !== undefined) existing.allowDelete = metadata.allowDelete;
-        if (metadata?.viewAllRecords !== undefined) existing.viewAllRecords = metadata.viewAllRecords;
-        if (metadata?.modifyAllRecords !== undefined) existing.modifyAllRecords = metadata.modifyAllRecords;
-      } else {
-        // Add new
-        existingObjectMap.set(perm.name, {
-          object: perm.name,
-          allowRead: metadata?.allowRead ?? false,
-          allowCreate: metadata?.allowCreate ?? false,
-          allowEdit: metadata?.allowEdit ?? false,
-          allowDelete: metadata?.allowDelete ?? false,
-          viewAllRecords: metadata?.viewAllRecords ?? false,
-          modifyAllRecords: metadata?.modifyAllRecords ?? false,
-        });
-      }
-    }
-    permissionSetData.objectPermissions = Array.from(existingObjectMap.values());
+    permissionSetData.objectPermissions = buildObjectPermissions(
+      objectPermissions,
+      normalizeToArray(permissionSetData.objectPermissions || [])
+    );
   }
 
   // Build connectedAppAccesses array
   if (connectedAppPermissions.length > 0) {
-    const existingConnectedApps = normalizeToArray(permissionSetData.connectedAppAccesses || []);
-    const existingConnectedAppMap = new Map<string, Record<string, unknown>>();
-    for (const caa of existingConnectedApps) {
-      if (typeof caa === 'object' && caa !== null) {
-        const caaObj = caa as Record<string, unknown>;
-        const connectedApp = caaObj.connectedApp as string | undefined;
-        if (connectedApp) {
-          existingConnectedAppMap.set(connectedApp, caaObj);
-        }
-      }
-    }
-
-    for (const perm of connectedAppPermissions) {
-      if (!existingConnectedAppMap.has(perm.name)) {
-        existingConnectedAppMap.set(perm.name, {
-          connectedApp: perm.name,
-          enabled: perm.enabled,
-        });
-      }
-    }
-    permissionSetData.connectedAppAccesses = Array.from(existingConnectedAppMap.values());
+    permissionSetData.connectedAppAccesses = buildSimplePermissions(
+      connectedAppPermissions,
+      normalizeToArray(permissionSetData.connectedAppAccesses || []),
+      'connectedApp'
+    );
   }
 
   // Build customPermissions array
   if (customPermissionPermissions.length > 0) {
-    const existingCustomPermissions = normalizeToArray(permissionSetData.customPermissions || []);
-    const existingCustomPermissionMap = new Map<string, Record<string, unknown>>();
-    for (const cp of existingCustomPermissions) {
-      if (typeof cp === 'object' && cp !== null) {
-        const cpObj = cp as Record<string, unknown>;
-        const name = cpObj.name as string | undefined;
-        if (name) {
-          existingCustomPermissionMap.set(name, cpObj);
-        }
-      }
-    }
-
-    for (const perm of customPermissionPermissions) {
-      if (!existingCustomPermissionMap.has(perm.name)) {
-        existingCustomPermissionMap.set(perm.name, {
-          enabled: perm.enabled,
-          name: perm.name,
-        });
-      }
-    }
-    permissionSetData.customPermissions = Array.from(existingCustomPermissionMap.values());
+    permissionSetData.customPermissions = buildSimplePermissions(
+      customPermissionPermissions,
+      normalizeToArray(permissionSetData.customPermissions || []),
+      'name'
+    );
   }
 
   // Build userPermissions array
   if (userPermissionPermissions.length > 0) {
-    const existingUserPermissions = normalizeToArray(permissionSetData.userPermissions || []);
-    const existingUserPermissionMap = new Map<string, Record<string, unknown>>();
-    for (const up of existingUserPermissions) {
-      if (typeof up === 'object' && up !== null) {
-        const upObj = up as Record<string, unknown>;
-        const name = upObj.name as string | undefined;
-        if (name) {
-          existingUserPermissionMap.set(name, upObj);
-        }
-      }
-    }
-
-    for (const perm of userPermissionPermissions) {
-      if (!existingUserPermissionMap.has(perm.name)) {
-        existingUserPermissionMap.set(perm.name, {
-          enabled: perm.enabled,
-          name: perm.name,
-        });
-      }
-    }
-    permissionSetData.userPermissions = Array.from(existingUserPermissionMap.values());
+    permissionSetData.userPermissions = buildSimplePermissions(
+      userPermissionPermissions,
+      normalizeToArray(permissionSetData.userPermissions || []),
+      'name'
+    );
   }
 
   // Build pageAccesses array (Visualforce)
   if (visualforcePermissions.length > 0) {
-    const existingPageAccesses = normalizeToArray(permissionSetData.pageAccesses || []);
-    const existingPageMap = new Map<string, Record<string, unknown>>();
-    for (const pa of existingPageAccesses) {
-      if (typeof pa === 'object' && pa !== null) {
-        const paObj = pa as Record<string, unknown>;
-        const apexPage = paObj.apexPage as string | undefined;
-        if (apexPage) {
-          existingPageMap.set(apexPage, paObj);
-        }
-      }
-    }
-
-    for (const perm of visualforcePermissions) {
-      if (!existingPageMap.has(perm.name)) {
-        existingPageMap.set(perm.name, {
-          apexPage: perm.name,
-          enabled: perm.enabled,
-        });
-      }
-    }
-    permissionSetData.pageAccesses = Array.from(existingPageMap.values());
+    permissionSetData.pageAccesses = buildSimplePermissions(
+      visualforcePermissions,
+      normalizeToArray(permissionSetData.pageAccesses || []),
+      'apexPage'
+    );
   }
 
   // Build customMetadataTypeAccesses array
   if (customMetadataTypePermissions.length > 0) {
-    const existingCustomMetadataTypes = normalizeToArray(permissionSetData.customMetadataTypeAccesses || []);
-    const existingCustomMetadataTypeMap = new Map<string, Record<string, unknown>>();
-    for (const cmta of existingCustomMetadataTypes) {
-      if (typeof cmta === 'object' && cmta !== null) {
-        const cmtaObj = cmta as Record<string, unknown>;
-        const name = cmtaObj.name as string | undefined;
-        if (name) {
-          existingCustomMetadataTypeMap.set(name, cmtaObj);
-        }
-      }
-    }
-
-    for (const perm of customMetadataTypePermissions) {
-      if (!existingCustomMetadataTypeMap.has(perm.name)) {
-        existingCustomMetadataTypeMap.set(perm.name, {
-          enabled: perm.enabled,
-          name: perm.name,
-        });
-      }
-    }
-    permissionSetData.customMetadataTypeAccesses = Array.from(existingCustomMetadataTypeMap.values());
+    permissionSetData.customMetadataTypeAccesses = buildSimplePermissions(
+      customMetadataTypePermissions,
+      normalizeToArray(permissionSetData.customMetadataTypeAccesses || []),
+      'name'
+    );
   }
 
   // Build externalCredentialAccesses array
   if (externalCredentialPermissions.length > 0) {
-    const existingExternalCredentials = normalizeToArray(permissionSetData.externalCredentialAccesses || []);
-    const existingExternalCredentialMap = new Map<string, Record<string, unknown>>();
-    for (const eca of existingExternalCredentials) {
-      if (typeof eca === 'object' && eca !== null) {
-        const ecaObj = eca as Record<string, unknown>;
-        const externalCredential = ecaObj.externalCredential as string | undefined;
-        if (externalCredential) {
-          existingExternalCredentialMap.set(externalCredential, ecaObj);
-        }
-      }
-    }
-
-    for (const perm of externalCredentialPermissions) {
-      if (!existingExternalCredentialMap.has(perm.name)) {
-        existingExternalCredentialMap.set(perm.name, {
-          externalCredential: perm.name,
-          enabled: perm.enabled,
-        });
-      }
-    }
-    permissionSetData.externalCredentialAccesses = Array.from(existingExternalCredentialMap.values());
+    permissionSetData.externalCredentialAccesses = buildSimplePermissions(
+      externalCredentialPermissions,
+      normalizeToArray(permissionSetData.externalCredentialAccesses || []),
+      'externalCredential'
+    );
   }
 
   // Build dataSpaceAccesses array
   if (dataSpacePermissions.length > 0) {
-    const existingDataSpaces = normalizeToArray(permissionSetData.dataSpaceAccesses || []);
-    const existingDataSpaceMap = new Map<string, Record<string, unknown>>();
-    for (const dsa of existingDataSpaces) {
-      if (typeof dsa === 'object' && dsa !== null) {
-        const dsaObj = dsa as Record<string, unknown>;
-        const dataSpace = dsaObj.dataSpace as string | undefined;
-        if (dataSpace) {
-          existingDataSpaceMap.set(dataSpace, dsaObj);
-        }
-      }
-    }
-
-    for (const perm of dataSpacePermissions) {
-      if (!existingDataSpaceMap.has(perm.name)) {
-        existingDataSpaceMap.set(perm.name, {
-          dataSpace: perm.name,
-          enabled: perm.enabled,
-        });
-      }
-    }
-    permissionSetData.dataSpaceAccesses = Array.from(existingDataSpaceMap.values());
+    permissionSetData.dataSpaceAccesses = buildSimplePermissions(
+      dataSpacePermissions,
+      normalizeToArray(permissionSetData.dataSpaceAccesses || []),
+      'dataSpace'
+    );
   }
 
   // Build applicationVisibilities array
   if (applicationPermissions.length > 0) {
-    const existingApplicationVisibilities = normalizeToArray(permissionSetData.applicationVisibilities || []);
-    const existingApplicationMap = new Map<string, Record<string, unknown>>();
-    for (const av of existingApplicationVisibilities) {
-      if (typeof av === 'object' && av !== null) {
-        const avObj = av as Record<string, unknown>;
-        const application = avObj.application as string | undefined;
-        if (application) {
-          existingApplicationMap.set(application, avObj);
-        }
-      }
-    }
-
-    for (const perm of applicationPermissions) {
-      const metadata = perm.metadata as { default?: boolean; visible?: boolean } | undefined;
-      if (!existingApplicationMap.has(perm.name)) {
-        existingApplicationMap.set(perm.name, {
-          application: perm.name,
-          default: metadata?.default ?? false,
-          visible: metadata?.visible ?? true,
-        });
-      }
-    }
-    permissionSetData.applicationVisibilities = Array.from(existingApplicationMap.values());
+    permissionSetData.applicationVisibilities = buildApplicationVisibilities(
+      applicationPermissions,
+      normalizeToArray(permissionSetData.applicationVisibilities || [])
+    );
   }
 
   // Build customSettingAccesses array
   if (customSettingPermissions.length > 0) {
-    const existingCustomSettings = normalizeToArray(permissionSetData.customSettingAccesses || []);
-    const existingCustomSettingMap = new Map<string, Record<string, unknown>>();
-    for (const csa of existingCustomSettings) {
-      if (typeof csa === 'object' && csa !== null) {
-        const csaObj = csa as Record<string, unknown>;
-        const name = csaObj.name as string | undefined;
-        if (name) {
-          existingCustomSettingMap.set(name, csaObj);
-        }
-      }
-    }
-
-    for (const perm of customSettingPermissions) {
-      if (!existingCustomSettingMap.has(perm.name)) {
-        existingCustomSettingMap.set(perm.name, {
-          enabled: perm.enabled,
-          name: perm.name,
-        });
-      }
-    }
-    permissionSetData.customSettingAccesses = Array.from(existingCustomSettingMap.values());
+    permissionSetData.customSettingAccesses = buildSimplePermissions(
+      customSettingPermissions,
+      normalizeToArray(permissionSetData.customSettingAccesses || []),
+      'name'
+    );
   }
 
   // Build XML using Builder
