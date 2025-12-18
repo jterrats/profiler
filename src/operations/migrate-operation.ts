@@ -1053,9 +1053,10 @@ function groupPermissionsByType(permissions: ExtractedPermission[]): {
 }
 
 /**
- * Builds all permission arrays in the Permission Set data
+ * Builds complex permission arrays (FLS, Object, Application)
  */
-function buildAllPermissionArrays(
+// eslint-disable-next-line no-param-reassign
+function buildComplexPermissionArrays(
   groupedPermissions: ReturnType<typeof groupPermissionsByType>,
   permissionSetData: Record<string, unknown>
 ): void {
@@ -1065,6 +1066,28 @@ function buildAllPermissionArrays(
       normalizeToArray(permissionSetData.fieldPermissions || [])
     );
   }
+  if (groupedPermissions.objectaccess.length > 0) {
+    permissionSetData.objectPermissions = buildObjectPermissions(
+      groupedPermissions.objectaccess,
+      normalizeToArray(permissionSetData.objectPermissions || [])
+    );
+  }
+  if (groupedPermissions.applications.length > 0) {
+    permissionSetData.applicationVisibilities = buildApplicationVisibilities(
+      groupedPermissions.applications,
+      normalizeToArray(permissionSetData.applicationVisibilities || [])
+    );
+  }
+}
+
+/**
+ * Builds standard permission arrays (Apex, Flows, Tabs, Record Types)
+ */
+// eslint-disable-next-line no-param-reassign
+function buildStandardPermissionArrays(
+  groupedPermissions: ReturnType<typeof groupPermissionsByType>,
+  permissionSetData: Record<string, unknown>
+): void {
   if (groupedPermissions.apex.length > 0) {
     permissionSetData.classAccesses = buildClassAccesses(
       groupedPermissions.apex,
@@ -1089,12 +1112,16 @@ function buildAllPermissionArrays(
       normalizeToArray(permissionSetData.recordTypeVisibilities || [])
     );
   }
-  if (groupedPermissions.objectaccess.length > 0) {
-    permissionSetData.objectPermissions = buildObjectPermissions(
-      groupedPermissions.objectaccess,
-      normalizeToArray(permissionSetData.objectPermissions || [])
-    );
-  }
+}
+
+/**
+ * Builds simple permission arrays (Connected Apps, Custom Permissions, etc.)
+ */
+// eslint-disable-next-line no-param-reassign
+function buildSimplePermissionArrays(
+  groupedPermissions: ReturnType<typeof groupPermissionsByType>,
+  permissionSetData: Record<string, unknown>
+): void {
   if (groupedPermissions.connectedapps.length > 0) {
     permissionSetData.connectedAppAccesses = buildSimplePermissions(
       groupedPermissions.connectedapps,
@@ -1144,12 +1171,6 @@ function buildAllPermissionArrays(
       'dataSpace'
     );
   }
-  if (groupedPermissions.applications.length > 0) {
-    permissionSetData.applicationVisibilities = buildApplicationVisibilities(
-      groupedPermissions.applications,
-      normalizeToArray(permissionSetData.applicationVisibilities || [])
-    );
-  }
   if (groupedPermissions.customsettings.length > 0) {
     permissionSetData.customSettingAccesses = buildSimplePermissions(
       groupedPermissions.customsettings,
@@ -1157,6 +1178,18 @@ function buildAllPermissionArrays(
       'name'
     );
   }
+}
+
+/**
+ * Builds all permission arrays in the Permission Set data
+ */
+function buildAllPermissionArrays(
+  groupedPermissions: ReturnType<typeof groupPermissionsByType>,
+  permissionSetData: Record<string, unknown>
+): void {
+  buildComplexPermissionArrays(groupedPermissions, permissionSetData);
+  buildStandardPermissionArrays(groupedPermissions, permissionSetData);
+  buildSimplePermissionArrays(groupedPermissions, permissionSetData);
 }
 
 /**
