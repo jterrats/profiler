@@ -118,7 +118,7 @@ Migrating permissions from Profile '%s' to Permission Set '%s'
 
 # info.complete
 
-Migrated {0} permission(s) to Permission Set. File created: {1}
+Migrated %s permission(s) to Permission Set. File created: %s
 
 # info.preview-generated
 

@@ -755,7 +755,7 @@ function comparePermissions(
 function buildFieldPermissions(
   flsPermissions: ExtractedPermission[],
   existingFieldPermissions: unknown[]
-): Record<string, unknown>[] {
+): Array<Record<string, unknown>> {
   const existingFieldMap = new Map<string, Record<string, unknown>>();
   for (const fp of existingFieldPermissions) {
     if (typeof fp === 'object' && fp !== null) {
@@ -790,7 +790,7 @@ function buildFieldPermissions(
 function buildClassAccesses(
   apexPermissions: ExtractedPermission[],
   existingClassAccesses: unknown[]
-): Record<string, unknown>[] {
+): Array<Record<string, unknown>> {
   const existingClassMap = new Map<string, Record<string, unknown>>();
   for (const ca of existingClassAccesses) {
     if (typeof ca === 'object' && ca !== null) {
@@ -819,7 +819,7 @@ function buildClassAccesses(
 function buildFlowAccesses(
   flowPermissions: ExtractedPermission[],
   existingFlowAccesses: unknown[]
-): Record<string, unknown>[] {
+): Array<Record<string, unknown>> {
   const existingFlowMap = new Map<string, Record<string, unknown>>();
   for (const fa of existingFlowAccesses) {
     if (typeof fa === 'object' && fa !== null) {
@@ -848,7 +848,7 @@ function buildFlowAccesses(
 function buildTabVisibilities(
   tabPermissions: ExtractedPermission[],
   existingTabVisibilities: unknown[]
-): Record<string, unknown>[] {
+): Array<Record<string, unknown>> {
   const existingTabMap = new Map<string, Record<string, unknown>>();
   for (const tv of existingTabVisibilities) {
     if (typeof tv === 'object' && tv !== null) {
@@ -877,7 +877,7 @@ function buildTabVisibilities(
 function buildRecordTypeVisibilities(
   recordTypePermissions: ExtractedPermission[],
   existingRecordTypeVisibilities: unknown[]
-): Record<string, unknown>[] {
+): Array<Record<string, unknown>> {
   const existingRecordTypeMap = new Map<string, Record<string, unknown>>();
   for (const rtv of existingRecordTypeVisibilities) {
     if (typeof rtv === 'object' && rtv !== null) {
@@ -906,7 +906,7 @@ function buildRecordTypeVisibilities(
 function buildObjectPermissions(
   objectPermissions: ExtractedPermission[],
   existingObjectPermissions: unknown[]
-): Record<string, unknown>[] {
+): Array<Record<string, unknown>> {
   const existingObjectMap = new Map<string, Record<string, unknown>>();
   for (const op of existingObjectPermissions) {
     if (typeof op === 'object' && op !== null) {
@@ -958,7 +958,7 @@ function buildSimplePermissions(
   existingPermissions: unknown[],
   keyName: string,
   enabledKey = 'enabled'
-): Record<string, unknown>[] {
+): Array<Record<string, unknown>> {
   const existingMap = new Map<string, Record<string, unknown>>();
   for (const ep of existingPermissions) {
     if (typeof ep === 'object' && ep !== null) {
@@ -988,7 +988,7 @@ function buildSimplePermissions(
 function buildApplicationVisibilities(
   applicationPermissions: ExtractedPermission[],
   existingApplicationVisibilities: unknown[]
-): Record<string, unknown>[] {
+): Array<Record<string, unknown>> {
   const existingApplicationMap = new Map<string, Record<string, unknown>>();
   for (const av of existingApplicationVisibilities) {
     if (typeof av === 'object' && av !== null) {
@@ -1014,6 +1014,152 @@ function buildApplicationVisibilities(
 }
 
 /**
+ * Groups permissions by type
+ */
+function groupPermissionsByType(permissions: ExtractedPermission[]): {
+  fls: ExtractedPermission[];
+  apex: ExtractedPermission[];
+  flows: ExtractedPermission[];
+  tabs: ExtractedPermission[];
+  recordtype: ExtractedPermission[];
+  objectaccess: ExtractedPermission[];
+  connectedapps: ExtractedPermission[];
+  custompermissions: ExtractedPermission[];
+  userpermissions: ExtractedPermission[];
+  visualforce: ExtractedPermission[];
+  custommetadatatypes: ExtractedPermission[];
+  externalcredentials: ExtractedPermission[];
+  dataspaces: ExtractedPermission[];
+  applications: ExtractedPermission[];
+  customsettings: ExtractedPermission[];
+} {
+  return {
+    fls: permissions.filter((p) => p.type === 'fls'),
+    apex: permissions.filter((p) => p.type === 'apex'),
+    flows: permissions.filter((p) => p.type === 'flows'),
+    tabs: permissions.filter((p) => p.type === 'tabs'),
+    recordtype: permissions.filter((p) => p.type === 'recordtype'),
+    objectaccess: permissions.filter((p) => p.type === 'objectaccess'),
+    connectedapps: permissions.filter((p) => p.type === 'connectedapps'),
+    custompermissions: permissions.filter((p) => p.type === 'custompermissions'),
+    userpermissions: permissions.filter((p) => p.type === 'userpermissions'),
+    visualforce: permissions.filter((p) => p.type === 'visualforce'),
+    custommetadatatypes: permissions.filter((p) => p.type === 'custommetadatatypes'),
+    externalcredentials: permissions.filter((p) => p.type === 'externalcredentials'),
+    dataspaces: permissions.filter((p) => p.type === 'dataspaces'),
+    applications: permissions.filter((p) => p.type === 'applications'),
+    customsettings: permissions.filter((p) => p.type === 'customsettings'),
+  };
+}
+
+/**
+ * Builds all permission arrays in the Permission Set data
+ */
+function buildAllPermissionArrays(
+  groupedPermissions: ReturnType<typeof groupPermissionsByType>,
+  permissionSetData: Record<string, unknown>
+): void {
+  if (groupedPermissions.fls.length > 0) {
+    permissionSetData.fieldPermissions = buildFieldPermissions(
+      groupedPermissions.fls,
+      normalizeToArray(permissionSetData.fieldPermissions || [])
+    );
+  }
+  if (groupedPermissions.apex.length > 0) {
+    permissionSetData.classAccesses = buildClassAccesses(
+      groupedPermissions.apex,
+      normalizeToArray(permissionSetData.classAccesses || [])
+    );
+  }
+  if (groupedPermissions.flows.length > 0) {
+    permissionSetData.flowAccesses = buildFlowAccesses(
+      groupedPermissions.flows,
+      normalizeToArray(permissionSetData.flowAccesses || [])
+    );
+  }
+  if (groupedPermissions.tabs.length > 0) {
+    permissionSetData.tabVisibilities = buildTabVisibilities(
+      groupedPermissions.tabs,
+      normalizeToArray(permissionSetData.tabVisibilities || [])
+    );
+  }
+  if (groupedPermissions.recordtype.length > 0) {
+    permissionSetData.recordTypeVisibilities = buildRecordTypeVisibilities(
+      groupedPermissions.recordtype,
+      normalizeToArray(permissionSetData.recordTypeVisibilities || [])
+    );
+  }
+  if (groupedPermissions.objectaccess.length > 0) {
+    permissionSetData.objectPermissions = buildObjectPermissions(
+      groupedPermissions.objectaccess,
+      normalizeToArray(permissionSetData.objectPermissions || [])
+    );
+  }
+  if (groupedPermissions.connectedapps.length > 0) {
+    permissionSetData.connectedAppAccesses = buildSimplePermissions(
+      groupedPermissions.connectedapps,
+      normalizeToArray(permissionSetData.connectedAppAccesses || []),
+      'connectedApp'
+    );
+  }
+  if (groupedPermissions.custompermissions.length > 0) {
+    permissionSetData.customPermissions = buildSimplePermissions(
+      groupedPermissions.custompermissions,
+      normalizeToArray(permissionSetData.customPermissions || []),
+      'name'
+    );
+  }
+  if (groupedPermissions.userpermissions.length > 0) {
+    permissionSetData.userPermissions = buildSimplePermissions(
+      groupedPermissions.userpermissions,
+      normalizeToArray(permissionSetData.userPermissions || []),
+      'name'
+    );
+  }
+  if (groupedPermissions.visualforce.length > 0) {
+    permissionSetData.pageAccesses = buildSimplePermissions(
+      groupedPermissions.visualforce,
+      normalizeToArray(permissionSetData.pageAccesses || []),
+      'apexPage'
+    );
+  }
+  if (groupedPermissions.custommetadatatypes.length > 0) {
+    permissionSetData.customMetadataTypeAccesses = buildSimplePermissions(
+      groupedPermissions.custommetadatatypes,
+      normalizeToArray(permissionSetData.customMetadataTypeAccesses || []),
+      'name'
+    );
+  }
+  if (groupedPermissions.externalcredentials.length > 0) {
+    permissionSetData.externalCredentialAccesses = buildSimplePermissions(
+      groupedPermissions.externalcredentials,
+      normalizeToArray(permissionSetData.externalCredentialAccesses || []),
+      'externalCredential'
+    );
+  }
+  if (groupedPermissions.dataspaces.length > 0) {
+    permissionSetData.dataSpaceAccesses = buildSimplePermissions(
+      groupedPermissions.dataspaces,
+      normalizeToArray(permissionSetData.dataSpaceAccesses || []),
+      'dataSpace'
+    );
+  }
+  if (groupedPermissions.applications.length > 0) {
+    permissionSetData.applicationVisibilities = buildApplicationVisibilities(
+      groupedPermissions.applications,
+      normalizeToArray(permissionSetData.applicationVisibilities || [])
+    );
+  }
+  if (groupedPermissions.customsettings.length > 0) {
+    permissionSetData.customSettingAccesses = buildSimplePermissions(
+      groupedPermissions.customsettings,
+      normalizeToArray(permissionSetData.customSettingAccesses || []),
+      'name'
+    );
+  }
+}
+
+/**
  * Generates Permission Set XML from extracted permissions
  */
 function generatePermissionSetXml(
@@ -1028,150 +1174,8 @@ function generatePermissionSetXml(
         description: 'Permission Set migrated from Profile',
       };
 
-  // Group permissions by type
-  const flsPermissions = permissions.filter((p) => p.type === 'fls');
-  const apexPermissions = permissions.filter((p) => p.type === 'apex');
-  const flowPermissions = permissions.filter((p) => p.type === 'flows');
-  const tabPermissions = permissions.filter((p) => p.type === 'tabs');
-  const recordTypePermissions = permissions.filter((p) => p.type === 'recordtype');
-  const objectPermissions = permissions.filter((p) => p.type === 'objectaccess');
-  const connectedAppPermissions = permissions.filter((p) => p.type === 'connectedapps');
-  const customPermissionPermissions = permissions.filter((p) => p.type === 'custompermissions');
-  const userPermissionPermissions = permissions.filter((p) => p.type === 'userpermissions');
-  const visualforcePermissions = permissions.filter((p) => p.type === 'visualforce');
-  const customMetadataTypePermissions = permissions.filter((p) => p.type === 'custommetadatatypes');
-  const externalCredentialPermissions = permissions.filter((p) => p.type === 'externalcredentials');
-  const dataSpacePermissions = permissions.filter((p) => p.type === 'dataspaces');
-  const applicationPermissions = permissions.filter((p) => p.type === 'applications');
-  const customSettingPermissions = permissions.filter((p) => p.type === 'customsettings');
-
-  // Build fieldPermissions array
-  if (flsPermissions.length > 0) {
-    permissionSetData.fieldPermissions = buildFieldPermissions(
-      flsPermissions,
-      normalizeToArray(permissionSetData.fieldPermissions || [])
-    );
-  }
-
-  // Build classAccesses array
-  if (apexPermissions.length > 0) {
-    permissionSetData.classAccesses = buildClassAccesses(
-      apexPermissions,
-      normalizeToArray(permissionSetData.classAccesses || [])
-    );
-  }
-
-  // Build flowAccesses array
-  if (flowPermissions.length > 0) {
-    permissionSetData.flowAccesses = buildFlowAccesses(
-      flowPermissions,
-      normalizeToArray(permissionSetData.flowAccesses || [])
-    );
-  }
-
-  // Build tabVisibilities array
-  if (tabPermissions.length > 0) {
-    permissionSetData.tabVisibilities = buildTabVisibilities(
-      tabPermissions,
-      normalizeToArray(permissionSetData.tabVisibilities || [])
-    );
-  }
-
-  // Build recordTypeVisibilities array
-  if (recordTypePermissions.length > 0) {
-    permissionSetData.recordTypeVisibilities = buildRecordTypeVisibilities(
-      recordTypePermissions,
-      normalizeToArray(permissionSetData.recordTypeVisibilities || [])
-    );
-  }
-
-  // Build objectPermissions array
-  if (objectPermissions.length > 0) {
-    permissionSetData.objectPermissions = buildObjectPermissions(
-      objectPermissions,
-      normalizeToArray(permissionSetData.objectPermissions || [])
-    );
-  }
-
-  // Build connectedAppAccesses array
-  if (connectedAppPermissions.length > 0) {
-    permissionSetData.connectedAppAccesses = buildSimplePermissions(
-      connectedAppPermissions,
-      normalizeToArray(permissionSetData.connectedAppAccesses || []),
-      'connectedApp'
-    );
-  }
-
-  // Build customPermissions array
-  if (customPermissionPermissions.length > 0) {
-    permissionSetData.customPermissions = buildSimplePermissions(
-      customPermissionPermissions,
-      normalizeToArray(permissionSetData.customPermissions || []),
-      'name'
-    );
-  }
-
-  // Build userPermissions array
-  if (userPermissionPermissions.length > 0) {
-    permissionSetData.userPermissions = buildSimplePermissions(
-      userPermissionPermissions,
-      normalizeToArray(permissionSetData.userPermissions || []),
-      'name'
-    );
-  }
-
-  // Build pageAccesses array (Visualforce)
-  if (visualforcePermissions.length > 0) {
-    permissionSetData.pageAccesses = buildSimplePermissions(
-      visualforcePermissions,
-      normalizeToArray(permissionSetData.pageAccesses || []),
-      'apexPage'
-    );
-  }
-
-  // Build customMetadataTypeAccesses array
-  if (customMetadataTypePermissions.length > 0) {
-    permissionSetData.customMetadataTypeAccesses = buildSimplePermissions(
-      customMetadataTypePermissions,
-      normalizeToArray(permissionSetData.customMetadataTypeAccesses || []),
-      'name'
-    );
-  }
-
-  // Build externalCredentialAccesses array
-  if (externalCredentialPermissions.length > 0) {
-    permissionSetData.externalCredentialAccesses = buildSimplePermissions(
-      externalCredentialPermissions,
-      normalizeToArray(permissionSetData.externalCredentialAccesses || []),
-      'externalCredential'
-    );
-  }
-
-  // Build dataSpaceAccesses array
-  if (dataSpacePermissions.length > 0) {
-    permissionSetData.dataSpaceAccesses = buildSimplePermissions(
-      dataSpacePermissions,
-      normalizeToArray(permissionSetData.dataSpaceAccesses || []),
-      'dataSpace'
-    );
-  }
-
-  // Build applicationVisibilities array
-  if (applicationPermissions.length > 0) {
-    permissionSetData.applicationVisibilities = buildApplicationVisibilities(
-      applicationPermissions,
-      normalizeToArray(permissionSetData.applicationVisibilities || [])
-    );
-  }
-
-  // Build customSettingAccesses array
-  if (customSettingPermissions.length > 0) {
-    permissionSetData.customSettingAccesses = buildSimplePermissions(
-      customSettingPermissions,
-      normalizeToArray(permissionSetData.customSettingAccesses || []),
-      'name'
-    );
-  }
+  const groupedPermissions = groupPermissionsByType(permissions);
+  buildAllPermissionArrays(groupedPermissions, permissionSetData);
 
   // Build XML using Builder
   const builder = new Builder({
