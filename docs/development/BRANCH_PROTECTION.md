@@ -136,5 +136,3 @@ If you need to bypass protection temporarily:
 Review these rules quarterly to ensure they still meet project needs.
 
 Last updated: 2024-12-02
-
-
