@@ -2273,8 +2273,6 @@ else
     exit 1
 fi
 
-<<<<<<< HEAD
-# Commit profiles after all retrieves to ensure clean git state for validation
 # Commit profiles after all retrieves to ensure clean git state for validation
 if [ -d "force-app/main/default/profiles" ] && [ -n "$(find force-app/main/default/profiles -name '*.profile-meta.xml' -type f 2>/dev/null)" ]; then
     git add force-app/main/default/profiles/*.profile-meta.xml > /dev/null 2>&1

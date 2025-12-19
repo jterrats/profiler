@@ -268,6 +268,9 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
             differenceCount: comp.differences.length,
           })),
         };
+        // Ensure directory exists before writing
+        const outputDir = path.dirname(outputFile);
+        await fs.mkdir(outputDir, { recursive: true });
         await fs.writeFile(outputFile, JSON.stringify(jsonData, null, 2), 'utf-8');
         status.success(`Comparison exported to: ${outputFile}`);
       } else {
