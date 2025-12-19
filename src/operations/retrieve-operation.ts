@@ -225,7 +225,14 @@ export function listAllMetadata(input: RetrieveInput, metadataTypes: string[]): 
         rateLimiter.recordCall();
         tracker.recordApiCall();
 
-        const monad = listMetadataType(connection, orgId, type, input.apiVersion, excludeManaged, input.noCache ?? false);
+        const monad = listMetadataType(
+          connection,
+          orgId,
+          type,
+          input.apiVersion,
+          excludeManaged,
+          input.noCache ?? false
+        );
         const result = await monad.run();
 
         if (result.isFailure()) {
@@ -637,15 +644,25 @@ export function executeRetrieve(org: Org, packageXmlPath: string, tempRetrieveDi
     try {
       const { exec } = await import('node:child_process');
       const { promisify } = await import('node:util');
+      const path = await import('node:path');
       const execAsync = promisify(exec);
 
       const username = org.getUsername() ?? org.getOrgId();
-      const retrieveCmd = `sf project retrieve start --manifest "${packageXmlPath}" --target-org ${username}`;
+      // Use --output-dir to explicitly control where files are retrieved
+      // This ensures isolation from parent projects
+      const outputDir = path.join(tempRetrieveDir, 'force-app');
+      const retrieveCmd = `sf project retrieve start --manifest "${packageXmlPath}" --target-org ${username} --output-dir "${outputDir}"`;
 
       // CRITICAL: Execute retrieve in temp directory, NOT in user's project
+      // Set working directory explicitly and ensure no parent project is detected
       await execAsync(retrieveCmd, {
         cwd: tempRetrieveDir,
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+        env: {
+          ...process.env,
+          // Ensure SF CLI doesn't detect parent project directories
+          SF_PROJECT_PATH: tempRetrieveDir,
+        },
       });
 
       return success(undefined);
