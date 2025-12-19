@@ -2273,11 +2273,18 @@ else
     exit 1
 fi
 
+# Commit profiles after all retrieves to ensure clean git state for validation
+if [ -d "force-app/main/default/profiles" ] && [ -n "$(find force-app/main/default/profiles -name '*.profile-meta.xml' -type f 2>/dev/null)" ]; then
+    git add force-app/main/default/profiles/*.profile-meta.xml > /dev/null 2>&1
+    git commit -m "Test 21: Profiles retrieved with cache flags" > /dev/null 2>&1
+fi
+
 # SAFETY VALIDATION
 if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
     log_success "Test 21: ✓ DummyTest.cls unchanged"
 else
     log_error "Test 21 failed: DummyTest.cls was modified!"
+    git diff HEAD -- force-app/main/default/classes/DummyTest.cls
     exit 1
 fi
 
