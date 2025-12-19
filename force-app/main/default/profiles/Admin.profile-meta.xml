@@ -243,193 +243,52 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_CardResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_CardResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ChangeTierAction</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ChangeTierActionTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_DataFactory</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_LoyAccOfflineRequest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_LoyAccOfflineRequestTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberContact360Resource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberContactACCResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberContactPXResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberContactResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberContactResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberCorpNumberResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberCorpNumberResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberCurrencyResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberCurrencyResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberTriggerHandler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberTriggerHandlerHelper</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberTriggerTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberVouchers360</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_PicklistRequest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ProductResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ProductResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ProgramMemberController</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ProgramMemberControllerTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ReferredMembersResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ReferredMembersResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ResourceHelper</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_StringUtils</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_StringUtilsTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TarjetaTriggerHandler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TarjetaTriggerHandlerHelper</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TarjetaTriggerTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TierChangeResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TierChangeResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TierMemberResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TierMemberResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TierResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TierResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TransactionResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TransactionResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_VoucherDefinitionResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_VoucherDefinitionResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_VoucherResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_VoucherResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
         <apexClass>MicrobatchSelfRegController</apexClass>
         <enabled>true</enabled>
@@ -777,11 +636,7 @@
         <recordType>Knowledge__kav.FAQ</recordType>
     </layoutAssignments>
     <layoutAssignments>
-        <layout>LTY_OBJ_LoyaltyCard__c-Loyalty Tarjeta Layout</layout>
-    </layoutAssignments>
     <layoutAssignments>
-        <layout>LTY_OBJ_TierChange__c-Cambio de Nivel Layout</layout>
-    </layoutAssignments>
     <layoutAssignments>
         <layout>Lead-Lead Layout</layout>
     </layoutAssignments>
@@ -2103,7 +1958,6 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
-        <object>LTY_OBJ_LoyaltyCard__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
@@ -2112,7 +1966,6 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
-        <object>LTY_OBJ_TierChange__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
@@ -3620,7 +3473,6 @@
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
-        <tab>LTY_OBJ_TierChange__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
