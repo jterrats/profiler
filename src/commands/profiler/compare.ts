@@ -1,7 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import { Messages, SfError, SfProject, AuthInfo, Connection, Org, StateAggregator } from '@salesforce/core';
+import { Messages, SfError, SfProject, Org, AuthInfo, Connection, StateAggregator } from '@salesforce/core';
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 
 import {
@@ -9,6 +9,7 @@ import {
   compareMultiSource,
   type CompareInput,
   type MultiSourceCompareInput,
+  type ProfileComparison as OperationProfileComparison,
 } from '../../operations/index.js';
 import {
   PERFORMANCE_FLAGS,
@@ -68,10 +69,12 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       description: messages.getMessage('flags.sources.description'),
     }),
     'output-file': Flags.string({
+      char: 'O',
       summary: messages.getMessage('flags.output-file.summary'),
       description: messages.getMessage('flags.output-file.description'),
     }),
     'output-format': Flags.string({
+      char: 'F',
       summary: messages.getMessage('flags.output-format.summary'),
       description: messages.getMessage('flags.output-format.description'),
       options: ['table', 'json', 'html'],
@@ -142,16 +145,11 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
     const progressOptions: ProgressOptions = { quiet };
     const status = new StatusMessage(progressOptions);
 
-    // Resolve org from alias/username (same logic as multi-source)
+    // Resolve org from alias/username
     let org: Org;
     try {
-      // Resolve alias to username if needed
-      const aliases = await StateAggregator.getInstance();
-      const username = aliases.aliases.getUsername(targetOrgAlias) ?? targetOrgAlias;
-
-      const authInfo = await AuthInfo.create({ username });
-      const connection = await Connection.create({ authInfo });
-      org = await Org.create({ connection });
+      // Use Org.create which handles alias resolution automatically
+      org = await Org.create({ aliasOrUsername: targetOrgAlias });
     } catch (error) {
       throw new SfError(
         `Failed to authenticate to org '${targetOrgAlias}': ${error instanceof Error ? error.message : String(error)}`
@@ -231,8 +229,62 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
 
     spinner.succeed(`Compared ${comparisons.length} profile(s) (${elapsed}s)`);
 
-    // Display results
-    this.displayResults(comparisons);
+    // Get output format preferences
+    const outputFormat = (flags['output-format'] as 'table' | 'json' | 'html') ?? 'table';
+    const outputFile = flags['output-file'] as string | undefined;
+
+    // If output file is specified, export results
+    if (outputFile) {
+      // For single org comparison, get full comparison results for export
+      const fullComparisonPromises = profileNames.map(async (profile) => {
+        const input: CompareInput = {
+          profileName: profile,
+          projectPath,
+          org,
+          apiVersion,
+          performanceConfig: perfConfig,
+        };
+
+        const result = await compareProfileOperation(input).run();
+        if (result.isFailure()) {
+          return null;
+        }
+        return result.value.comparisons[0];
+      });
+
+      const fullResults = await Promise.all(fullComparisonPromises);
+      const validResults = fullResults.filter((r): r is OperationProfileComparison => r !== null);
+
+      // Export based on format
+      if (outputFormat === 'json') {
+        const jsonData = {
+          status: 'success',
+          org: org.getUsername() ?? org.getOrgId(),
+          profilesCompared: validResults.length,
+          comparisons: validResults.map((comp) => ({
+            profileName: comp.profileName,
+            identical: comp.identical,
+            differences: comp.differences,
+            differenceCount: comp.differences.length,
+          })),
+        };
+        await fs.writeFile(outputFile, JSON.stringify(jsonData, null, 2), 'utf-8');
+        status.success(`Comparison exported to: ${outputFile}`);
+      } else {
+        // For HTML/table, use a simplified export
+        const exportContent =
+          outputFormat === 'html'
+            ? this.generateHtmlExport(validResults, org.getUsername() ?? org.getOrgId())
+            : this.generateTableExport(validResults);
+        await fs.writeFile(outputFile, exportContent, 'utf-8');
+        status.success(`Comparison exported to: ${outputFile}`);
+      }
+    }
+
+    // Display results (unless JSON format with output file)
+    if (outputFormat === 'table' || !outputFile) {
+      this.displayResults(comparisons);
+    }
 
     status.info(`Total profiles compared: ${comparisons.length}`);
     if (profilesWithDifferences > 0) {
@@ -414,5 +466,35 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
     }
 
     this.log('');
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private generateHtmlExport(comparisons: OperationProfileComparison[], orgName: string): string {
+    const html = [
+      '<!DOCTYPE html>',
+      '<html><head><title>Profile Comparison</title>',
+      '<style>body{font-family:Arial,sans-serif;margin:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background-color:#0176d3;color:white;}</style>',
+      '</head><body>',
+      `<h1>Profile Comparison: ${orgName}</h1>`,
+      '<table><tr><th>Profile</th><th>Status</th><th>Differences</th></tr>',
+    ];
+    for (const comp of comparisons) {
+      html.push(
+        `<tr><td>${comp.profileName}</td><td>${comp.identical ? '✅ Identical' : '⚠️ Differences'}</td><td>${
+          comp.differences.length
+        }</td></tr>`
+      );
+    }
+    html.push('</table></body></html>');
+    return html.join('\n');
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private generateTableExport(comparisons: OperationProfileComparison[]): string {
+    const lines = ['Profile Comparison', '='.repeat(50), ''];
+    for (const comp of comparisons) {
+      lines.push(`${comp.profileName}: ${comp.identical ? 'Identical' : `${comp.differences.length} differences`}`);
+    }
+    return lines.join('\n');
   }
 }

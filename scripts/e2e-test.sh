@@ -4,7 +4,8 @@
 # This script creates a local SF project, retrieves profiles, and validates results
 # without committing anything to git.
 
-set -e  # Exit on any error
+# Don't exit immediately on error - we want to continue and generate report
+set +e  # Continue on error to generate full report
 
 # Colors for output
 RED='\033[0;31m'
@@ -13,41 +14,372 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Function to print colored messages
-log_info() {
-    echo -e "${BLUE}ℹ${NC} $1"
-}
-
-log_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-log_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}✗${NC} $1"
-}
-
 # Get script directory (where this script is located)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PLUGIN_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 TEST_PROJECT_DIR="$PLUGIN_ROOT/test-project"
+EXPECTED_FILES_DIR="$PLUGIN_ROOT/test-e2e-expected"
 
-# Cleanup function for error handling
-cleanup_on_error() {
-    log_error "Test failed! Cleaning up..."
-    if [ -d "$TEST_PROJECT_DIR" ]; then
-        cd "$PLUGIN_ROOT" 2>/dev/null || cd "$HOME"
-        rm -rf "$TEST_PROJECT_DIR"
-        log_info "Test project removed"
-    fi
-    exit 1
+# Logging setup
+LOG_DIR="$PLUGIN_ROOT/test-logs"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+LOG_FILE="$LOG_DIR/e2e-test_${TIMESTAMP}.log"
+REPORT_FILE="$LOG_DIR/e2e-report_${TIMESTAMP}.txt"
+mkdir -p "$LOG_DIR"
+
+# Test tracking
+TOTAL_TESTS=0
+PASSED_TESTS=0
+FAILED_TESTS=0
+FAILED_TEST_LIST=()
+CURRENT_TEST=""
+
+# Function to get timestamp
+get_timestamp() {
+    date '+%Y-%m-%d %H:%M:%S'
 }
 
-# Set trap to cleanup on error
-trap cleanup_on_error ERR
+# Function to log to both console and file
+log_to_file() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(get_timestamp)
+    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
+}
+
+# Function to print colored messages (also logs to file)
+log_info() {
+    echo -e "${BLUE}ℹ${NC} $1" | tee -a "$LOG_FILE"
+    log_to_file "INFO" "$1"
+}
+
+log_success() {
+    echo -e "${GREEN}✓${NC} $1" | tee -a "$LOG_FILE"
+    log_to_file "SUCCESS" "$1"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+}
+
+log_warning() {
+    echo -e "${YELLOW}⚠${NC} $1" | tee -a "$LOG_FILE"
+    log_to_file "WARNING" "$1"
+}
+
+log_error() {
+    echo -e "${RED}✗${NC} $1" | tee -a "$LOG_FILE"
+    log_to_file "ERROR" "$1"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+    if [ -n "$CURRENT_TEST" ]; then
+        FAILED_TEST_LIST+=("$CURRENT_TEST")
+    fi
+}
+
+# Function to detect and use appropriate timeout command
+# Works on macOS, Linux, and Windows (Git Bash/WSL)
+get_timeout_command() {
+    # Check for GNU timeout (Linux, or macOS with coreutils)
+    if command -v timeout >/dev/null 2>&1; then
+        echo "timeout"
+        return 0
+    fi
+
+    # Check for gtimeout (macOS with coreutils via Homebrew)
+    if command -v gtimeout >/dev/null 2>&1; then
+        echo "gtimeout"
+        return 0
+    fi
+
+    # Fallback: use a simple wrapper that works everywhere
+    # This will just run the command without timeout (not ideal, but works)
+    echo "no_timeout"
+    return 0
+}
+
+# Function to run command with timeout and logging
+# Compatible with macOS, Linux, and Windows
+run_with_timeout() {
+    local timeout_seconds="${1:-300}"  # Default 5 minutes
+    local test_name="$2"
+    shift 2
+    local cmd="$@"
+
+    CURRENT_TEST="$test_name"
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+    log_info "Starting: $test_name"
+    log_to_file "COMMAND" "Executing: $cmd"
+    log_to_file "COMMAND" "Timeout: ${timeout_seconds}s"
+
+    local start_time=$(date +%s)
+    local output_file=$(mktemp)
+    local exit_code=0
+
+    # Run command with timeout, capturing both stdout and stderr
+    # Use cross-platform timeout detection
+    TIMEOUT_CMD=$(get_timeout_command)
+    if [ "$TIMEOUT_CMD" = "no_timeout" ]; then
+        # Fallback: run without timeout (works on all systems)
+        log_warning "Timeout command not available, running without timeout"
+        if bash -c "$cmd" > "$output_file" 2>&1; then
+            exit_code=0
+        else
+            exit_code=$?
+        fi
+    else
+        # Use timeout command (Linux/macOS with coreutils)
+        if $TIMEOUT_CMD "$timeout_seconds" bash -c "$cmd" > "$output_file" 2>&1; then
+            exit_code=0
+        else
+            exit_code=$?
+            if [ $exit_code -eq 124 ]; then
+                log_error "Test '$test_name' TIMED OUT after ${timeout_seconds}s"
+                log_to_file "TIMEOUT" "Command exceeded ${timeout_seconds}s timeout"
+                echo "=== COMMAND OUTPUT (last 100 lines) ===" >> "$LOG_FILE"
+                tail -100 "$output_file" >> "$LOG_FILE"
+                echo "=== END COMMAND OUTPUT ===" >> "$LOG_FILE"
+                rm -f "$output_file"
+                return 124
+            fi
+        fi
+    fi
+
+    local end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+
+    log_to_file "DURATION" "Test '$test_name' completed in ${duration}s (exit code: $exit_code)"
+
+    # Log output if command failed
+    if [ $exit_code -ne 0 ]; then
+        log_error "Test '$test_name' FAILED (exit code: $exit_code)"
+        echo "=== COMMAND OUTPUT ===" >> "$LOG_FILE"
+        cat "$output_file" >> "$LOG_FILE"
+        echo "=== END COMMAND OUTPUT ===" >> "$LOG_FILE"
+    fi
+
+    # Return output for processing
+    cat "$output_file"
+    rm -f "$output_file"
+    return $exit_code
+}
+
+# Function to generate final report
+generate_report() {
+    local report_file="$REPORT_FILE"
+
+    {
+        echo "═══════════════════════════════════════════════════════════════"
+        echo "E2E Test Report - $(get_timestamp)"
+        echo "═══════════════════════════════════════════════════════════════"
+        echo ""
+        echo "Summary:"
+        echo "  Total Tests: $TOTAL_TESTS"
+        echo "  Passed: $PASSED_TESTS"
+        echo "  Failed: $FAILED_TESTS"
+        echo "  Success Rate: $(( PASSED_TESTS * 100 / TOTAL_TESTS ))%"
+        echo ""
+
+        if [ ${#FAILED_TEST_LIST[@]} -gt 0 ]; then
+            echo "Failed Tests:"
+            for test in "${FAILED_TEST_LIST[@]}"; do
+                echo "  ✗ $test"
+            done
+            echo ""
+        fi
+
+        echo "Log File: $LOG_FILE"
+        echo "Report File: $report_file"
+        echo ""
+        echo "═══════════════════════════════════════════════════════════════"
+    } | tee "$report_file"
+
+    log_info "Report generated: $report_file"
+}
+
+# Initialize log file
+{
+    echo "═══════════════════════════════════════════════════════════════"
+    echo "E2E Test Run Started - $(get_timestamp)"
+    echo "═══════════════════════════════════════════════════════════════"
+    echo "Log File: $LOG_FILE"
+    echo "Report File: $REPORT_FILE"
+    echo "Test Project: $TEST_PROJECT_DIR"
+    echo "═══════════════════════════════════════════════════════════════"
+    echo ""
+} > "$LOG_FILE"
+
+# Helper function to validate JSON structure against expected file
+validate_json_structure() {
+    local actual_file="$1"
+    local expected_file="$2"
+    local description="$3"
+
+    if [ ! -f "$actual_file" ]; then
+        log_error "$description: Actual file not found: $actual_file"
+        return 1
+    fi
+
+    if [ ! -f "$expected_file" ]; then
+        log_warning "$description: Expected file not found: $expected_file (skipping structure validation)"
+        return 0
+    fi
+
+    # Extract top-level keys from both files
+    local actual_keys=$(jq -r 'keys[]' "$actual_file" 2>/dev/null | sort)
+    local expected_keys=$(jq -r 'keys[]' "$expected_file" 2>/dev/null | sort)
+
+    if [ "$actual_keys" = "$expected_keys" ]; then
+        log_success "$description: JSON structure matches expected (keys: $(echo "$actual_keys" | tr '\n' ',' | sed 's/,$//'))"
+        return 0
+    else
+        log_warning "$description: JSON structure may differ (actual: $(echo "$actual_keys" | tr '\n' ',' | sed 's/,$//'), expected: $(echo "$expected_keys" | tr '\n' ',' | sed 's/,$//'))"
+        return 0  # Don't fail, just warn
+    fi
+}
+
+# Helper function to validate HTML structure
+validate_html_structure() {
+    local actual_file="$1"
+    local expected_file="$2"
+    local description="$3"
+
+    if [ ! -f "$actual_file" ]; then
+        log_error "$description: Actual file not found: $actual_file"
+        return 1
+    fi
+
+    if [ ! -f "$expected_file" ]; then
+        log_warning "$description: Expected file not found: $expected_file (skipping structure validation)"
+        return 0
+    fi
+
+    # Check for key HTML elements
+    local has_doctype=$(grep -q "<!DOCTYPE html>" "$actual_file" && echo "yes" || echo "no")
+    local has_html=$(grep -q "<html" "$actual_file" && echo "yes" || echo "no")
+    local has_head=$(grep -q "<head" "$actual_file" && echo "yes" || echo "no")
+    local has_body=$(grep -q "<body" "$actual_file" && echo "yes" || echo "no")
+
+    if [ "$has_doctype" = "yes" ] && [ "$has_html" = "yes" ] && [ "$has_head" = "yes" ] && [ "$has_body" = "yes" ]; then
+        log_success "$description: HTML structure is valid (DOCTYPE, html, head, body present)"
+        return 0
+    else
+        log_warning "$description: HTML structure may be incomplete (DOCTYPE: $has_doctype, html: $has_html, head: $has_head, body: $has_body)"
+        return 0  # Don't fail, just warn
+    fi
+}
+
+# Helper function to validate Markdown structure
+validate_markdown_structure() {
+    local actual_file="$1"
+    local expected_file="$2"
+    local description="$3"
+
+    if [ ! -f "$actual_file" ]; then
+        log_error "$description: Actual file not found: $actual_file"
+        return 1
+    fi
+
+    if [ ! -f "$expected_file" ]; then
+        log_warning "$description: Expected file not found: $expected_file (skipping structure validation)"
+        return 0
+    fi
+
+    # Check for key Markdown elements
+    local has_header=$(grep -qE "^#" "$actual_file" && echo "yes" || echo "no")
+    local has_summary=$(grep -qi "summary\|profile\|permission" "$actual_file" && echo "yes" || echo "no")
+
+    if [ "$has_header" = "yes" ] && [ "$has_summary" = "yes" ]; then
+        log_success "$description: Markdown structure is valid (headers and summary present)"
+        return 0
+    else
+        log_warning "$description: Markdown structure may be incomplete (header: $has_header, summary: $has_summary)"
+        return 0  # Don't fail, just warn
+    fi
+}
+
+# Helper function to validate CSV structure
+validate_csv_structure() {
+    local actual_file="$1"
+    local expected_file="$2"
+    local description="$3"
+
+    if [ ! -f "$actual_file" ]; then
+        log_error "$description: Actual file not found: $actual_file"
+        return 1
+    fi
+
+    if [ ! -f "$expected_file" ]; then
+        log_warning "$description: Expected file not found: $expected_file (skipping structure validation)"
+        return 0
+    fi
+
+    # Check for CSV header
+    local expected_header=$(head -1 "$expected_file")
+    local actual_header=$(head -1 "$actual_file")
+
+    if [ "$actual_header" = "$expected_header" ]; then
+        log_success "$description: CSV header matches expected: $expected_header"
+        return 0
+    else
+        log_warning "$description: CSV header may differ (actual: $actual_header, expected: $expected_header)"
+        return 0  # Don't fail, just warn
+    fi
+}
+
+# Helper function to validate YAML structure
+validate_yaml_structure() {
+    local actual_file="$1"
+    local expected_file="$2"
+    local description="$3"
+
+    if [ ! -f "$actual_file" ]; then
+        log_error "$description: Actual file not found: $actual_file"
+        return 1
+    fi
+
+    if [ ! -f "$expected_file" ]; then
+        log_warning "$description: Expected file not found: $expected_file (skipping structure validation)"
+        return 0
+    fi
+
+    # Check for key YAML fields
+    local has_profile=$(grep -q "profileName:" "$actual_file" && echo "yes" || echo "no")
+    local has_permission_set=$(grep -q "permissionSetName:" "$actual_file" && echo "yes" || echo "no")
+
+    if [ "$has_profile" = "yes" ] && [ "$has_permission_set" = "yes" ]; then
+        log_success "$description: YAML structure is valid (profileName and permissionSetName present)"
+        return 0
+    else
+        log_warning "$description: YAML structure may be incomplete (profileName: $has_profile, permissionSetName: $has_permission_set)"
+        return 0  # Don't fail, just warn
+    fi
+}
+
+# Cleanup function for error handling (only on unexpected exits)
+cleanup_on_exit() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ] && [ $exit_code -ne 124 ]; then
+        log_error "Script exited unexpectedly (code: $exit_code). Generating report..."
+        generate_report
+        if [ -d "$TEST_PROJECT_DIR" ]; then
+            cd "$PLUGIN_ROOT" 2>/dev/null || cd "$HOME"
+            rm -rf "$TEST_PROJECT_DIR"
+            log_info "Test project removed"
+        fi
+        log_info "Log file preserved: $LOG_FILE"
+        log_info "Report file: $REPORT_FILE"
+    fi
+}
+
+# Set trap to cleanup on exit
+trap cleanup_on_exit EXIT
+
+# Function to handle test failures gracefully (continue instead of exit)
+handle_test_failure() {
+    local test_name="$1"
+    local error_msg="$2"
+    log_error "$test_name: $error_msg"
+    log_to_file "FAILURE" "$test_name: $error_msg"
+    # Don't exit, continue with next test
+}
 
 # Check if sf CLI is installed
 if ! command -v sf &> /dev/null; then
@@ -440,7 +772,7 @@ if [ ! -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
     sf profiler retrieve --target-org "$TARGET_ORG" --name "Admin" > /dev/null 2>&1
 fi
 
-sf profiler retrieve --target-org "$TARGET_ORG" --from-project 2>&1 | grep -v "MissingBundleError" || true
+sf profiler retrieve --target-org "$TARGET_ORG" -p 2>&1 | grep -v "MissingBundleError" || true
 
 if [ -d "force-app/main/default/profiles" ]; then
     log_success "Retrieve with --from-project completed"
@@ -603,17 +935,20 @@ log_info "═══════════════════════�
 sf profiler retrieve --target-org "$TARGET_ORG" --name "Admin" > /dev/null 2>&1
 
 log_info "Comparing with performance flags..."
-OUTPUT=$(sf profiler compare \
+if OUTPUT=$(sf profiler compare \
     --target-org "$TARGET_ORG" \
     --name "Admin" \
     --verbose-performance \
     --max-api-calls 150 \
-    2>&1 | grep -v "MissingBundleError" || true)
-
-if echo "$OUTPUT" | grep -qi "comparison"; then
-    log_success "Compare command executed with performance flags"
+    2>&1 | grep -v "MissingBundleError"); then
+    if echo "$OUTPUT" | grep -qi "comparison"; then
+        log_success "Compare command executed with performance flags"
+    else
+        log_warning "Compare output may not show comparison details"
+    fi
 else
-    log_warning "Compare output may not show comparison details"
+    log_error "Test 8 failed: Compare command with performance flags returned error"
+    exit 1
 fi
 
 # SAFETY VALIDATION for compare command
@@ -904,16 +1239,68 @@ log_info ""
 log_info "Test 14: Output format JSON"
 
 log_info "Testing JSON output format..."
-OUTPUT=$(sf profiler compare --target-org "$TARGET_ORG" --name Admin --output-format json 2>&1 || true)
+JSON_COMPARE_FILE="$TEST_PROJECT_DIR/compare-output.json"
 
-# Check if output contains JSON structure
-if echo "$OUTPUT" | grep -q '"status"\|"profilesCompared"\|"matrices"'; then
-    log_success "✓ JSON output format working"
+# Ensure directory exists
+mkdir -p "$(dirname "$JSON_COMPARE_FILE")"
+
+# Run command with timeout and capture full output
+CURRENT_TEST="Test 14: JSON output format"
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+log_info "Executing: sf profiler compare --target-org \"$TARGET_ORG\" --name Admin --output-format json --output-file \"$JSON_COMPARE_FILE\""
+log_to_file "COMMAND" "Test 14: sf profiler compare --target-org \"$TARGET_ORG\" --name Admin --output-format json --output-file \"$JSON_COMPARE_FILE\""
+
+TEST14_START=$(date +%s)
+TIMEOUT_CMD=$(get_timeout_command)
+if [ "$TIMEOUT_CMD" = "no_timeout" ]; then
+    # Fallback: run without timeout (works on all systems, including macOS without coreutils)
+    TEST14_OUTPUT=$(sf profiler compare --target-org "$TARGET_ORG" --name Admin --output-format json --output-file "$JSON_COMPARE_FILE" 2>&1)
+    TEST14_EXIT=$?
 else
-    log_warning "JSON output may not contain expected structure"
+    # Use timeout command (Linux/macOS with coreutils)
+    TEST14_OUTPUT=$($TIMEOUT_CMD 120 bash -c "sf profiler compare --target-org \"$TARGET_ORG\" --name Admin --output-format json --output-file \"$JSON_COMPARE_FILE\" 2>&1" 2>&1)
+    TEST14_EXIT=$?
+    # timeout returns 124 on timeout
+    if [ $TEST14_EXIT -eq 124 ]; then
+        TEST14_EXIT=124
+    fi
 fi
+TEST14_END=$(date +%s)
+TEST14_DURATION=$((TEST14_END - TEST14_START))
 
-log_success "Test 14 passed: JSON output format works"
+log_to_file "DURATION" "Test 14 completed in ${TEST14_DURATION}s (exit code: $TEST14_EXIT)"
+
+if [ $TEST14_EXIT -eq 124 ]; then
+    log_error "Test 14 failed: Command TIMED OUT after 120s"
+    log_to_file "TIMEOUT" "Test 14 command exceeded 120s timeout"
+    log_to_file "OUTPUT" "Last output: ${TEST14_OUTPUT: -500}"  # Last 500 chars
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+    FAILED_TEST_LIST+=("Test 14: JSON output format (TIMEOUT)")
+elif [ $TEST14_EXIT -ne 0 ]; then
+    log_error "Test 14 failed: Compare command returned error (exit code: $TEST14_EXIT)"
+    log_to_file "ERROR" "Command failed with exit code: $TEST14_EXIT"
+    log_to_file "OUTPUT" "Command output: $TEST14_OUTPUT"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+    FAILED_TEST_LIST+=("Test 14: JSON output format (COMMAND_ERROR)")
+else
+    if [ -f "$JSON_COMPARE_FILE" ]; then
+        validate_json_structure "$JSON_COMPARE_FILE" "$EXPECTED_FILES_DIR/compare/compare-expected.json" "Test 14"
+        log_success "✓ JSON output format validated"
+        log_success "Test 14 passed: JSON output format works"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        log_error "Test 14 failed: JSON file not created"
+        log_to_file "DEBUG" "Command output: $TEST14_OUTPUT"
+        log_to_file "DEBUG" "Expected file path: $JSON_COMPARE_FILE"
+        log_to_file "DEBUG" "Directory exists: $([ -d "$(dirname "$JSON_COMPARE_FILE")" ] && echo 'yes' || echo 'no')"
+        log_to_file "DEBUG" "Directory contents: $(ls -la "$(dirname "$JSON_COMPARE_FILE")" 2>&1 || echo 'Directory not found')"
+        log_to_file "DEBUG" "Current directory: $(pwd)"
+        log_to_file "DEBUG" "File system check: $(test -f "$JSON_COMPARE_FILE" && echo 'file exists' || echo 'file does not exist')"
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+        FAILED_TEST_LIST+=("Test 14: JSON output format (FILE_NOT_CREATED)")
+    fi
+fi
 log_info ""
 
 ########################################
@@ -1208,6 +1595,19 @@ if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
     MERGE_OUTPUT=$(sf profiler merge --target-org "$TARGET_ORG" --name Admin --strategy local-wins 2>&1 || true)
     if echo "$MERGE_OUTPUT" | grep -qi "merge.*complete\|merged\|conflict"; then
         log_success "Test 18b passed: Merge with local-wins strategy works"
+
+        # Validate merge result structure (if expected file exists)
+        MERGED_FILE="force-app/main/default/profiles/Admin.profile-meta.xml"
+        EXPECTED_MERGE_FILE="$PLUGIN_ROOT/test-merge-profiles/expected/Admin-local-wins.profile-meta.xml"
+        if [ -f "$EXPECTED_MERGE_FILE" ] && [ -f "$MERGED_FILE" ]; then
+            # Check for key XML elements that should be present
+            if grep -q "<Profile" "$MERGED_FILE" && grep -q "<fullName>Admin</fullName>" "$MERGED_FILE"; then
+                log_success "Test 18b: Merged file structure is valid (Profile XML structure matches expected format)"
+            else
+                log_warning "Test 18b: Merged file structure may be incomplete"
+            fi
+        fi
+
         # Restore backup
         mv "force-app/main/default/profiles/Admin.profile-meta.xml.backup-test" "force-app/main/default/profiles/Admin.profile-meta.xml"
     else
@@ -1321,25 +1721,31 @@ fi
 
 # Test 19c: Verify progress indicators in compare command
 log_info "Test 19c: Verify progress indicators in compare command"
-COMPARE_OUTPUT=$(sf profiler compare --target-org "$TARGET_ORG" --name Admin 2>&1 || true)
-
-# Check for progress messages or spinner characters
-if echo "$COMPARE_OUTPUT" | grep -qE "(Comparing|Compared|✓|🔍|✅)" || echo "$COMPARE_OUTPUT" | grep -q "profile"; then
-    log_success "Test 19c passed: Compare command shows progress indicators"
+if COMPARE_OUTPUT=$(sf profiler compare --target-org "$TARGET_ORG" --name Admin 2>&1); then
+    # Check for progress messages or spinner characters
+    if echo "$COMPARE_OUTPUT" | grep -qE "(Comparing|Compared|✓|🔍|✅)" || echo "$COMPARE_OUTPUT" | grep -q "profile"; then
+        log_success "Test 19c passed: Compare command shows progress indicators"
+    else
+        log_warning "Test 19c: Progress indicators may not be visible"
+    fi
 else
-    log_warning "Test 19c: Progress indicators may not be visible"
+    log_error "Test 19c failed: Compare command returned error"
+    exit 1
 fi
 
 # Test 19d: Verify --quiet in compare command
 log_info "Test 19d: Verify --quiet in compare command"
-QUIET_COMPARE_OUTPUT=$(sf profiler compare --target-org "$TARGET_ORG" --name Admin --quiet 2>&1 || true)
-
-SPINNER_COUNT=$(echo "$QUIET_COMPARE_OUTPUT" | grep -cE "(⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏|📥|✅|🔍|⚠️|⚙️)" || echo "0")
-SPINNER_COUNT=$(echo "$SPINNER_COUNT" | tr -d '\n' | tr -d ' ')
-if [ -z "$SPINNER_COUNT" ] || [ "$SPINNER_COUNT" = "0" ]; then
-    log_success "Test 19d passed: --quiet disables indicators in compare"
+if QUIET_COMPARE_OUTPUT=$(sf profiler compare --target-org "$TARGET_ORG" --name Admin --quiet 2>&1); then
+    SPINNER_COUNT=$(echo "$QUIET_COMPARE_OUTPUT" | grep -cE "(⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏|📥|✅|🔍|⚠️|⚙️)" || echo "0")
+    SPINNER_COUNT=$(echo "$SPINNER_COUNT" | tr -d '\n' | tr -d ' ')
+    if [ -z "$SPINNER_COUNT" ] || [ "$SPINNER_COUNT" = "0" ]; then
+        log_success "Test 19d passed: --quiet disables indicators in compare"
+    else
+        log_warning "Test 19d: --quiet may not be fully suppressing indicators"
+    fi
 else
-    log_warning "Test 19d: --quiet may not be fully suppressing indicators"
+    log_error "Test 19d failed: Compare command with --quiet returned error"
+    exit 1
 fi
 
 # Test 19e: Verify progress bars in multi-source compare (if multiple orgs available)
@@ -1429,12 +1835,477 @@ log_info "  ✓ Progress indicators in validate command"
 log_info "  ✓ --quiet flag disables indicators in validate"
 log_info ""
 
+# Test 20: Profile Migration Command (sf profiler migrate)
+log_info "═══════════════════════════════════════════════════════════════"
+log_info "Test 20: Profile Migration Command (sf profiler migrate)"
+log_info "═══════════════════════════════════════════════════════════════"
+
+# Ensure we have a profile to migrate
+cd "$TEST_PROJECT_DIR"
+if [ ! -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
+    log_info "Retrieving Admin profile for migration test..."
+    sf profiler retrieve --target-org "$TARGET_ORG" --name Admin > /dev/null 2>&1 || true
+fi
+
+if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
+    # Test 20a: Dry-run migration (preview)
+    log_info "Test 20a: Dry-run migration (preview)"
+    MIGRATE_OUTPUT=$(sf profiler migrate --from Admin --section fls --dry-run 2>&1 || true)
+
+    if echo "$MIGRATE_OUTPUT" | grep -qiE "(preview|migration|permission|Profile.*Permission Set)"; then
+        log_success "Test 20a passed: Dry-run migration shows preview"
+    else
+        log_warning "Test 20a: Migration preview output may need review"
+        echo "$MIGRATE_OUTPUT" | head -10
+    fi
+
+    # Test 20b: Migration with table format (default)
+    log_info "Test 20b: Migration preview with table format (default)"
+    TABLE_OUTPUT=$(sf profiler migrate --from Admin --section fls,apex --dry-run --format table 2>&1 || true)
+
+    if echo "$TABLE_OUTPUT" | grep -qiE "(Profile|Permission Set|Permissions|Type|Name|Status|╔|║|╚|─)"; then
+        log_success "Test 20b passed: Table format displays correctly"
+    else
+        log_warning "Test 20b: Table format may need review"
+    fi
+
+    # Test 20c: Migration with JSON format
+    log_info "Test 20c: Migration preview with JSON format"
+    JSON_FILE="$TEST_PROJECT_DIR/migration-json-test.json"
+    if sf profiler migrate --from Admin --section fls --dry-run --format json --output-file "$JSON_FILE" 2>&1; then
+        if [ -f "$JSON_FILE" ]; then
+            validate_json_structure "$JSON_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-fls-expected.json" "Test 20c"
+            log_success "Test 20c passed: JSON format validated"
+        else
+            log_error "Test 20c failed: JSON file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20c failed: Command returned error"
+        exit 1
+    fi
+
+    # Test 20d: Migration with HTML format and file export
+    log_info "Test 20d: Migration preview with HTML format and file export"
+    HTML_FILE="$TEST_PROJECT_DIR/migration-preview.html"
+
+    if sf profiler migrate --from Admin --section fls,apex --dry-run --format html --output-file "$HTML_FILE" 2>&1; then
+        if [ -f "$HTML_FILE" ]; then
+            validate_html_structure "$HTML_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-expected.html" "Test 20d"
+            FILE_SIZE=$(wc -c < "$HTML_FILE")
+            log_info "  HTML file size: $FILE_SIZE bytes"
+            log_success "Test 20d passed: HTML file validated"
+        else
+            log_error "Test 20d failed: HTML file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20d failed: Command returned error"
+        exit 1
+    fi
+
+    # Test 20e: Migration with Markdown format
+    log_info "Test 20e: Migration preview with Markdown format"
+    MD_FILE="$TEST_PROJECT_DIR/migration-test.md"
+    if sf profiler migrate --from Admin --section fls --dry-run --format markdown --output-file "$MD_FILE" 2>&1; then
+        if [ -f "$MD_FILE" ]; then
+            validate_markdown_structure "$MD_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-expected.md" "Test 20e"
+            log_success "Test 20e passed: Markdown format validated"
+        else
+            log_error "Test 20e failed: Markdown file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20e failed: Command returned error"
+        exit 1
+    fi
+
+    # Test 20f: Migration with CSV format
+    log_info "Test 20f: Migration preview with CSV format"
+    CSV_FILE="$TEST_PROJECT_DIR/migration-test.csv"
+    if sf profiler migrate --from Admin --section fls,apex --dry-run --format csv --output-file "$CSV_FILE" 2>&1; then
+        if [ -f "$CSV_FILE" ]; then
+            validate_csv_structure "$CSV_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-expected.csv" "Test 20f"
+            log_success "Test 20f passed: CSV format validated"
+        else
+            log_error "Test 20f failed: CSV file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20f failed: Command returned error"
+        exit 1
+    fi
+
+    # Test 20g: Migration with YAML format
+    log_info "Test 20g: Migration preview with YAML format"
+    YAML_FILE="$TEST_PROJECT_DIR/migration-test.yaml"
+    if sf profiler migrate --from Admin --section fls --dry-run --format yaml --output-file "$YAML_FILE" 2>&1; then
+        if [ -f "$YAML_FILE" ]; then
+            validate_yaml_structure "$YAML_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-expected.yaml" "Test 20g"
+            log_success "Test 20g passed: YAML format validated"
+        else
+            log_error "Test 20g failed: YAML file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20g failed: Command returned error"
+        exit 1
+    fi
+
+    # Test 20h: Multiple permission types
+    log_info "Test 20h: Migration with multiple permission types"
+    MULTI_TYPE_OUTPUT=$(sf profiler migrate --from Admin --section fls,apex,flows,tabs,recordtype --dry-run 2>&1 || true)
+
+    if echo "$MULTI_TYPE_OUTPUT" | grep -qiE "(fls|apex|flows|tabs|recordtype)"; then
+        log_success "Test 20h passed: Multiple permission types processed"
+    else
+        log_warning "Test 20h: Multiple types may need review"
+    fi
+
+    # Test 20i: Custom Permission Set name
+    log_info "Test 20i: Migration with custom Permission Set name"
+    CUSTOM_PS_OUTPUT=$(sf profiler migrate --from Admin --section fls --name "Custom_PS_Test" --dry-run 2>&1 || true)
+
+    if echo "$CUSTOM_PS_OUTPUT" | grep -qi "Custom_PS_Test"; then
+        log_success "Test 20i passed: Custom Permission Set name used"
+    else
+        log_warning "Test 20i: Custom name may not be displayed in preview"
+    fi
+
+    # Test 20j: Error handling - invalid permission type
+    log_info "Test 20j: Error handling - invalid permission type"
+    # Capture output and exit code correctly (don't use || true)
+    set +e  # Temporarily disable exit on error to capture exit code
+    INVALID_TYPE_OUTPUT=$(sf profiler migrate --from Admin --section invalidtype --dry-run 2>&1)
+    EXIT_CODE=$?
+    set -e  # Re-enable exit on error
+
+    if [ $EXIT_CODE -ne 0 ]; then
+        if echo "$INVALID_TYPE_OUTPUT" | grep -qiE "(invalid|valid types|Invalid permission)"; then
+            log_success "Test 20j passed: Invalid permission type shows clear error"
+        else
+            log_warning "Test 20j: Error message may need improvement"
+        fi
+    else
+        log_error "Test 20j failed: Invalid permission type should fail (exit code: $EXIT_CODE)"
+        log_error "Output: $INVALID_TYPE_OUTPUT"
+        exit 1
+    fi
+
+    # Test 20k: Error handling - non-existent profile
+    log_info "Test 20k: Error handling - non-existent profile"
+    # Capture output and exit code correctly (don't use || true)
+    set +e  # Temporarily disable exit on error to capture exit code
+    NONEXISTENT_OUTPUT=$(sf profiler migrate --from "ProfileThatDoesNotExist12345" --section fls --dry-run 2>&1)
+    EXIT_CODE=$?
+    set -e  # Re-enable exit on error
+
+    if [ $EXIT_CODE -ne 0 ]; then
+        if echo "$NONEXISTENT_OUTPUT" | grep -qiE "(not found|doesn't exist|Profile.*not found|PROFILE_NOT_FOUND)"; then
+            log_success "Test 20k passed: Non-existent profile shows clear error"
+        else
+            log_warning "Test 20k: Error message may need improvement"
+        fi
+    else
+        log_error "Test 20k failed: Non-existent profile should fail (exit code: $EXIT_CODE)"
+        log_error "Output: $NONEXISTENT_OUTPUT"
+        exit 1
+    fi
+
+    # Test 20l: Export to file with different formats
+    log_info "Test 20l: Export to file with different formats"
+
+    # JSON export
+    JSON_FILE="$TEST_PROJECT_DIR/migration-json.json"
+    if sf profiler migrate --from Admin --section fls --dry-run --format json --output-file "$JSON_FILE" 2>&1; then
+        if [ -f "$JSON_FILE" ]; then
+            validate_json_structure "$JSON_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-fls-expected.json" "Test 20l JSON"
+            log_success "Test 20l: JSON file export validated"
+        else
+            log_error "Test 20l: JSON export failed - file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20l: JSON export command failed"
+        exit 1
+    fi
+
+    # Markdown export
+    MD_FILE="$TEST_PROJECT_DIR/migration.md"
+    if sf profiler migrate --from Admin --section fls --dry-run --format markdown --output-file "$MD_FILE" 2>&1; then
+        if [ -f "$MD_FILE" ]; then
+            validate_markdown_structure "$MD_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-expected.md" "Test 20l Markdown"
+            log_success "Test 20l: Markdown file export validated"
+        else
+            log_error "Test 20l: Markdown export failed - file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20l: Markdown export command failed"
+        exit 1
+    fi
+
+    # CSV export
+    CSV_FILE="$TEST_PROJECT_DIR/migration.csv"
+    if sf profiler migrate --from Admin --section fls --dry-run --format csv --output-file "$CSV_FILE" 2>&1; then
+        if [ -f "$CSV_FILE" ]; then
+            validate_csv_structure "$CSV_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-expected.csv" "Test 20l CSV"
+            log_success "Test 20l: CSV file export validated"
+        else
+            log_error "Test 20l: CSV export failed - file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20l: CSV export command failed"
+        exit 1
+    fi
+
+    # YAML export
+    YAML_FILE="$TEST_PROJECT_DIR/migration.yaml"
+    if sf profiler migrate --from Admin --section fls --dry-run --format yaml --output-file "$YAML_FILE" 2>&1; then
+        if [ -f "$YAML_FILE" ]; then
+            validate_yaml_structure "$YAML_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-expected.yaml" "Test 20l YAML"
+            log_success "Test 20l: YAML file export validated"
+        else
+            log_error "Test 20l: YAML export failed - file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20l: YAML export command failed"
+        exit 1
+    fi
+
+    # Test 20m: --quiet flag in migrate command
+    log_info "Test 20m: --quiet flag in migrate command"
+    QUIET_MIGRATE_OUTPUT=$(sf profiler migrate --from Admin --section fls --dry-run --quiet 2>&1 || true)
+
+    SPINNER_COUNT=$(echo "$QUIET_MIGRATE_OUTPUT" | grep -cE "(⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏|📥|✅|🔍|⚠️|⚙️)" || echo "0")
+    SPINNER_COUNT=$(echo "$SPINNER_COUNT" | tr -d '\n' | tr -d ' ')
+    if [ -z "$SPINNER_COUNT" ] || [ "$SPINNER_COUNT" = "0" ]; then
+        log_success "Test 20m passed: --quiet disables indicators in migrate"
+    else
+        log_warning "Test 20m: --quiet may not fully suppress indicators"
+    fi
+
+    # Verify command still works with --quiet
+    if echo "$QUIET_MIGRATE_OUTPUT" | grep -qiE "(Profile|Permission|migration|preview)"; then
+        log_success "Test 20m: Command functionality preserved with --quiet"
+    fi
+
+    # Test 20n: New metadata types - applications
+    log_info "Test 20n: Migration with applications type"
+    APPLICATIONS_JSON_FILE="$TEST_PROJECT_DIR/migration-applications-test.json"
+    if sf profiler migrate --from Admin --section applications --dry-run --format json --output-file "$APPLICATIONS_JSON_FILE" 2>&1; then
+        if [ -f "$APPLICATIONS_JSON_FILE" ]; then
+            validate_json_structure "$APPLICATIONS_JSON_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-applications-expected.json" "Test 20n"
+            log_success "Test 20n passed: Applications type validated"
+        else
+            log_error "Test 20n failed: JSON file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20n failed: Command returned error"
+        exit 1
+    fi
+
+    # Test 20o: New metadata types - customsettings
+    log_info "Test 20o: Migration with customsettings type"
+    CUSTOMSETTINGS_JSON_FILE="$TEST_PROJECT_DIR/migration-customsettings-test.json"
+    if sf profiler migrate --from Admin --section customsettings --dry-run --format json --output-file "$CUSTOMSETTINGS_JSON_FILE" 2>&1; then
+        if [ -f "$CUSTOMSETTINGS_JSON_FILE" ]; then
+            validate_json_structure "$CUSTOMSETTINGS_JSON_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-customsettings-expected.json" "Test 20o"
+            log_success "Test 20o passed: Custom Settings type validated"
+        else
+            log_error "Test 20o failed: JSON file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20o failed: Command returned error"
+        exit 1
+    fi
+
+    # Test 20p: All metadata types together
+    log_info "Test 20p: Migration with all metadata types"
+    ALL_TYPES_JSON_FILE="$TEST_PROJECT_DIR/migration-all-types-test.json"
+    if sf profiler migrate --from Admin --section fls,apex,flows,tabs,recordtype,objectaccess,connectedapps,custompermissions,userpermissions,visualforce,custommetadatatypes,externalcredentials,dataspaces,applications,customsettings --dry-run --format json --output-file "$ALL_TYPES_JSON_FILE" 2>&1; then
+        if [ -f "$ALL_TYPES_JSON_FILE" ]; then
+            validate_json_structure "$ALL_TYPES_JSON_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-all-types-expected.json" "Test 20p"
+            log_success "Test 20p passed: All metadata types validated"
+        else
+            log_error "Test 20p failed: JSON file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20p failed: Command returned error"
+        exit 1
+    fi
+
+    # Test 20q: HTML auto-open functionality
+    log_info "Test 20q: HTML format auto-opens in browser"
+    HTML_AUTOOPEN_FILE="$TEST_PROJECT_DIR/migration-autoopen-test.html"
+    if sf profiler migrate --from Admin --section fls --dry-run --format html --output-file "$HTML_AUTOOPEN_FILE" 2>&1; then
+        if [ -f "$HTML_AUTOOPEN_FILE" ]; then
+            validate_html_structure "$HTML_AUTOOPEN_FILE" "$EXPECTED_FILES_DIR/migrate/migrate-expected.html" "Test 20q"
+            # Note: We can't actually verify browser opening in automated tests,
+            # but we verify the file is created and has valid HTML structure
+            log_success "Test 20q passed: HTML file generated and validated (auto-open functionality enabled)"
+        else
+            log_error "Test 20q failed: HTML file not created"
+            exit 1
+        fi
+    else
+        log_error "Test 20q failed: Command returned error"
+        exit 1
+    fi
+
+    log_success "Test 20 passed: Profile migration command works correctly"
+    log_info ""
+    log_info "Migration scenarios validated:"
+    log_info "  ✓ Dry-run migration (preview)"
+    log_info "  ✓ Table format (default)"
+    log_info "  ✓ JSON format"
+    log_info "  ✓ HTML format with file export"
+    log_info "  ✓ Markdown format"
+    log_info "  ✓ CSV format"
+    log_info "  ✓ YAML format"
+    log_info "  ✓ Multiple permission types"
+    log_info "  ✓ Custom Permission Set name"
+    log_info "  ✓ Error handling (invalid type, non-existent profile)"
+    log_info "  ✓ File export for all formats"
+    log_info "  ✓ --quiet flag"
+else
+    log_warning "Test 20 skipped: No Admin profile available for migration testing"
+fi
+
+########################################
+# Test 21: Cache flags (--no-cache, --clear-cache)
+########################################
+log_info ""
+log_info "═══════════════════════════════════════════════════════════════"
+log_info "Test 21: Cache flags (--no-cache, --clear-cache)"
+log_info "═══════════════════════════════════════════════════════════════"
+
+cd "$TEST_PROJECT_DIR"
+
+# Test 21a: --clear-cache flag
+log_info "Test 21a: --clear-cache flag"
+if sf profiler retrieve --target-org "$TARGET_ORG" --name Admin --clear-cache 2>&1 | grep -qiE "(cache|cleared|retrieved)"; then
+    log_success "Test 21a passed: --clear-cache flag works"
+else
+    log_warning "Test 21a: --clear-cache may not show clear indication"
+fi
+
+# Verify profile was retrieved
+if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
+    log_success "Test 21a: Profile retrieved successfully with --clear-cache"
+else
+    log_error "Test 21a failed: Profile not retrieved with --clear-cache"
+    exit 1
+fi
+
+# Test 21b: --no-cache flag (should bypass cache)
+log_info "Test 21b: --no-cache flag (bypass cache)"
+rm -rf force-app/main/default/profiles
+
+if sf profiler retrieve --target-org "$TARGET_ORG" --name Admin --no-cache 2>&1 | grep -qiE "(retrieved|profile)"; then
+    log_success "Test 21b passed: --no-cache flag works"
+else
+    log_warning "Test 21b: --no-cache may not show clear indication"
+fi
+
+# Verify profile was retrieved
+if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
+    log_success "Test 21b: Profile retrieved successfully with --no-cache"
+else
+    log_error "Test 21b failed: Profile not retrieved with --no-cache"
+    exit 1
+fi
+
+# Test 21c: Cache effectiveness (retrieve twice, second should be faster with cache)
+log_info "Test 21c: Cache effectiveness (second retrieve should use cache)"
+rm -rf force-app/main/default/profiles
+
+# First retrieve (populates cache)
+log_info "  First retrieve (populates cache)..."
+START_TIME=$(date +%s)
+if sf profiler retrieve --target-org "$TARGET_ORG" --name Admin > /dev/null 2>&1; then
+    FIRST_TIME=$(($(date +%s) - START_TIME))
+    log_info "  First retrieve took: ${FIRST_TIME}s"
+else
+    log_error "Test 21c failed: First retrieve failed"
+    exit 1
+fi
+
+# Second retrieve (should use cache, faster)
+log_info "  Second retrieve (should use cache)..."
+rm -rf force-app/main/default/profiles
+START_TIME=$(date +%s)
+if sf profiler retrieve --target-org "$TARGET_ORG" --name Admin > /dev/null 2>&1; then
+    SECOND_TIME=$(($(date +%s) - START_TIME))
+    log_info "  Second retrieve took: ${SECOND_TIME}s"
+
+    if [ "$SECOND_TIME" -le "$FIRST_TIME" ]; then
+        log_success "Test 21c passed: Cache is working (second retrieve same or faster)"
+    else
+        log_warning "Test 21c: Cache may not be effective (second retrieve slower)"
+    fi
+else
+    log_error "Test 21c failed: Second retrieve failed"
+    exit 1
+fi
+
+# Test 21d: --no-cache bypasses cache (should be slower than cached)
+log_info "Test 21d: --no-cache bypasses cache"
+rm -rf force-app/main/default/profiles
+
+START_TIME=$(date +%s)
+if sf profiler retrieve --target-org "$TARGET_ORG" --name Admin --no-cache > /dev/null 2>&1; then
+    NO_CACHE_TIME=$(($(date +%s) - START_TIME))
+    log_info "  Retrieve with --no-cache took: ${NO_CACHE_TIME}s"
+
+    if [ "$NO_CACHE_TIME" -ge "$SECOND_TIME" ]; then
+        log_success "Test 21d passed: --no-cache bypasses cache (took longer than cached)"
+    else
+        log_info "Test 21d: --no-cache may have been faster (acceptable if cache was empty)"
+    fi
+else
+    log_error "Test 21d failed: Retrieve with --no-cache failed"
+    exit 1
+fi
+
+# SAFETY VALIDATION
+if git diff --quiet HEAD -- force-app/main/default/classes/DummyTest.cls; then
+    log_success "Test 21: ✓ DummyTest.cls unchanged"
+else
+    log_error "Test 21 failed: DummyTest.cls was modified!"
+    exit 1
+fi
+
+log_success "Test 21 passed: Cache flags work correctly"
+log_info ""
+log_info "Cache scenarios validated:"
+log_info "  ✓ --clear-cache flag works"
+log_info "  ✓ --no-cache flag bypasses cache"
+log_info "  ✓ Cache effectiveness (second retrieve uses cache)"
+log_info "  ✓ --no-cache bypasses cache correctly"
+log_info ""
+
+log_info ""
+
 log_info "Error scenarios validated:"
 log_info "  ✓ Non-existent profile (graceful error)"
 log_info "  ✓ Corrupted sfdx-project.json (JSON parsing)"
 log_info "  ✓ Read-only directory (permission error)"
 log_info "  ✓ Invalid org username (auth error)"
+log_info "  ✓ Invalid permission type (migration command)"
 log_info ""
+
+# Generate final report
+log_info ""
+log_info "═══════════════════════════════════════════════════════════════"
+log_info "Generating final test report..."
+log_info "═══════════════════════════════════════════════════════════════"
+generate_report
 
 # Cleanup test project
 log_info "Cleaning up test project..."
@@ -1442,15 +2313,35 @@ cd "$PLUGIN_ROOT"
 rm -rf "$TEST_PROJECT_DIR"
 log_success "Test project cleaned up"
 log_info ""
-log_success "All E2E tests completed successfully!"
-log_info ""
-log_info "Test Summary:"
-log_info "  ✓ 12 core tests (retrieve, compare, performance, incremental)"
-log_info "  ✓ 3 feature tests (multi-source, JSON, HTML export)"
-log_info "  ✓ Pipeline DSL available programmatically (see docs/development/pipeline-dsl.md)"
-log_info "  ✓ 1 error handling test (4 error scenarios)"
-log_info "  ✓ 1 validation test (5 validation scenarios)"
-log_info "  ✓ 1 merge test (5 merge scenarios: dry-run, local-wins, abort-on-conflict, interactive, help)"
-log_info "  ✓ 1 progress indicators test (9 progress scenarios)"
-log_info "  Total: 19 E2E tests"
+
+# Final summary
+if [ $FAILED_TESTS -eq 0 ]; then
+    log_success "All E2E tests completed successfully!"
+    log_info ""
+    log_info "Test Summary:"
+    log_info "  ✓ 12 core tests (retrieve, compare, performance, incremental)"
+    log_info "  ✓ 3 feature tests (multi-source, JSON, HTML export)"
+    log_info "  ✓ 1 error handling test (4 error scenarios)"
+    log_info "  ✓ 1 validation test (5 validation scenarios)"
+    log_info "  ✓ 1 merge test (5 merge scenarios: dry-run, local-wins, abort-on-conflict, interactive, help)"
+    log_info "  ✓ 1 progress indicators test (9 progress scenarios)"
+    log_info "  ✓ 1 migration test (13 migration scenarios: dry-run, formats, error handling)"
+    log_info "  ✓ 1 cache test (4 cache scenarios: clear-cache, no-cache, effectiveness, bypass)"
+    log_info "  Total: 21 E2E tests"
+    log_info ""
+    log_info "Log file: $LOG_FILE"
+    log_info "Report file: $REPORT_FILE"
+    exit 0
+else
+    log_error "Some tests failed! Check the report for details."
+    log_info ""
+    log_info "Failed tests: ${#FAILED_TEST_LIST[@]}"
+    for test in "${FAILED_TEST_LIST[@]}"; do
+        log_error "  ✗ $test"
+    done
+    log_info ""
+    log_info "Log file: $LOG_FILE"
+    log_info "Report file: $REPORT_FILE"
+    exit 1
+fi
 

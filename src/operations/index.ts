@@ -74,3 +74,12 @@ export {
   type ValidationResult,
   type ValidationIssue,
 } from './validate-operation.js';
+
+// Migrate Operation
+export {
+  migratePermissionsOperation,
+  type MigrateInput,
+  type MigrateResult,
+  type PermissionType,
+  type ExtractedPermission,
+} from './migrate-operation.js';

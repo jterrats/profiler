@@ -47,7 +47,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       description: messages.getMessage('flags.api-version.description'),
     }),
     'from-project': Flags.boolean({
-      char: 'f',
+      char: 'p',
       summary: messages.getMessage('flags.from-project.summary'),
       description: messages.getMessage('flags.from-project.description'),
       default: false,
@@ -72,6 +72,16 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       description: messages.getMessage('flags.quiet.description'),
       default: false,
     }),
+    'no-cache': Flags.boolean({
+      summary: messages.getMessage('flags.no-cache.summary'),
+      description: messages.getMessage('flags.no-cache.description'),
+      default: false,
+    }),
+    'clear-cache': Flags.boolean({
+      summary: messages.getMessage('flags.clear-cache.summary'),
+      description: messages.getMessage('flags.clear-cache.description'),
+      default: false,
+    }),
     // Performance flags
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
     ...(PERFORMANCE_FLAGS as any),
@@ -88,6 +98,8 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
     const forceFullRetrieve = flags.force;
     const dryRun = flags['dry-run'];
     const quiet = flags.quiet ?? false;
+    const noCache = flags['no-cache'] ?? false;
+    const clearCache = flags['clear-cache'] ?? false;
     const apiVersion = flags['api-version'] ?? (await org.retrieveMaxApiVersion());
 
     const progressOptions: ProgressOptions = { quiet };
@@ -123,6 +135,16 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       this.log(messages.getMessage('info.starting', [org.getUsername() ?? org.getOrgId()]));
     }
 
+    // Handle cache flags
+    if (clearCache) {
+      const { getFilesystemMetadataCache } = await import('../../core/cache/index.js');
+      const cache = getFilesystemMetadataCache();
+      await cache.clearAll();
+      if (!quiet) {
+        status.info('Cache cleared');
+      }
+    }
+
     // Get project path
     const project = await SfProject.resolve();
     const projectPath = project.getPath();
@@ -139,6 +161,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       performanceConfig: perfConfig,
       forceFullRetrieve,
       dryRun,
+      noCache, // Pass noCache flag to operation
     };
 
     // Show incremental retrieve info

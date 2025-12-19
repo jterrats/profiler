@@ -6,20 +6,8 @@
         <visible>true</visible>
     </applicationVisibilities>
     <applicationVisibilities>
-        <application>SC_GRG_App</application>
-        <default>false</default>
-        <visible>false</visible>
-    </applicationVisibilities>
     <applicationVisibilities>
-        <application>SC_GRG_AppConsole</application>
-        <default>false</default>
-        <visible>false</visible>
-    </applicationVisibilities>
     <applicationVisibilities>
-        <application>SC_Shake_Shack_App</application>
-        <default>false</default>
-        <visible>false</visible>
-    </applicationVisibilities>
     <applicationVisibilities>
         <application>Sales_Leader</application>
         <default>false</default>
@@ -255,193 +243,52 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_CardResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_CardResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ChangeTierAction</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ChangeTierActionTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_DataFactory</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_LoyAccOfflineRequest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_LoyAccOfflineRequestTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberContact360Resource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberContactACCResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberContactPXResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberContactResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberContactResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberCorpNumberResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberCorpNumberResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberCurrencyResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberCurrencyResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberTriggerHandler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberTriggerHandlerHelper</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberTriggerTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_MemberVouchers360</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_PicklistRequest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ProductResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ProductResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ProgramMemberController</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ProgramMemberControllerTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ReferredMembersResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ReferredMembersResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_ResourceHelper</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_StringUtils</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_StringUtilsTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TarjetaTriggerHandler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TarjetaTriggerHandlerHelper</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TarjetaTriggerTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TierChangeResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TierChangeResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TierMemberResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TierMemberResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TierResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TierResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TransactionResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_TransactionResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_VoucherDefinitionResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_VoucherDefinitionResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_VoucherResource</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
-        <apexClass>LTY_APX_VoucherResourceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <classAccesses>
         <apexClass>MicrobatchSelfRegController</apexClass>
         <enabled>true</enabled>
@@ -456,226 +303,6 @@
     </classAccesses>
     <classAccesses>
         <apexClass>MyProfilePageControllerTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_AccountWrapper</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Account_Handler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Account_HandlerTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Account_ResetAPIFlag_Batch</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Account_ResetAPIFlag_Batch_Test</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Account_ResetAPIFlag_Scheduler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Account_Service</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Account_Service_Test</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_ActualizarClasificacionCasos</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_BusinessHoursHandler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_BusinessHoursHandler_Test</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_BusinessHoursService</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_BusinessHoursService_Test</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Case_Handler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Case_LoyaltyMember</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Case_LoyaltyMemberTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Case_Service</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Case_Service_Test</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_ContactPointController</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_ContactPointControllerTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_ContactPointDuplicateValidator</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_ContactPointDuplicateValidatorTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_ContentDocument_Handler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_ContentDocument_Service</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_ContentDocument_Service_Test</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_ContentVersion_Handler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_ContentVersion_Service</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_ContentVersion_Service_Test</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_DataFactory</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_DeleteOldCaseFilesBatch</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_DeleteOldCaseFilesSchedule</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_DeleteOldCaseFilesbatchTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_DynamicSObjectHandler</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_DynamicSObjectHandlerTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_GRGDependencyService</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_GRGDependencyServiceAComerTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_GRGDependencyServiceTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_HttpGetStatusVoucherGRG</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_HttpGetStatusVoucherGRG_Test</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_HttpSendEmailGRG</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_HttpSendEmailGRG_Test</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_HttpSendVoucherGRG</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_HttpSendVoucherGRG_Test</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Http_Helper</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Http_Helper_Test</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_MetadataUploader</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_PublishKnowledgeController</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_PublishKnowledgeController_Test</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_SendAccountsCMDQueueable</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_SendAccountsCMDQueueableTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_UberPedidos</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_UberPedidosTest</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Uber_Callout</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Uber_CalloutMock</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SC_Uber_CalloutTest</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
@@ -750,9 +377,6 @@
         <layout>BusinessBrand-Business Brand Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
-        <layout>CAS_GRG_SubCategory__mdt-Sub-categoría Picklist Layout</layout>
-    </layoutAssignments>
-    <layoutAssignments>
         <layout>CalcMatrixColumnRange-Formato Decision Matrix Column Range</layout>
     </layoutAssignments>
     <layoutAssignments>
@@ -799,11 +423,9 @@
     </layoutAssignments>
     <layoutAssignments>
         <layout>Case-Case Layout</layout>
-        <recordType>Case.GRG</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Case-Case Layout</layout>
-        <recordType>Case.SC_Case_SS</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>CaseClose-Close Case Layout</layout>
@@ -963,78 +585,58 @@
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_GRG_FAQ</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_GRG_InformacionGeneral</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_GRG_Menu</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_GRG_Procedimientos</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_GRG_Productos</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_GRG_Promociones</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_GRG_UbicacionesHorarios</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_SS_Catering</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_SS_FAQ</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_SS_Facturacion</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_SS_Legal</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_SS_Loyalty</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_SS_MKT</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_SS_Productos</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_SS_Promociones</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Knowledge Layout</layout>
-        <recordType>Knowledge__kav.SC_SS_Shacks</recordType>
     </layoutAssignments>
     <layoutAssignments>
         <layout>Knowledge__kav-Lightning Knowledge FAQ Layout</layout>
         <recordType>Knowledge__kav.FAQ</recordType>
     </layoutAssignments>
     <layoutAssignments>
-        <layout>LTY_OBJ_LoyaltyCard__c-Loyalty Tarjeta Layout</layout>
-    </layoutAssignments>
     <layoutAssignments>
-        <layout>LTY_OBJ_TierChange__c-Cambio de Nivel Layout</layout>
-    </layoutAssignments>
     <layoutAssignments>
         <layout>Lead-Lead Layout</layout>
     </layoutAssignments>
@@ -1173,33 +775,6 @@
     </layoutAssignments>
     <layoutAssignments>
         <layout>RefundLinePayment-Formato Pago de partida de reembolso</layout>
-    </layoutAssignments>
-    <layoutAssignments>
-        <layout>SC_BusinessEngine__mdt-SC Business Engine Layout</layout>
-    </layoutAssignments>
-    <layoutAssignments>
-        <layout>SC_CaseJunction__c-Case Junction Layout</layout>
-    </layoutAssignments>
-    <layoutAssignments>
-        <layout>SC_FileExtension__mdt-SC Extension de Archivo Layout</layout>
-    </layoutAssignments>
-    <layoutAssignments>
-        <layout>SC_GRG_AssignmentRules__mdt-GRG Reglas de Asignación Layout</layout>
-    </layoutAssignments>
-    <layoutAssignments>
-        <layout>SC_GRG_Emails__mdt-GRG Emails Layout</layout>
-    </layoutAssignments>
-    <layoutAssignments>
-        <layout>SC_HandlingAdditionalHours__mdt-Gestión Hora Adicional Layout</layout>
-    </layoutAssignments>
-    <layoutAssignments>
-        <layout>SC_Logs__c-Logs Layout</layout>
-    </layoutAssignments>
-    <layoutAssignments>
-        <layout>SC_RestConfig__mdt-Configuración Rest Layout</layout>
-    </layoutAssignments>
-    <layoutAssignments>
-        <layout>SC_RolesOutsideSalesforce__mdt-Rol fuera de Salesforce Layout</layout>
     </layoutAssignments>
     <layoutAssignments>
         <layout>SalesforceContract-Formato Contrato de Salesforce</layout>
@@ -2383,7 +1958,6 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
-        <object>LTY_OBJ_LoyaltyCard__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
@@ -2392,7 +1966,6 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
-        <object>LTY_OBJ_TierChange__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
@@ -3471,7 +3044,6 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
-        <object>SC_CaseJunction__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
@@ -3480,7 +3052,6 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
-        <object>SC_Logs__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
@@ -3736,26 +3307,6 @@
         <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
-        <apexPage>ESWSCAComerClubWeb1754435120512</apexPage>
-        <enabled>true</enabled>
-    </pageAccesses>
-    <pageAccesses>
-        <apexPage>ESWSCElFarolitoWeb1754430358003</apexPage>
-        <enabled>true</enabled>
-    </pageAccesses>
-    <pageAccesses>
-        <apexPage>ESWSCPandaExpressWeb1754501240155</apexPage>
-        <enabled>true</enabled>
-    </pageAccesses>
-    <pageAccesses>
-        <apexPage>ESWSCShakeShackWeb1754502835622</apexPage>
-        <enabled>true</enabled>
-    </pageAccesses>
-    <pageAccesses>
-        <apexPage>ESWSCToksWeb1754500019832</apexPage>
-        <enabled>true</enabled>
-    </pageAccesses>
-    <pageAccesses>
         <apexPage>Exception</apexPage>
         <enabled>true</enabled>
     </pageAccesses>
@@ -3823,12 +3374,10 @@
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Case.GRG</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Case.SC_Case_SS</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
@@ -3843,82 +3392,66 @@
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_GRG_FAQ</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_GRG_InformacionGeneral</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_GRG_Menu</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_GRG_Procedimientos</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_GRG_Productos</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_GRG_Promociones</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_GRG_UbicacionesHorarios</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_SS_Catering</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_SS_FAQ</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_SS_Facturacion</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_SS_Legal</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_SS_Loyalty</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_SS_MKT</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_SS_Productos</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_SS_Promociones</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
         <default>false</default>
-        <recordType>Knowledge__kav.SC_SS_Shacks</recordType>
         <visible>false</visible>
     </recordTypeVisibilities>
     <recordTypeVisibilities>
@@ -3928,22 +3461,18 @@
     </recordTypeVisibilities>
     <servicePresenceStatusAccesses>
         <enabled>false</enabled>
-        <servicePresenceStatus>SC_Available</servicePresenceStatus>
     </servicePresenceStatusAccesses>
     <servicePresenceStatusAccesses>
         <enabled>false</enabled>
-        <servicePresenceStatus>SC_Busy</servicePresenceStatus>
     </servicePresenceStatusAccesses>
     <servicePresenceStatusAccesses>
         <enabled>false</enabled>
-        <servicePresenceStatus>SC_OnBreak</servicePresenceStatus>
     </servicePresenceStatusAccesses>
     <tabVisibilities>
         <tab>Knowledge__kav</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>
-        <tab>LTY_OBJ_TierChange__c</tab>
         <visibility>DefaultOn</visibility>
     </tabVisibilities>
     <tabVisibilities>

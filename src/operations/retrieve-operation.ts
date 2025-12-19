@@ -37,6 +37,8 @@ export type RetrieveInput = {
   forceFullRetrieve?: boolean;
   /** Dry run mode - show what would be retrieved without executing */
   dryRun?: boolean;
+  /** Bypass metadata cache and fetch fresh data */
+  noCache?: boolean;
 };
 
 /**
@@ -113,19 +115,23 @@ export function listMetadataType(
   orgId: string,
   metadataType: string,
   apiVersion: string,
-  excludeManaged: boolean
+  excludeManaged: boolean,
+  noCache: boolean = false
 ): ProfilerMonad<string[]> {
   return new ProfilerMonad(async () => {
     try {
-      // Import cache dynamically
-      const { getMetadataCache } = await import('../core/performance/cache.js');
-      const cache = getMetadataCache();
+      // Try cache first (unless --no-cache flag is set)
+      if (!noCache) {
+        // Import cache dynamically
+        const { getFilesystemMetadataCache } = await import('../core/cache/index.js');
+        const cache = getFilesystemMetadataCache();
 
-      // Try cache first
-      const cached = cache.get<string[]>(orgId, `${metadataType}:excludeManaged=${excludeManaged}`, apiVersion);
+        // Try filesystem cache first
+        const cached = await cache.get<string[]>(orgId, `${metadataType}:excludeManaged=${excludeManaged}`, apiVersion);
 
-      if (cached !== null) {
-        return success(cached);
+        if (cached !== null) {
+          return success(cached);
+        }
       }
 
       // Cache miss - make API call
@@ -133,7 +139,12 @@ export function listMetadataType(
 
       if (!metadata) {
         const emptyResult: string[] = [];
-        cache.set(orgId, `${metadataType}:excludeManaged=${excludeManaged}`, apiVersion, emptyResult);
+        // Store in cache (unless --no-cache flag is set)
+        if (!noCache) {
+          const { getFilesystemMetadataCache } = await import('../core/cache/index.js');
+          const cache = getFilesystemMetadataCache();
+          await cache.set(orgId, `${metadataType}:excludeManaged=${excludeManaged}`, apiVersion, emptyResult);
+        }
         return success(emptyResult);
       }
 
@@ -145,8 +156,12 @@ export function listMetadataType(
         members = members.filter((member) => !member.includes('__') || member.endsWith('__c'));
       }
 
-      // Store in cache
-      cache.set(orgId, `${metadataType}:excludeManaged=${excludeManaged}`, apiVersion, members);
+      // Store in cache (unless --no-cache flag is set)
+      if (!noCache) {
+        const { getFilesystemMetadataCache } = await import('../core/cache/index.js');
+        const cache = getFilesystemMetadataCache();
+        await cache.set(orgId, `${metadataType}:excludeManaged=${excludeManaged}`, apiVersion, members);
+      }
 
       return success(members);
     } catch (error) {
@@ -210,7 +225,7 @@ export function listAllMetadata(input: RetrieveInput, metadataTypes: string[]): 
         rateLimiter.recordCall();
         tracker.recordApiCall();
 
-        const monad = listMetadataType(connection, orgId, type, input.apiVersion, excludeManaged);
+        const monad = listMetadataType(connection, orgId, type, input.apiVersion, excludeManaged, input.noCache ?? false);
         const result = await monad.run();
 
         if (result.isFailure()) {

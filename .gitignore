@@ -69,3 +69,7 @@ node_modules
 
 # Profile merge test files (not tracked)
 test-merge-profiles/
+
+# Announcement drafts (not tracked)
+LINKEDIN_ANNOUNCEMENT.md
+ESLINT_IMPROVEMENTS.md

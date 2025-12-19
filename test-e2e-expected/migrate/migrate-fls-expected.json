@@ -1,0 +1,12 @@
+{
+  "profileName": "Admin",
+  "permissionSetName": "Admin_Migrated",
+  "permissionsMigrated": 0,
+  "permissionTypes": [
+    "fls"
+  ],
+  "dryRun": true,
+  "permissionSetExists": false,
+  "permissions": []
+}
+

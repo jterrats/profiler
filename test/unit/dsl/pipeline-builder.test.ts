@@ -8,10 +8,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/unbound-method */
 
 import type { Org } from '@salesforce/core';
 import { expect } from 'chai';
-import { pipeline, type PipelineContext } from '../../../../src/core/dsl/pipeline-builder.js';
+import { pipeline, type PipelineContext } from '../../../src/core/dsl/pipeline-builder.js';
 
 describe('Pipeline DSL - Happy Path', () => {
   // Mock org and context for testing
