@@ -24,10 +24,13 @@ Documentation for plugin users.
 
 Documentation for contributors and developers.
 
+- **[Development Guide](development/DEVELOPMENT.md)** - Complete development guide 🛠️
+- **[Code Standards](development/CODE_STANDARDS.md)** - Coding standards and best practices 💻
 - **[Contributing](development/contributing.md)** - How to contribute to the project
 - **[Testing & Publishing](development/testing-and-publishing.md)** - Local testing and npm publishing
 - **[Push to GitHub](development/push-to-github.md)** - GitHub repository setup
 - **[GitHub Actions](development/github-actions.md)** - CI/CD workflow documentation
+- **[Branch Protection](development/BRANCH_PROTECTION.md)** - Branch protection setup guide
 
 ### 🔧 Technical
 
