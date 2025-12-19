@@ -54,7 +54,7 @@ describe('profiler retrieve', () => {
   it('has from-project flag with correct char', () => {
     /* eslint-disable @typescript-eslint/no-unsafe-member-access */
     expect(ProfilerRetrieve.flags['from-project']).to.exist;
-    expect(ProfilerRetrieve.flags['from-project'].char).to.equal('f');
+    expect(ProfilerRetrieve.flags['from-project'].char).to.equal('p');
     /* eslint-enable @typescript-eslint/no-unsafe-member-access */
   });
 

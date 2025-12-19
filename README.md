@@ -171,7 +171,7 @@ Compare local Profile metadata with the version in Salesforce org.
 ```
 USAGE
   $ sf profiler compare [--json] [--flags-dir <value>] [-o <value>] [-n <value>] [--api-version <value>]
-    [--exclude-managed] [--sources <value>] [--output-file <value>] [--output-format table|json|html] [--max-profiles
+    [--exclude-managed] [--sources <value>] [-O|--output-file <value>] [-F|--output-format table|json|html] [--max-profiles
     <value>] [--max-api-calls <value>] [--max-memory <value>] [--operation-timeout <value>] [--concurrent-workers
     <value>] [--verbose-performance]
 
@@ -185,8 +185,8 @@ FLAGS
       --max-memory=<value>          Maximum memory usage in MB
       --max-profiles=<value>        Maximum number of profiles to process in a single operation
       --operation-timeout=<value>   Operation timeout in milliseconds
-      --output-file=<value>         Export comparison results to a file.
-      --output-format=<option>      [default: table] Output format for comparison results (table, json, html).
+      -O, --output-file=<value>     Export comparison results to a file.
+      -F, --output-format=<option>  [default: table] Output format for comparison results (table, json, html).
                                     <options: table|json|html>
       --sources=<value>             Compare profiles across multiple Salesforce environments (comma-separated org
                                     aliases).
@@ -230,12 +230,12 @@ EXAMPLES
 
   Export comparison matrix to HTML file:
 
-    $ sf profiler compare --name "Admin" --sources "dev,qa,prod" --output-format html --output-file \
+    $ sf profiler compare --name "Admin" --sources "dev,qa,prod" -F html -O \
       "./comparison-report.html"
 
   Get comparison results as JSON:
 
-    $ sf profiler compare --name "Admin" --sources "dev,qa,prod" --output-format json
+    $ sf profiler compare --name "Admin" --sources "dev,qa,prod" -F json
 
 FLAG DESCRIPTIONS
   -n, --name=<value>  The name of a specific profile or comma-separated list of profiles to compare.
@@ -275,12 +275,12 @@ FLAG DESCRIPTIONS
 
     Overrides the default timeout of 300000ms (5 minutes).
 
-  --output-file=<value>  Export comparison results to a file.
+  -O, --output-file=<value>  Export comparison results to a file.
 
     Specify a file path to export the comparison matrix results. The output format is determined by the --output-format
     flag. Example: "./comparison-report.html". Useful for documentation, reports, or sharing results with team members.
 
-  --output-format=table|json|html  Output format for comparison results (table, json, html).
+  -F, --output-format=table|json|html  Output format for comparison results (table, json, html).
 
     Choose the output format for displaying or exporting comparison matrices. Options: "table" (ASCII table for
     terminal), "json" (machine-readable structured data), "html" (web-friendly formatted output with styling). Default
@@ -393,7 +393,7 @@ USAGE
     <value>] [--operation-timeout <value>] [--concurrent-workers <value>] [--verbose-performance]
 
 FLAGS
-  -f, --from-project                Use local project metadata to build the package.xml instead of listing from org.
+  -p, --from-project                Use local project metadata to build the package.xml instead of listing from org.
   -n, --name=<value>                The name of a specific profile or comma-separated list of profiles to retrieve.
   -o, --target-org=<value>          (required) The target org to retrieve profiles from.
       --all-fields                  Include Field Level Security (FLS) in the retrieved profiles.
@@ -479,7 +479,7 @@ EXAMPLES
     $ sf profiler retrieve --target-org myOrg --name Admin --dry-run
 
 FLAG DESCRIPTIONS
-  -f, --from-project  Use local project metadata to build the package.xml instead of listing from org.
+  -p, --from-project  Use local project metadata to build the package.xml instead of listing from org.
 
     When enabled, reads metadata component names from the local project directories (classes, objects, flows, etc.) to
     build the package.xml, instead of querying the org. This is faster and useful when you want to retrieve only what

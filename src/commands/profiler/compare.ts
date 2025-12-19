@@ -69,10 +69,12 @@ export default class ProfilerCompare extends SfCommand<ProfilerCompareResult> {
       description: messages.getMessage('flags.sources.description'),
     }),
     'output-file': Flags.string({
+      char: 'O',
       summary: messages.getMessage('flags.output-file.summary'),
       description: messages.getMessage('flags.output-file.description'),
     }),
     'output-format': Flags.string({
+      char: 'F',
       summary: messages.getMessage('flags.output-format.summary'),
       description: messages.getMessage('flags.output-format.description'),
       options: ['table', 'json', 'html'],

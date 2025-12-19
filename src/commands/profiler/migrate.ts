@@ -78,6 +78,7 @@ export default class ProfilerMigrate extends SfCommand<ProfilerMigrateResult> {
       default: 'table',
     }),
     'output-file': Flags.string({
+      char: 'O',
       summary: messages.getMessage('flags.output-file.summary'),
       description: messages.getMessage('flags.output-file.description'),
     }),

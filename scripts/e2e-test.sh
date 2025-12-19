@@ -772,7 +772,7 @@ if [ ! -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
     sf profiler retrieve --target-org "$TARGET_ORG" --name "Admin" > /dev/null 2>&1
 fi
 
-sf profiler retrieve --target-org "$TARGET_ORG" --from-project 2>&1 | grep -v "MissingBundleError" || true
+sf profiler retrieve --target-org "$TARGET_ORG" -p 2>&1 | grep -v "MissingBundleError" || true
 
 if [ -d "force-app/main/default/profiles" ]; then
     log_success "Retrieve with --from-project completed"

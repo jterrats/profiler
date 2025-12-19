@@ -47,7 +47,7 @@ export default class ProfilerRetrieve extends SfCommand<ProfilerRetrieveResult> 
       description: messages.getMessage('flags.api-version.description'),
     }),
     'from-project': Flags.boolean({
-      char: 'f',
+      char: 'p',
       summary: messages.getMessage('flags.from-project.summary'),
       description: messages.getMessage('flags.from-project.description'),
       default: false,
