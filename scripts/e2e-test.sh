@@ -4,7 +4,8 @@
 # This script creates a local SF project, retrieves profiles, and validates results
 # without committing anything to git.
 
-set -e  # Exit on any error
+# Don't exit immediately on error - we want to continue and generate report
+set +e  # Continue on error to generate full report
 
 # Colors for output
 RED='\033[0;31m'
@@ -13,28 +14,197 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Function to print colored messages
-log_info() {
-    echo -e "${BLUE}ℹ${NC} $1"
-}
-
-log_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-log_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}✗${NC} $1"
-}
-
 # Get script directory (where this script is located)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PLUGIN_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 TEST_PROJECT_DIR="$PLUGIN_ROOT/test-project"
 EXPECTED_FILES_DIR="$PLUGIN_ROOT/test-e2e-expected"
+
+# Logging setup
+LOG_DIR="$PLUGIN_ROOT/test-logs"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+LOG_FILE="$LOG_DIR/e2e-test_${TIMESTAMP}.log"
+REPORT_FILE="$LOG_DIR/e2e-report_${TIMESTAMP}.txt"
+mkdir -p "$LOG_DIR"
+
+# Test tracking
+TOTAL_TESTS=0
+PASSED_TESTS=0
+FAILED_TESTS=0
+FAILED_TEST_LIST=()
+CURRENT_TEST=""
+
+# Function to get timestamp
+get_timestamp() {
+    date '+%Y-%m-%d %H:%M:%S'
+}
+
+# Function to log to both console and file
+log_to_file() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(get_timestamp)
+    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
+}
+
+# Function to print colored messages (also logs to file)
+log_info() {
+    echo -e "${BLUE}ℹ${NC} $1" | tee -a "$LOG_FILE"
+    log_to_file "INFO" "$1"
+}
+
+log_success() {
+    echo -e "${GREEN}✓${NC} $1" | tee -a "$LOG_FILE"
+    log_to_file "SUCCESS" "$1"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+}
+
+log_warning() {
+    echo -e "${YELLOW}⚠${NC} $1" | tee -a "$LOG_FILE"
+    log_to_file "WARNING" "$1"
+}
+
+log_error() {
+    echo -e "${RED}✗${NC} $1" | tee -a "$LOG_FILE"
+    log_to_file "ERROR" "$1"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+    if [ -n "$CURRENT_TEST" ]; then
+        FAILED_TEST_LIST+=("$CURRENT_TEST")
+    fi
+}
+
+# Function to detect and use appropriate timeout command
+# Works on macOS, Linux, and Windows (Git Bash/WSL)
+get_timeout_command() {
+    # Check for GNU timeout (Linux, or macOS with coreutils)
+    if command -v timeout >/dev/null 2>&1; then
+        echo "timeout"
+        return 0
+    fi
+
+    # Check for gtimeout (macOS with coreutils via Homebrew)
+    if command -v gtimeout >/dev/null 2>&1; then
+        echo "gtimeout"
+        return 0
+    fi
+
+    # Fallback: use a simple wrapper that works everywhere
+    # This will just run the command without timeout (not ideal, but works)
+    echo "no_timeout"
+    return 0
+}
+
+# Function to run command with timeout and logging
+# Compatible with macOS, Linux, and Windows
+run_with_timeout() {
+    local timeout_seconds="${1:-300}"  # Default 5 minutes
+    local test_name="$2"
+    shift 2
+    local cmd="$@"
+
+    CURRENT_TEST="$test_name"
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+    log_info "Starting: $test_name"
+    log_to_file "COMMAND" "Executing: $cmd"
+    log_to_file "COMMAND" "Timeout: ${timeout_seconds}s"
+
+    local start_time=$(date +%s)
+    local output_file=$(mktemp)
+    local exit_code=0
+
+    # Run command with timeout, capturing both stdout and stderr
+    # Use cross-platform timeout detection
+    TIMEOUT_CMD=$(get_timeout_command)
+    if [ "$TIMEOUT_CMD" = "no_timeout" ]; then
+        # Fallback: run without timeout (works on all systems)
+        log_warning "Timeout command not available, running without timeout"
+        if bash -c "$cmd" > "$output_file" 2>&1; then
+            exit_code=0
+        else
+            exit_code=$?
+        fi
+    else
+        # Use timeout command (Linux/macOS with coreutils)
+        if $TIMEOUT_CMD "$timeout_seconds" bash -c "$cmd" > "$output_file" 2>&1; then
+            exit_code=0
+        else
+            exit_code=$?
+            if [ $exit_code -eq 124 ]; then
+                log_error "Test '$test_name' TIMED OUT after ${timeout_seconds}s"
+                log_to_file "TIMEOUT" "Command exceeded ${timeout_seconds}s timeout"
+                echo "=== COMMAND OUTPUT (last 100 lines) ===" >> "$LOG_FILE"
+                tail -100 "$output_file" >> "$LOG_FILE"
+                echo "=== END COMMAND OUTPUT ===" >> "$LOG_FILE"
+                rm -f "$output_file"
+                return 124
+            fi
+        fi
+    fi
+
+    local end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+
+    log_to_file "DURATION" "Test '$test_name' completed in ${duration}s (exit code: $exit_code)"
+
+    # Log output if command failed
+    if [ $exit_code -ne 0 ]; then
+        log_error "Test '$test_name' FAILED (exit code: $exit_code)"
+        echo "=== COMMAND OUTPUT ===" >> "$LOG_FILE"
+        cat "$output_file" >> "$LOG_FILE"
+        echo "=== END COMMAND OUTPUT ===" >> "$LOG_FILE"
+    fi
+
+    # Return output for processing
+    cat "$output_file"
+    rm -f "$output_file"
+    return $exit_code
+}
+
+# Function to generate final report
+generate_report() {
+    local report_file="$REPORT_FILE"
+
+    {
+        echo "═══════════════════════════════════════════════════════════════"
+        echo "E2E Test Report - $(get_timestamp)"
+        echo "═══════════════════════════════════════════════════════════════"
+        echo ""
+        echo "Summary:"
+        echo "  Total Tests: $TOTAL_TESTS"
+        echo "  Passed: $PASSED_TESTS"
+        echo "  Failed: $FAILED_TESTS"
+        echo "  Success Rate: $(( PASSED_TESTS * 100 / TOTAL_TESTS ))%"
+        echo ""
+
+        if [ ${#FAILED_TEST_LIST[@]} -gt 0 ]; then
+            echo "Failed Tests:"
+            for test in "${FAILED_TEST_LIST[@]}"; do
+                echo "  ✗ $test"
+            done
+            echo ""
+        fi
+
+        echo "Log File: $LOG_FILE"
+        echo "Report File: $report_file"
+        echo ""
+        echo "═══════════════════════════════════════════════════════════════"
+    } | tee "$report_file"
+
+    log_info "Report generated: $report_file"
+}
+
+# Initialize log file
+{
+    echo "═══════════════════════════════════════════════════════════════"
+    echo "E2E Test Run Started - $(get_timestamp)"
+    echo "═══════════════════════════════════════════════════════════════"
+    echo "Log File: $LOG_FILE"
+    echo "Report File: $REPORT_FILE"
+    echo "Test Project: $TEST_PROJECT_DIR"
+    echo "═══════════════════════════════════════════════════════════════"
+    echo ""
+} > "$LOG_FILE"
 
 # Helper function to validate JSON structure against expected file
 validate_json_structure() {
@@ -183,19 +353,33 @@ validate_yaml_structure() {
     fi
 }
 
-# Cleanup function for error handling
-cleanup_on_error() {
-    log_error "Test failed! Cleaning up..."
-    if [ -d "$TEST_PROJECT_DIR" ]; then
-        cd "$PLUGIN_ROOT" 2>/dev/null || cd "$HOME"
-        rm -rf "$TEST_PROJECT_DIR"
-        log_info "Test project removed"
+# Cleanup function for error handling (only on unexpected exits)
+cleanup_on_exit() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ] && [ $exit_code -ne 124 ]; then
+        log_error "Script exited unexpectedly (code: $exit_code). Generating report..."
+        generate_report
+        if [ -d "$TEST_PROJECT_DIR" ]; then
+            cd "$PLUGIN_ROOT" 2>/dev/null || cd "$HOME"
+            rm -rf "$TEST_PROJECT_DIR"
+            log_info "Test project removed"
+        fi
+        log_info "Log file preserved: $LOG_FILE"
+        log_info "Report file: $REPORT_FILE"
     fi
-    exit 1
 }
 
-# Set trap to cleanup on error
-trap cleanup_on_error ERR
+# Set trap to cleanup on exit
+trap cleanup_on_exit EXIT
+
+# Function to handle test failures gracefully (continue instead of exit)
+handle_test_failure() {
+    local test_name="$1"
+    local error_msg="$2"
+    log_error "$test_name: $error_msg"
+    log_to_file "FAILURE" "$test_name: $error_msg"
+    # Don't exit, continue with next test
+}
 
 # Check if sf CLI is installed
 if ! command -v sf &> /dev/null; then
@@ -1056,20 +1240,67 @@ log_info "Test 14: Output format JSON"
 
 log_info "Testing JSON output format..."
 JSON_COMPARE_FILE="$TEST_PROJECT_DIR/compare-output.json"
-if sf profiler compare --target-org "$TARGET_ORG" --name Admin --output-format json --output-file "$JSON_COMPARE_FILE" 2>&1; then
+
+# Ensure directory exists
+mkdir -p "$(dirname "$JSON_COMPARE_FILE")"
+
+# Run command with timeout and capture full output
+CURRENT_TEST="Test 14: JSON output format"
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+log_info "Executing: sf profiler compare --target-org \"$TARGET_ORG\" --name Admin --output-format json --output-file \"$JSON_COMPARE_FILE\""
+log_to_file "COMMAND" "Test 14: sf profiler compare --target-org \"$TARGET_ORG\" --name Admin --output-format json --output-file \"$JSON_COMPARE_FILE\""
+
+TEST14_START=$(date +%s)
+TIMEOUT_CMD=$(get_timeout_command)
+if [ "$TIMEOUT_CMD" = "no_timeout" ]; then
+    # Fallback: run without timeout (works on all systems, including macOS without coreutils)
+    TEST14_OUTPUT=$(sf profiler compare --target-org "$TARGET_ORG" --name Admin --output-format json --output-file "$JSON_COMPARE_FILE" 2>&1)
+    TEST14_EXIT=$?
+else
+    # Use timeout command (Linux/macOS with coreutils)
+    TEST14_OUTPUT=$($TIMEOUT_CMD 120 bash -c "sf profiler compare --target-org \"$TARGET_ORG\" --name Admin --output-format json --output-file \"$JSON_COMPARE_FILE\" 2>&1" 2>&1)
+    TEST14_EXIT=$?
+    # timeout returns 124 on timeout
+    if [ $TEST14_EXIT -eq 124 ]; then
+        TEST14_EXIT=124
+    fi
+fi
+TEST14_END=$(date +%s)
+TEST14_DURATION=$((TEST14_END - TEST14_START))
+
+log_to_file "DURATION" "Test 14 completed in ${TEST14_DURATION}s (exit code: $TEST14_EXIT)"
+
+if [ $TEST14_EXIT -eq 124 ]; then
+    log_error "Test 14 failed: Command TIMED OUT after 120s"
+    log_to_file "TIMEOUT" "Test 14 command exceeded 120s timeout"
+    log_to_file "OUTPUT" "Last output: ${TEST14_OUTPUT: -500}"  # Last 500 chars
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+    FAILED_TEST_LIST+=("Test 14: JSON output format (TIMEOUT)")
+elif [ $TEST14_EXIT -ne 0 ]; then
+    log_error "Test 14 failed: Compare command returned error (exit code: $TEST14_EXIT)"
+    log_to_file "ERROR" "Command failed with exit code: $TEST14_EXIT"
+    log_to_file "OUTPUT" "Command output: $TEST14_OUTPUT"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+    FAILED_TEST_LIST+=("Test 14: JSON output format (COMMAND_ERROR)")
+else
     if [ -f "$JSON_COMPARE_FILE" ]; then
         validate_json_structure "$JSON_COMPARE_FILE" "$EXPECTED_FILES_DIR/compare/compare-expected.json" "Test 14"
         log_success "✓ JSON output format validated"
+        log_success "Test 14 passed: JSON output format works"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
     else
         log_error "Test 14 failed: JSON file not created"
-        exit 1
+        log_to_file "DEBUG" "Command output: $TEST14_OUTPUT"
+        log_to_file "DEBUG" "Expected file path: $JSON_COMPARE_FILE"
+        log_to_file "DEBUG" "Directory exists: $([ -d "$(dirname "$JSON_COMPARE_FILE")" ] && echo 'yes' || echo 'no')"
+        log_to_file "DEBUG" "Directory contents: $(ls -la "$(dirname "$JSON_COMPARE_FILE")" 2>&1 || echo 'Directory not found')"
+        log_to_file "DEBUG" "Current directory: $(pwd)"
+        log_to_file "DEBUG" "File system check: $(test -f "$JSON_COMPARE_FILE" && echo 'file exists' || echo 'file does not exist')"
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+        FAILED_TEST_LIST+=("Test 14: JSON output format (FILE_NOT_CREATED)")
     fi
-else
-    log_error "Test 14 failed: Compare command with JSON format returned error"
-    exit 1
 fi
-
-log_success "Test 14 passed: JSON output format works"
 log_info ""
 
 ########################################
@@ -1743,8 +1974,11 @@ if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
 
     # Test 20j: Error handling - invalid permission type
     log_info "Test 20j: Error handling - invalid permission type"
-    INVALID_TYPE_OUTPUT=$(sf profiler migrate --from Admin --section invalidtype --dry-run 2>&1 || true)
+    # Capture output and exit code correctly (don't use || true)
+    set +e  # Temporarily disable exit on error to capture exit code
+    INVALID_TYPE_OUTPUT=$(sf profiler migrate --from Admin --section invalidtype --dry-run 2>&1)
     EXIT_CODE=$?
+    set -e  # Re-enable exit on error
 
     if [ $EXIT_CODE -ne 0 ]; then
         if echo "$INVALID_TYPE_OUTPUT" | grep -qiE "(invalid|valid types|Invalid permission)"; then
@@ -1753,23 +1987,28 @@ if [ -f "force-app/main/default/profiles/Admin.profile-meta.xml" ]; then
             log_warning "Test 20j: Error message may need improvement"
         fi
     else
-        log_error "Test 20j failed: Invalid permission type should fail"
+        log_error "Test 20j failed: Invalid permission type should fail (exit code: $EXIT_CODE)"
+        log_error "Output: $INVALID_TYPE_OUTPUT"
         exit 1
     fi
 
     # Test 20k: Error handling - non-existent profile
     log_info "Test 20k: Error handling - non-existent profile"
-    NONEXISTENT_OUTPUT=$(sf profiler migrate --from "ProfileThatDoesNotExist12345" --section fls --dry-run 2>&1 || true)
+    # Capture output and exit code correctly (don't use || true)
+    set +e  # Temporarily disable exit on error to capture exit code
+    NONEXISTENT_OUTPUT=$(sf profiler migrate --from "ProfileThatDoesNotExist12345" --section fls --dry-run 2>&1)
     EXIT_CODE=$?
+    set -e  # Re-enable exit on error
 
     if [ $EXIT_CODE -ne 0 ]; then
-        if echo "$NONEXISTENT_OUTPUT" | grep -qiE "(not found|doesn't exist|Profile.*not found)"; then
+        if echo "$NONEXISTENT_OUTPUT" | grep -qiE "(not found|doesn't exist|Profile.*not found|PROFILE_NOT_FOUND)"; then
             log_success "Test 20k passed: Non-existent profile shows clear error"
         else
             log_warning "Test 20k: Error message may need improvement"
         fi
     else
-        log_error "Test 20k failed: Non-existent profile should fail"
+        log_error "Test 20k failed: Non-existent profile should fail (exit code: $EXIT_CODE)"
+        log_error "Output: $NONEXISTENT_OUTPUT"
         exit 1
     fi
 
@@ -2061,22 +2300,48 @@ log_info "  ✓ Invalid org username (auth error)"
 log_info "  ✓ Invalid permission type (migration command)"
 log_info ""
 
+# Generate final report
+log_info ""
+log_info "═══════════════════════════════════════════════════════════════"
+log_info "Generating final test report..."
+log_info "═══════════════════════════════════════════════════════════════"
+generate_report
+
 # Cleanup test project
 log_info "Cleaning up test project..."
 cd "$PLUGIN_ROOT"
 rm -rf "$TEST_PROJECT_DIR"
 log_success "Test project cleaned up"
 log_info ""
-log_success "All E2E tests completed successfully!"
-log_info ""
-log_info "Test Summary:"
-log_info "  ✓ 12 core tests (retrieve, compare, performance, incremental)"
-log_info "  ✓ 3 feature tests (multi-source, JSON, HTML export)"
-log_info "  ✓ 1 error handling test (4 error scenarios)"
-log_info "  ✓ 1 validation test (5 validation scenarios)"
-log_info "  ✓ 1 merge test (5 merge scenarios: dry-run, local-wins, abort-on-conflict, interactive, help)"
-log_info "  ✓ 1 progress indicators test (9 progress scenarios)"
-log_info "  ✓ 1 migration test (13 migration scenarios: dry-run, formats, error handling)"
-log_info "  ✓ 1 cache test (4 cache scenarios: clear-cache, no-cache, effectiveness, bypass)"
-log_info "  Total: 21 E2E tests"
+
+# Final summary
+if [ $FAILED_TESTS -eq 0 ]; then
+    log_success "All E2E tests completed successfully!"
+    log_info ""
+    log_info "Test Summary:"
+    log_info "  ✓ 12 core tests (retrieve, compare, performance, incremental)"
+    log_info "  ✓ 3 feature tests (multi-source, JSON, HTML export)"
+    log_info "  ✓ 1 error handling test (4 error scenarios)"
+    log_info "  ✓ 1 validation test (5 validation scenarios)"
+    log_info "  ✓ 1 merge test (5 merge scenarios: dry-run, local-wins, abort-on-conflict, interactive, help)"
+    log_info "  ✓ 1 progress indicators test (9 progress scenarios)"
+    log_info "  ✓ 1 migration test (13 migration scenarios: dry-run, formats, error handling)"
+    log_info "  ✓ 1 cache test (4 cache scenarios: clear-cache, no-cache, effectiveness, bypass)"
+    log_info "  Total: 21 E2E tests"
+    log_info ""
+    log_info "Log file: $LOG_FILE"
+    log_info "Report file: $REPORT_FILE"
+    exit 0
+else
+    log_error "Some tests failed! Check the report for details."
+    log_info ""
+    log_info "Failed tests: ${#FAILED_TEST_LIST[@]}"
+    for test in "${FAILED_TEST_LIST[@]}"; do
+        log_error "  ✗ $test"
+    done
+    log_info ""
+    log_info "Log file: $LOG_FILE"
+    log_info "Report file: $REPORT_FILE"
+    exit 1
+fi
 

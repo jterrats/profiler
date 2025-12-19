@@ -1,0 +1,690 @@
+═══════════════════════════════════════════════════════════════
+E2E Test Run Started - 2025-12-18 00:38:04
+═══════════════════════════════════════════════════════════════
+Log File: /Users/jterrats/dev/profiler/test-logs/e2e-test_20251218_003804.log
+Report File: /Users/jterrats/dev/profiler/test-logs/e2e-report_20251218_003804.txt
+Test Project: /Users/jterrats/dev/profiler/test-project
+═══════════════════════════════════════════════════════════════
+
+[0;32m✓[0m Salesforce CLI found
+[2025-12-18 00:38:04] [SUCCESS] Salesforce CLI found
+[0;32m✓[0m Plugin @jterrats/profiler is available
+[2025-12-18 00:38:08] [SUCCESS] Plugin @jterrats/profiler is available
+[0;34mℹ[0m Fetching list of authorized orgs...
+[2025-12-18 00:38:08] [INFO] Fetching list of authorized orgs...
+[0;32m✓[0m Using org: jterrats@salesforce.com.grg.prod.devfull
+[2025-12-18 00:38:14] [SUCCESS] Using org: jterrats@salesforce.com.grg.prod.devfull
+[0;34mℹ[0m Removing existing test project...
+[2025-12-18 00:38:14] [INFO] Removing existing test project...
+[0;34mℹ[0m Creating SF project in: /Users/jterrats/dev/profiler/test-project
+[2025-12-18 00:38:14] [INFO] Creating SF project in: /Users/jterrats/dev/profiler/test-project
+[0;34mℹ[0m Generating Salesforce project...
+[2025-12-18 00:38:14] [INFO] Generating Salesforce project...
+[0;32m✓[0m Project created
+[2025-12-18 00:38:17] [SUCCESS] Project created
+[0;34mℹ[0m Navigating to test project...
+[2025-12-18 00:38:17] [INFO] Navigating to test project...
+[0;32m✓[0m Working directory: /Users/jterrats/dev/profiler/test-project
+[2025-12-18 00:38:17] [SUCCESS] Working directory: /Users/jterrats/dev/profiler/test-project
+[0;34mℹ[0m Initializing git repository...
+[2025-12-18 00:38:17] [INFO] Initializing git repository...
+[0;32m✓[0m Git repository initialized
+[2025-12-18 00:38:17] [SUCCESS] Git repository initialized
+[0;34mℹ[0m Creating dummy metadata files for safety validation...
+[2025-12-18 00:38:17] [INFO] Creating dummy metadata files for safety validation...
+[0;32m✓[0m Dummy metadata files created and committed
+[2025-12-18 00:38:17] [SUCCESS] Dummy metadata files created and committed
+[0;34mℹ[0m 
+[2025-12-18 00:38:17] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:38:17] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Test 1: Retrieve all profiles (basic)
+[2025-12-18 00:38:17] [INFO] Test 1: Retrieve all profiles (basic)
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:38:17] [INFO] ═══════════════════════════════════════════
+[0;32m✓[0m Profiles retrieved: 33
+[2025-12-18 00:39:53] [SUCCESS] Profiles retrieved: 33
+[0;34mℹ[0m Checking git status (should ONLY show profiles)...
+[2025-12-18 00:39:53] [INFO] Checking git status (should ONLY show profiles)...
+[0;32m✓[0m ✓ No other metadata modified (safe retrieve confirmed)
+[2025-12-18 00:39:53] [SUCCESS] ✓ No other metadata modified (safe retrieve confirmed)
+[0;34mℹ[0m Verifying dummy metadata integrity...
+[2025-12-18 00:39:53] [INFO] Verifying dummy metadata integrity...
+[0;32m✓[0m ✓ DummyTest.cls unchanged
+[2025-12-18 00:39:53] [SUCCESS] ✓ DummyTest.cls unchanged
+[0;32m✓[0m ✓ DummyObject__c unchanged
+[2025-12-18 00:39:53] [SUCCESS] ✓ DummyObject__c unchanged
+[0;32m✓[0m 🛡️  SAFETY VALIDATED: Only profiles modified, other metadata untouched
+[2025-12-18 00:39:53] [SUCCESS] 🛡️  SAFETY VALIDATED: Only profiles modified, other metadata untouched
+[0;34mℹ[0m 
+[2025-12-18 00:39:53] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:39:53] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Test 2: Retrieve specific profile (Admin)
+[2025-12-18 00:39:53] [INFO] Test 2: Retrieve specific profile (Admin)
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:39:53] [INFO] ═══════════════════════════════════════════
+[0;32m✓[0m Admin profile retrieved successfully
+[2025-12-18 00:41:38] [SUCCESS] Admin profile retrieved successfully
+[0;34mℹ[0m Validating profile content...
+[2025-12-18 00:41:38] [INFO] Validating profile content...
+[0;34mℹ[0m   Object Permissions: 250
+[2025-12-18 00:41:38] [INFO]   Object Permissions: 250
+[0;34mℹ[0m   Layout Assignments: 172
+[2025-12-18 00:41:38] [INFO]   Layout Assignments: 172
+[0;34mℹ[0m   Apex Class Accesses: 122
+[2025-12-18 00:41:38] [INFO]   Apex Class Accesses: 122
+[0;34mℹ[0m   Apex Page Accesses: 28
+[2025-12-18 00:41:38] [INFO]   Apex Page Accesses: 28
+[0;34mℹ[0m   Tab Visibilities: 194
+[2025-12-18 00:41:38] [INFO]   Tab Visibilities: 194
+[0;32m✓[0m Profile contains 766 metadata elements
+[2025-12-18 00:41:38] [SUCCESS] Profile contains 766 metadata elements
+[0;34mℹ[0m Verifying metadata safety...
+[2025-12-18 00:41:38] [INFO] Verifying metadata safety...
+[0;32m✓[0m ✓ DummyTest.cls unchanged
+[2025-12-18 00:41:38] [SUCCESS] ✓ DummyTest.cls unchanged
+[0;34mℹ[0m Total profiles retrieved: 1
+[2025-12-18 00:41:38] [INFO] Total profiles retrieved: 1
+[0;34mℹ[0m 
+[2025-12-18 00:41:38] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:41:38] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Test 2.5: Retrieve with --all-fields (keep FLS)
+[2025-12-18 00:41:38] [INFO] Test 2.5: Retrieve with --all-fields (keep FLS)
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:41:38] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Step 2.5a: Retrieve WITHOUT --all-fields (default)...
+[2025-12-18 00:41:38] [INFO] Step 2.5a: Retrieve WITHOUT --all-fields (default)...
+[0;34mℹ[0m   Field permissions WITHOUT --all-fields: 00
+[2025-12-18 00:42:41] [INFO]   Field permissions WITHOUT --all-fields: 00
+[0;32m✓[0m Field-level security removed (as expected)
+[2025-12-18 00:42:41] [SUCCESS] Field-level security removed (as expected)
+[0;34mℹ[0m Step 2.5b: Retrieve WITH --all-fields...
+[2025-12-18 00:42:41] [INFO] Step 2.5b: Retrieve WITH --all-fields...
+[0;34mℹ[0m   Field permissions WITH --all-fields: 1438
+[2025-12-18 00:43:33] [INFO]   Field permissions WITH --all-fields: 1438
+[0;32m✓[0m Field-level security preserved: 1438 field permissions
+[2025-12-18 00:43:33] [SUCCESS] Field-level security preserved: 1438 field permissions
+[0;32m✓[0m ✓ DummyTest.cls unchanged
+[2025-12-18 00:43:33] [SUCCESS] ✓ DummyTest.cls unchanged
+[0;34mℹ[0m 
+[2025-12-18 00:43:33] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:43:33] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Test 3: Retrieve excluding managed packages
+[2025-12-18 00:43:33] [INFO] Test 3: Retrieve excluding managed packages
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:43:33] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Step 3a: Retrieving without --exclude-managed (baseline)...
+[2025-12-18 00:43:33] [INFO] Step 3a: Retrieving without --exclude-managed (baseline)...
+[0;34mℹ[0m   Baseline profile: 5628 lines,        0 unique managed namespaces
+[2025-12-18 00:45:00] [INFO]   Baseline profile: 5628 lines,        0 unique managed namespaces
+[0;34mℹ[0m Step 3b: Retrieving with --exclude-managed...
+[2025-12-18 00:45:00] [INFO] Step 3b: Retrieving with --exclude-managed...
+[0;34mℹ[0m No managed packages to exclude (or none found)
+[2025-12-18 00:46:03] [INFO] No managed packages to exclude (or none found)
+[0;32m✓[0m Profile retrieved with --exclude-managed flag
+[2025-12-18 00:46:03] [SUCCESS] Profile retrieved with --exclude-managed flag
+[0;34mℹ[0m   Managed Layouts in profile:        0
+[2025-12-18 00:46:03] [INFO]   Managed Layouts in profile:        0
+[0;34mℹ[0m   Managed Classes in profile:        0
+[2025-12-18 00:46:03] [INFO]   Managed Classes in profile:        0
+[0;34mℹ[0m   Managed Objects in profile:        0
+[2025-12-18 00:46:03] [INFO]   Managed Objects in profile:        0
+[0;32m✓[0m No managed package components in profile (excellent!)
+[2025-12-18 00:46:03] [SUCCESS] No managed package components in profile (excellent!)
+[0;32m✓[0m Profile still contains 249 object permissions (not empty)
+[2025-12-18 00:46:03] [SUCCESS] Profile still contains 249 object permissions (not empty)
+[0;32m✓[0m ✓ DummyTest.cls unchanged
+[2025-12-18 00:46:03] [SUCCESS] ✓ DummyTest.cls unchanged
+[0;34mℹ[0m 
+[2025-12-18 00:46:03] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:46:03] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Test 4: Retrieve using --from-project
+[2025-12-18 00:46:03] [INFO] Test 4: Retrieve using --from-project
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:46:03] [INFO] ═══════════════════════════════════════════
+[0;32m✓[0m Retrieve with --from-project completed
+[2025-12-18 00:47:12] [SUCCESS] Retrieve with --from-project completed
+[0;32m✓[0m ✓ DummyTest.cls unchanged
+[2025-12-18 00:47:12] [SUCCESS] ✓ DummyTest.cls unchanged
+[0;34mℹ[0m 
+[2025-12-18 00:47:12] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:47:12] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Test 5: Performance flags (--verbose-performance)
+[2025-12-18 00:47:12] [INFO] Test 5: Performance flags (--verbose-performance)
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:47:12] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Performance metrics may not show for fast operations
+[2025-12-18 00:48:35] [INFO] Performance metrics may not show for fast operations
+[0;32m✓[0m Profile retrieved successfully with --verbose-performance
+[2025-12-18 00:48:35] [SUCCESS] Profile retrieved successfully with --verbose-performance
+[0;32m✓[0m ✓ DummyTest.cls unchanged
+[2025-12-18 00:48:35] [SUCCESS] ✓ DummyTest.cls unchanged
+[0;34mℹ[0m 
+[2025-12-18 00:48:35] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:48:35] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Test 6: Custom performance limits
+[2025-12-18 00:48:35] [INFO] Test 6: Custom performance limits
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:48:35] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Step 6a: Testing --max-profiles flag...
+[2025-12-18 00:48:35] [INFO] Step 6a: Testing --max-profiles flag...
+[0;34mℹ[0m No warning shown (may be within default limits)
+[2025-12-18 00:49:26] [INFO] No warning shown (may be within default limits)
+[0;32m✓[0m Profile retrieved with custom --max-profiles
+[2025-12-18 00:49:26] [SUCCESS] Profile retrieved with custom --max-profiles
+[0;32m✓[0m ✓ DummyTest.cls unchanged
+[2025-12-18 00:49:26] [SUCCESS] ✓ DummyTest.cls unchanged
+[0;34mℹ[0m Step 6b: Testing --max-api-calls flag...
+[2025-12-18 00:49:26] [INFO] Step 6b: Testing --max-api-calls flag...
+[0;34mℹ[0m No API warning shown (may be within default limits)
+[2025-12-18 00:50:20] [INFO] No API warning shown (may be within default limits)
+[0;32m✓[0m Profile retrieved with custom --max-api-calls
+[2025-12-18 00:50:20] [SUCCESS] Profile retrieved with custom --max-api-calls
+[0;32m✓[0m ✓ DummyTest.cls unchanged
+[2025-12-18 00:50:20] [SUCCESS] ✓ DummyTest.cls unchanged
+[0;34mℹ[0m 
+[2025-12-18 00:50:20] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:50:20] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Test 7: Combined performance flags
+[2025-12-18 00:50:20] [INFO] Test 7: Combined performance flags
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:50:20] [INFO] ═══════════════════════════════════════════
+[0;32m✓[0m Profile retrieved with multiple performance flags
+[2025-12-18 00:51:32] [SUCCESS] Profile retrieved with multiple performance flags
+[0;32m✓[0m Performance warnings/metrics displayed
+[2025-12-18 00:51:32] [SUCCESS] Performance warnings/metrics displayed
+[0;32m✓[0m ✓ DummyTest.cls unchanged
+[2025-12-18 00:51:32] [SUCCESS] ✓ DummyTest.cls unchanged
+[0;34mℹ[0m 
+[2025-12-18 00:51:32] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:51:32] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Test 8: Performance flags in compare command
+[2025-12-18 00:51:32] [INFO] Test 8: Performance flags in compare command
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:51:32] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Comparing with performance flags...
+[2025-12-18 00:52:34] [INFO] Comparing with performance flags...
+[0;32m✓[0m Compare command executed with performance flags
+[2025-12-18 00:52:37] [SUCCESS] Compare command executed with performance flags
+[0;34mℹ[0m Verifying compare command safety...
+[2025-12-18 00:52:37] [INFO] Verifying compare command safety...
+[0;32m✓[0m ✓ Compare command: DummyTest.cls unchanged
+[2025-12-18 00:52:37] [SUCCESS] ✓ Compare command: DummyTest.cls unchanged
+[0;32m✓[0m ✓ Compare command: DummyObject__c unchanged
+[2025-12-18 00:52:37] [SUCCESS] ✓ Compare command: DummyObject__c unchanged
+[0;34mℹ[0m 
+[2025-12-18 00:52:37] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:52:37] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Test 9: Edge cases and validation
+[2025-12-18 00:52:37] [INFO] Test 9: Edge cases and validation
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:52:37] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Step 9a: Testing with extremely high limits (should show warnings)...
+[2025-12-18 00:52:37] [INFO] Step 9a: Testing with extremely high limits (should show warnings)...
+[0;32m✓[0m Warnings displayed for high limits
+[2025-12-18 00:53:38] [SUCCESS] Warnings displayed for high limits
+[0;32m✓[0m Profile retrieved even with high limits
+[2025-12-18 00:53:38] [SUCCESS] Profile retrieved even with high limits
+[0;32m✓[0m ✓ DummyTest.cls unchanged (edge case)
+[2025-12-18 00:53:38] [SUCCESS] ✓ DummyTest.cls unchanged (edge case)
+[0;34mℹ[0m Step 9b: Testing --from-project with --exclude-managed (combined)...
+[2025-12-18 00:53:38] [INFO] Step 9b: Testing --from-project with --exclude-managed (combined)...
+[0;32m✓[0m Combined flags --from-project + --exclude-managed work
+[2025-12-18 00:54:58] [SUCCESS] Combined flags --from-project + --exclude-managed work
+[0;32m✓[0m ✓ DummyTest.cls unchanged (combined flags)
+[2025-12-18 00:54:58] [SUCCESS] ✓ DummyTest.cls unchanged (combined flags)
+[0;34mℹ[0m 
+[2025-12-18 00:54:58] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:54:58] [INFO] ═══════════════════════════════════════════
+[0;32m✓[0m Core E2E tests completed! (Tests 1-9)
+[2025-12-18 00:54:58] [SUCCESS] Core E2E tests completed! (Tests 1-9)
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:54:58] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Test project location: /Users/jterrats/dev/profiler/test-project
+[2025-12-18 00:54:58] [INFO] Test project location: /Users/jterrats/dev/profiler/test-project
+[0;34mℹ[0m 
+[2025-12-18 00:54:58] [INFO] 
+[0;34mℹ[0m Validations performed so far:
+[2025-12-18 00:54:58] [INFO] Validations performed so far:
+[0;34mℹ[0m   ✓ Profile files created correctly
+[2025-12-18 00:54:59] [INFO]   ✓ Profile files created correctly
+[0;34mℹ[0m   ✓ Profile content validated (metadata sections present)
+[2025-12-18 00:54:59] [INFO]   ✓ Profile content validated (metadata sections present)
+[0;34mℹ[0m   🛡️  Git safety confirmed (no unintended file modifications)
+[2025-12-18 00:54:59] [INFO]   🛡️  Git safety confirmed (no unintended file modifications)
+[0;34mℹ[0m   🛡️  DummyTest.cls NEVER modified (verified in 10 tests)
+[2025-12-18 00:54:59] [INFO]   🛡️  DummyTest.cls NEVER modified (verified in 10 tests)
+[0;34mℹ[0m   🛡️  DummyObject__c NEVER modified (verified in 2 tests)
+[2025-12-18 00:54:59] [INFO]   🛡️  DummyObject__c NEVER modified (verified in 2 tests)
+[0;34mℹ[0m   ✓ Managed package filtering tested
+[2025-12-18 00:54:59] [INFO]   ✓ Managed package filtering tested
+[0;34mℹ[0m   ✓ --from-project flag working
+[2025-12-18 00:54:59] [INFO]   ✓ --from-project flag working
+[0;34mℹ[0m   ✓ --all-fields flag tested (FLS preservation)
+[2025-12-18 00:54:59] [INFO]   ✓ --all-fields flag tested (FLS preservation)
+[0;34mℹ[0m   ✓ Performance flags tested (--verbose-performance)
+[2025-12-18 00:54:59] [INFO]   ✓ Performance flags tested (--verbose-performance)
+[0;34mℹ[0m   ✓ Custom performance limits validated
+[2025-12-18 00:54:59] [INFO]   ✓ Custom performance limits validated
+[0;34mℹ[0m   ✓ Combined performance flags working
+[2025-12-18 00:54:59] [INFO]   ✓ Combined performance flags working
+[0;34mℹ[0m   ✓ Compare command with performance flags
+[2025-12-18 00:54:59] [INFO]   ✓ Compare command with performance flags
+[0;34mℹ[0m   ✓ Edge cases and high limits handled
+[2025-12-18 00:54:59] [INFO]   ✓ Edge cases and high limits handled
+[0;34mℹ[0m 
+[2025-12-18 00:54:59] [INFO] 
+[0;32m✓[0m 🎯 100% Flag Coverage - All 10 retrieve flags tested
+[2025-12-18 00:54:59] [SUCCESS] 🎯 100% Flag Coverage - All 10 retrieve flags tested
+[0;32m✓[0m 🛡️  100% Safety Coverage - All tests validated metadata isolation
+[2025-12-18 00:54:59] [SUCCESS] 🛡️  100% Safety Coverage - All tests validated metadata isolation
+[0;34mℹ[0m 
+[2025-12-18 00:54:59] [INFO] 
+[0;34mℹ[0m Profile metadata validated:
+[2025-12-18 00:54:59] [INFO] Profile metadata validated:
+[0;34mℹ[0m   • Object Permissions
+[2025-12-18 00:54:59] [INFO]   • Object Permissions
+[0;34mℹ[0m   • Layout Assignments
+[2025-12-18 00:54:59] [INFO]   • Layout Assignments
+[0;34mℹ[0m   • Apex Class Accesses
+[2025-12-18 00:54:59] [INFO]   • Apex Class Accesses
+[0;34mℹ[0m   • Apex Page Accesses (Visualforce)
+[2025-12-18 00:54:59] [INFO]   • Apex Page Accesses (Visualforce)
+[0;34mℹ[0m   • Tab Visibilities
+[2025-12-18 00:54:59] [INFO]   • Tab Visibilities
+[0;34mℹ[0m 
+[2025-12-18 00:54:59] [INFO] 
+[0;34mℹ[0m Performance flags tested:
+[2025-12-18 00:54:59] [INFO] Performance flags tested:
+[0;34mℹ[0m   • --verbose-performance
+[2025-12-18 00:54:59] [INFO]   • --verbose-performance
+[0;34mℹ[0m   • --max-profiles
+[2025-12-18 00:54:59] [INFO]   • --max-profiles
+[0;34mℹ[0m   • --max-api-calls
+[2025-12-18 00:54:59] [INFO]   • --max-api-calls
+[0;34mℹ[0m   • --max-memory
+[2025-12-18 00:54:59] [INFO]   • --max-memory
+[0;34mℹ[0m   • --concurrent-workers
+[2025-12-18 00:54:59] [INFO]   • --concurrent-workers
+[0;34mℹ[0m   • Combined flags (multiple at once)
+[2025-12-18 00:54:59] [INFO]   • Combined flags (multiple at once)
+[0;34mℹ[0m   • --dry-run (incremental retrieve feature)
+[2025-12-18 00:54:59] [INFO]   • --dry-run (incremental retrieve feature)
+[0;34mℹ[0m   • --force (incremental retrieve feature)
+[2025-12-18 00:54:59] [INFO]   • --force (incremental retrieve feature)
+[0;34mℹ[0m 
+[2025-12-18 00:54:59] [INFO] 
+[0;34mℹ[0m 🔄 Continuing with Tests 10-16 (feature & error handling)...
+[2025-12-18 00:54:59] [INFO] 🔄 Continuing with Tests 10-16 (feature & error handling)...
+[0;34mℹ[0m 
+[2025-12-18 00:54:59] [INFO] 
+[0;34mℹ[0m Test 10: --dry-run flag (preview without executing)
+[2025-12-18 00:54:59] [INFO] Test 10: --dry-run flag (preview without executing)
+[0;34mℹ[0m Running dry run...
+[2025-12-18 00:54:59] [INFO] Running dry run...
+[0;34mℹ[0m Verifying NO files were modified (dry run should not write)...
+[2025-12-18 00:55:02] [INFO] Verifying NO files were modified (dry run should not write)...
+[0;32m✓[0m ✓ No files modified (dry run working correctly)
+[2025-12-18 00:55:02] [SUCCESS] ✓ No files modified (dry run working correctly)
+[0;34mℹ[0m Verifying dummy metadata integrity...
+[2025-12-18 00:55:02] [INFO] Verifying dummy metadata integrity...
+[0;32m✓[0m ✓ Dummy files unchanged (dry run safe)
+[2025-12-18 00:55:02] [SUCCESS] ✓ Dummy files unchanged (dry run safe)
+[0;32m✓[0m Test 10 passed: --dry-run works correctly
+[2025-12-18 00:55:02] [SUCCESS] Test 10 passed: --dry-run works correctly
+[0;34mℹ[0m 
+[2025-12-18 00:55:02] [INFO] 
+[0;34mℹ[0m Test 11: --force flag (force full retrieve)
+[2025-12-18 00:55:02] [INFO] Test 11: --force flag (force full retrieve)
+[0;34mℹ[0m First retrieve (creates baseline)...
+[2025-12-18 00:55:02] [INFO] First retrieve (creates baseline)...
+[0;34mℹ[0m Second retrieve with --force (should bypass incremental)...
+[2025-12-18 00:56:26] [INFO] Second retrieve with --force (should bypass incremental)...
+[0;34mℹ[0m Checking that retrieve was executed (not skipped)...
+[2025-12-18 00:57:26] [INFO] Checking that retrieve was executed (not skipped)...
+[0;34mℹ[0m Checking git status (should ONLY show profiles if any changes)...
+[2025-12-18 00:57:26] [INFO] Checking git status (should ONLY show profiles if any changes)...
+[0;32m✓[0m ✓ No other metadata modified (safe retrieve with --force)
+[2025-12-18 00:57:26] [SUCCESS] ✓ No other metadata modified (safe retrieve with --force)
+[0;34mℹ[0m Verifying dummy metadata integrity...
+[2025-12-18 00:57:26] [INFO] Verifying dummy metadata integrity...
+[0;32m✓[0m ✓ Dummy files unchanged (--force is safe)
+[2025-12-18 00:57:26] [SUCCESS] ✓ Dummy files unchanged (--force is safe)
+[0;32m✓[0m Test 11 passed: --force flag works correctly
+[2025-12-18 00:57:26] [SUCCESS] Test 11 passed: --force flag works correctly
+[0;34mℹ[0m 
+[2025-12-18 00:57:26] [INFO] 
+[0;34mℹ[0m Test 12: Incremental retrieve (default - no flags)
+[2025-12-18 00:57:26] [INFO] Test 12: Incremental retrieve (default - no flags)
+[0;34mℹ[0m First retrieve (creates baseline)...
+[2025-12-18 00:57:26] [INFO] First retrieve (creates baseline)...
+[0;34mℹ[0m Second retrieve (should detect no changes and skip)...
+[2025-12-18 00:58:27] [INFO] Second retrieve (should detect no changes and skip)...
+[0;32m✓[0m ✓ Incremental retrieve detected no changes
+[2025-12-18 00:59:33] [SUCCESS] ✓ Incremental retrieve detected no changes
+[0;34mℹ[0m Checking git status...
+[2025-12-18 00:59:33] [INFO] Checking git status...
+[0;32m✓[0m ✓ No other metadata modified (safe incremental retrieve)
+[2025-12-18 00:59:33] [SUCCESS] ✓ No other metadata modified (safe incremental retrieve)
+[0;34mℹ[0m Verifying dummy metadata integrity...
+[2025-12-18 00:59:33] [INFO] Verifying dummy metadata integrity...
+[0;32m✓[0m ✓ Dummy files unchanged (incremental is safe)
+[2025-12-18 00:59:33] [SUCCESS] ✓ Dummy files unchanged (incremental is safe)
+[0;32m✓[0m Test 12 passed: Incremental retrieve works correctly
+[2025-12-18 00:59:33] [SUCCESS] Test 12 passed: Incremental retrieve works correctly
+[0;34mℹ[0m 
+[2025-12-18 00:59:33] [INFO] 
+[0;34mℹ[0m Test 13: Multi-source comparison
+[2025-12-18 00:59:34] [INFO] Test 13: Multi-source comparison
+[0;34mℹ[0m Checking for multiple authorized orgs...
+[2025-12-18 00:59:34] [INFO] Checking for multiple authorized orgs...
+[0;32m✓[0m Found 3 orgs available for multi-source testing
+[2025-12-18 00:59:34] [SUCCESS] Found 3 orgs available for multi-source testing
+[0;34mℹ[0m Using orgs: jterrats@salesforce.com.grg.prod.devfull, jterrats@salesforce.com.grg.prod.devluisfer
+[2025-12-18 00:59:34] [INFO] Using orgs: jterrats@salesforce.com.grg.prod.devfull, jterrats@salesforce.com.grg.prod.devluisfer
+[0;34mℹ[0m Running multi-source comparison...
+[2025-12-18 00:59:34] [INFO] Running multi-source comparison...
+[0;32m✓[0m ✓ Multi-source comparison executed successfully
+[2025-12-18 00:59:39] [SUCCESS] ✓ Multi-source comparison executed successfully
+[0;32m✓[0m Test 13 passed: Multi-source comparison works
+[2025-12-18 00:59:39] [SUCCESS] Test 13 passed: Multi-source comparison works
+[0;34mℹ[0m 
+[2025-12-18 00:59:39] [INFO] 
+[0;34mℹ[0m Test 14: Output format JSON
+[2025-12-18 00:59:39] [INFO] Test 14: Output format JSON
+[0;34mℹ[0m Testing JSON output format...
+[2025-12-18 00:59:39] [INFO] Testing JSON output format...
+[0;34mℹ[0m Executing: sf profiler compare --target-org "jterrats@salesforce.com.grg.prod.devfull" --name Admin --output-format json --output-file "/Users/jterrats/dev/profiler/test-project/compare-output.json"
+[2025-12-18 00:59:40] [INFO] Executing: sf profiler compare --target-org "jterrats@salesforce.com.grg.prod.devfull" --name Admin --output-format json --output-file "/Users/jterrats/dev/profiler/test-project/compare-output.json"
+[2025-12-18 00:59:40] [COMMAND] Test 14: sf profiler compare --target-org "jterrats@salesforce.com.grg.prod.devfull" --name Admin --output-format json --output-file "/Users/jterrats/dev/profiler/test-project/compare-output.json"
+[2025-12-18 00:59:40] [DURATION] Test 14 completed in 0s (exit code: 127)
+[0;31m✗[0m Test 14 failed: Compare command returned error (exit code: 127)
+[2025-12-18 00:59:40] [ERROR] Test 14 failed: Compare command returned error (exit code: 127)
+[2025-12-18 00:59:40] [ERROR] Command failed with exit code: 127
+[2025-12-18 00:59:40] [OUTPUT] Command output: scripts/e2e-test.sh: line 1220: timeout: command not found
+[0;34mℹ[0m 
+[2025-12-18 00:59:40] [INFO] 
+[0;34mℹ[0m Test 15: HTML output with file export
+[2025-12-18 00:59:40] [INFO] Test 15: HTML output with file export
+[0;34mℹ[0m Testing HTML export to file...
+[2025-12-18 00:59:40] [INFO] Testing HTML export to file...
+[1;33m⚠[0m HTML file was not created (non-critical - may be a bug to fix)
+[2025-12-18 00:59:42] [WARNING] HTML file was not created (non-critical - may be a bug to fix)
+[0;34mℹ[0m Test 15 completed: HTML export (non-critical - may need fixes)
+[2025-12-18 00:59:42] [INFO] Test 15 completed: HTML export (non-critical - may need fixes)
+[0;34mℹ[0m 
+[2025-12-18 00:59:42] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:59:42] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m Test 16: Error Handling & Edge Cases
+[2025-12-18 00:59:42] [INFO] Test 16: Error Handling & Edge Cases
+[0;34mℹ[0m ═══════════════════════════════════════════
+[2025-12-18 00:59:42] [INFO] ═══════════════════════════════════════════
+[0;34mℹ[0m 
+[2025-12-18 00:59:42] [INFO] 
+[0;34mℹ[0m Step 16a: Testing non-existent profile...
+[2025-12-18 00:59:43] [INFO] Step 16a: Testing non-existent profile...
+[0;32m✓[0m ✓ Non-existent profile: Clear error message shown
+[2025-12-18 00:59:45] [SUCCESS] ✓ Non-existent profile: Clear error message shown
+[0;34mℹ[0m Step 16b: Testing corrupted sfdx-project.json...
+[2025-12-18 00:59:45] [INFO] Step 16b: Testing corrupted sfdx-project.json...
+[1;33m⚠[0m Corrupted JSON: Unexpected behavior
+[2025-12-18 01:02:06] [WARNING] Corrupted JSON: Unexpected behavior
+[0;34mℹ[0m    sfdx-project.json restored
+[2025-12-18 01:02:06] [INFO]    sfdx-project.json restored
+[0;34mℹ[0m Step 16c: Testing read-only force-app directory...
+[2025-12-18 01:02:06] [INFO] Step 16c: Testing read-only force-app directory...
+[0;32m✓[0m ✓ Read-only directory: Clear permission error shown
+[2025-12-18 01:12:14] [SUCCESS] ✓ Read-only directory: Clear permission error shown
+[0;34mℹ[0m    force-app permissions restored
+[2025-12-18 01:12:14] [INFO]    force-app permissions restored
+[0;34mℹ[0m Step 16d: Testing invalid org username...
+[2025-12-18 01:12:14] [INFO] Step 16d: Testing invalid org username...
+[0;32m✓[0m ✓ Invalid org: Clear error message shown
+[2025-12-18 01:12:17] [SUCCESS] ✓ Invalid org: Clear error message shown
+[0;32m✓[0m Test 16 passed: Error handling validated
+[2025-12-18 01:12:17] [SUCCESS] Test 16 passed: Error handling validated
+[0;34mℹ[0m 
+[2025-12-18 01:12:17] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════════════════════════
+[2025-12-18 01:12:17] [INFO] ═══════════════════════════════════════════════════════════════
+[0;34mℹ[0m Test 17: Profile Validation Command (sf profiler validate)
+[2025-12-18 01:12:17] [INFO] Test 17: Profile Validation Command (sf profiler validate)
+[0;34mℹ[0m ═══════════════════════════════════════════════════════════════
+[2025-12-18 01:12:17] [INFO] ═══════════════════════════════════════════════════════════════
+[0;34mℹ[0m Test 17a: Valid profile (should pass)
+[2025-12-18 01:12:17] [INFO] Test 17a: Valid profile (should pass)
+[0;32m✓[0m Test 17a passed: Valid profile detected correctly
+[2025-12-18 01:12:20] [SUCCESS] Test 17a passed: Valid profile detected correctly
+[0;34mℹ[0m Test 17b: Invalid XML (should fail with exit code 1)
+[2025-12-18 01:12:20] [INFO] Test 17b: Invalid XML (should fail with exit code 1)
+[0;32m✓[0m Test 17b passed: Malformed XML correctly fails (exit code 1)
+[2025-12-18 01:12:23] [SUCCESS] Test 17b passed: Malformed XML correctly fails (exit code 1)
+[0;34mℹ[0m Test 17c: Duplicate entries (should detect duplicates)
+[2025-12-18 01:12:23] [INFO] Test 17c: Duplicate entries (should detect duplicates)
+[0;32m✓[0m Test 17c passed: Duplicate entries detected
+[2025-12-18 01:12:26] [SUCCESS] Test 17c passed: Duplicate entries detected
+[0;34mℹ[0m Test 17d: Strict mode (--strict flag)
+[2025-12-18 01:12:26] [INFO] Test 17d: Strict mode (--strict flag)
+[0;32m✓[0m Test 17d passed: Strict mode works with valid profile
+[2025-12-18 01:12:28] [SUCCESS] Test 17d passed: Strict mode works with valid profile
+[0;34mℹ[0m Test 17e: Multiple profiles validation
+[2025-12-18 01:12:28] [INFO] Test 17e: Multiple profiles validation
+[0;32m✓[0m Test 17e passed: Multiple profiles validated
+[2025-12-18 01:12:31] [SUCCESS] Test 17e passed: Multiple profiles validated
+[0;32m✓[0m Test 17 passed: Profile validation command works correctly
+[2025-12-18 01:12:31] [SUCCESS] Test 17 passed: Profile validation command works correctly
+[0;34mℹ[0m 
+[2025-12-18 01:12:31] [INFO] 
+[0;34mℹ[0m Validation scenarios validated:
+[2025-12-18 01:12:31] [INFO] Validation scenarios validated:
+[0;34mℹ[0m   ✓ Valid profile (passes validation)
+[2025-12-18 01:12:31] [INFO]   ✓ Valid profile (passes validation)
+[0;34mℹ[0m   ✓ Malformed XML (fails with exit code 1)
+[2025-12-18 01:12:31] [INFO]   ✓ Malformed XML (fails with exit code 1)
+[0;34mℹ[0m   ✓ Duplicate entries (detected)
+[2025-12-18 01:12:31] [INFO]   ✓ Duplicate entries (detected)
+[0;34mℹ[0m   ✓ Strict mode (warnings = errors)
+[2025-12-18 01:12:31] [INFO]   ✓ Strict mode (warnings = errors)
+[0;34mℹ[0m   ✓ Multiple profiles (parallel validation)
+[2025-12-18 01:12:31] [INFO]   ✓ Multiple profiles (parallel validation)
+[0;34mℹ[0m 
+[2025-12-18 01:12:31] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════════════════════════
+[2025-12-18 01:12:31] [INFO] ═══════════════════════════════════════════════════════════════
+[0;34mℹ[0m Test 18: Profile Merge Command (sf profiler merge)
+[2025-12-18 01:12:31] [INFO] Test 18: Profile Merge Command (sf profiler merge)
+[0;34mℹ[0m ═══════════════════════════════════════════════════════════════
+[2025-12-18 01:12:31] [INFO] ═══════════════════════════════════════════════════════════════
+[0;34mℹ[0m Retrieving Admin profile for merge test...
+[2025-12-18 01:12:31] [INFO] Retrieving Admin profile for merge test...
+[0;32m✓[0m Admin profile retrieved for merge test
+[2025-12-18 01:16:00] [SUCCESS] Admin profile retrieved for merge test
+[0;34mℹ[0m Test 18a: Dry-run merge (preview changes)
+[2025-12-18 01:16:00] [INFO] Test 18a: Dry-run merge (preview changes)
+[1;33m⚠[0m Test 18a: Dry-run output may need review
+[2025-12-18 01:17:07] [WARNING] Test 18a: Dry-run output may need review
+[0;34mℹ[0m Test 18b: Merge with local-wins strategy
+[2025-12-18 01:17:07] [INFO] Test 18b: Merge with local-wins strategy
+[0;32m✓[0m Test 18b passed: Merge with local-wins strategy works
+[2025-12-18 01:18:16] [SUCCESS] Test 18b passed: Merge with local-wins strategy works
+[1;33m⚠[0m Test 18b: Merged file structure may be incomplete
+[2025-12-18 01:18:16] [WARNING] Test 18b: Merged file structure may be incomplete
+[0;34mℹ[0m Test 18c: Merge with abort-on-conflict strategy
+[2025-12-18 01:18:16] [INFO] Test 18c: Merge with abort-on-conflict strategy
+[0;34mℹ[0m Test 18c: No conflicts detected (expected if profiles are identical)
+[2025-12-18 01:19:21] [INFO] Test 18c: No conflicts detected (expected if profiles are identical)
+[0;34mℹ[0m Test 18d: Interactive merge mode (non-TTY validation)
+[2025-12-18 01:19:21] [INFO] Test 18d: Interactive merge mode (non-TTY validation)
+[1;33m⚠[0m Test 18d: Interactive mode succeeded unexpectedly in non-TTY
+[2025-12-18 01:20:38] [WARNING] Test 18d: Interactive mode succeeded unexpectedly in non-TTY
+[0;34mℹ[0m Test 18e: Verify interactive strategy is accepted as valid option
+[2025-12-18 01:20:38] [INFO] Test 18e: Verify interactive strategy is accepted as valid option
+[0;32m✓[0m Test 18e passed: Interactive strategy documented in help
+[2025-12-18 01:20:39] [SUCCESS] Test 18e passed: Interactive strategy documented in help
+[0;32m✓[0m Test 18 passed: Profile merge command works correctly
+[2025-12-18 01:20:39] [SUCCESS] Test 18 passed: Profile merge command works correctly
+[0;34mℹ[0m 
+[2025-12-18 01:20:39] [INFO] 
+[0;34mℹ[0m Merge scenarios validated:
+[2025-12-18 01:20:40] [INFO] Merge scenarios validated:
+[0;34mℹ[0m   ✓ Dry-run merge (preview changes)
+[2025-12-18 01:20:40] [INFO]   ✓ Dry-run merge (preview changes)
+[0;34mℹ[0m   ✓ Local-wins strategy
+[2025-12-18 01:20:40] [INFO]   ✓ Local-wins strategy
+[0;34mℹ[0m   ✓ Abort-on-conflict strategy
+[2025-12-18 01:20:40] [INFO]   ✓ Abort-on-conflict strategy
+[0;34mℹ[0m   ✓ Interactive mode (non-TTY validation)
+[2025-12-18 01:20:40] [INFO]   ✓ Interactive mode (non-TTY validation)
+[0;34mℹ[0m   ✓ Interactive strategy in help
+[2025-12-18 01:20:40] [INFO]   ✓ Interactive strategy in help
+[0;34mℹ[0m 
+[2025-12-18 01:20:40] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════════════════════════
+[2025-12-18 01:20:40] [INFO] ═══════════════════════════════════════════════════════════════
+[0;34mℹ[0m Test 19: Progress Indicators and --quiet flag
+[2025-12-18 01:20:40] [INFO] Test 19: Progress Indicators and --quiet flag
+[0;34mℹ[0m ═══════════════════════════════════════════════════════════════
+[2025-12-18 01:20:40] [INFO] ═══════════════════════════════════════════════════════════════
+[0;34mℹ[0m Test 19a: Verify spinners appear in retrieve command
+[2025-12-18 01:20:40] [INFO] Test 19a: Verify spinners appear in retrieve command
+[0;32m✓[0m Test 19a passed: Retrieve command shows progress indicators
+[2025-12-18 01:21:51] [SUCCESS] Test 19a passed: Retrieve command shows progress indicators
+[0;34mℹ[0m Test 19b: Verify --quiet flag disables progress indicators
+[2025-12-18 01:21:51] [INFO] Test 19b: Verify --quiet flag disables progress indicators
+[1;33m⚠[0m Test 19b: --quiet flag may not be fully suppressing indicators (00 found)
+[2025-12-18 01:23:07] [WARNING] Test 19b: --quiet flag may not be fully suppressing indicators (00 found)
+[0;32m✓[0m Test 19b: Command functionality preserved with --quiet
+[2025-12-18 01:23:07] [SUCCESS] Test 19b: Command functionality preserved with --quiet
+[0;34mℹ[0m Test 19c: Verify progress indicators in compare command
+[2025-12-18 01:23:07] [INFO] Test 19c: Verify progress indicators in compare command
+[0;32m✓[0m Test 19c passed: Compare command shows progress indicators
+[2025-12-18 01:23:10] [SUCCESS] Test 19c passed: Compare command shows progress indicators
+[0;34mℹ[0m Test 19d: Verify --quiet in compare command
+[2025-12-18 01:23:10] [INFO] Test 19d: Verify --quiet in compare command
+[1;33m⚠[0m Test 19d: --quiet may not be fully suppressing indicators
+[2025-12-18 01:23:12] [WARNING] Test 19d: --quiet may not be fully suppressing indicators
+[0;34mℹ[0m Test 19e: Verify progress bars in multi-source compare
+[2025-12-18 01:23:12] [INFO] Test 19e: Verify progress bars in multi-source compare
+[0;32m✓[0m Test 19e passed: Multi-source compare shows progress indicators
+[2025-12-18 01:23:18] [SUCCESS] Test 19e passed: Multi-source compare shows progress indicators
+[1;33m⚠[0m Test 19e: --quiet may not fully suppress progress bars
+[2025-12-18 01:23:24] [WARNING] Test 19e: --quiet may not fully suppress progress bars
+[0;34mℹ[0m Test 19f: Verify progress indicators in merge command
+[2025-12-18 01:23:24] [INFO] Test 19f: Verify progress indicators in merge command
+[0;32m✓[0m Test 19f passed: Merge command shows progress indicators
+[2025-12-18 01:24:31] [SUCCESS] Test 19f passed: Merge command shows progress indicators
+[1;33m⚠[0m Test 19f: --quiet may not fully suppress indicators
+[2025-12-18 01:25:47] [WARNING] Test 19f: --quiet may not fully suppress indicators
+[0;34mℹ[0m Test 19g: Verify progress indicators in validate command
+[2025-12-18 01:25:47] [INFO] Test 19g: Verify progress indicators in validate command
+[0;32m✓[0m Test 19g passed: Validate command shows progress indicators
+[2025-12-18 01:25:50] [SUCCESS] Test 19g passed: Validate command shows progress indicators
+[1;33m⚠[0m Test 19g: --quiet may not fully suppress indicators
+[2025-12-18 01:25:53] [WARNING] Test 19g: --quiet may not fully suppress indicators
+[0;32m✓[0m Test 19 passed: Progress indicators validated
+[2025-12-18 01:25:53] [SUCCESS] Test 19 passed: Progress indicators validated
+[0;34mℹ[0m 
+[2025-12-18 01:25:53] [INFO] 
+[0;34mℹ[0m Progress indicator scenarios validated:
+[2025-12-18 01:25:53] [INFO] Progress indicator scenarios validated:
+[0;34mℹ[0m   ✓ Spinners appear in retrieve command
+[2025-12-18 01:25:53] [INFO]   ✓ Spinners appear in retrieve command
+[0;34mℹ[0m   ✓ --quiet flag disables spinners in retrieve
+[2025-12-18 01:25:53] [INFO]   ✓ --quiet flag disables spinners in retrieve
+[0;34mℹ[0m   ✓ Progress indicators in compare command
+[2025-12-18 01:25:53] [INFO]   ✓ Progress indicators in compare command
+[0;34mℹ[0m   ✓ --quiet flag disables indicators in compare
+[2025-12-18 01:25:53] [INFO]   ✓ --quiet flag disables indicators in compare
+[0;34mℹ[0m   ✓ Progress bars in multi-source compare (if available)
+[2025-12-18 01:25:53] [INFO]   ✓ Progress bars in multi-source compare (if available)
+[0;34mℹ[0m   ✓ --quiet disables progress bars in multi-source
+[2025-12-18 01:25:53] [INFO]   ✓ --quiet disables progress bars in multi-source
+[0;34mℹ[0m   ✓ Progress indicators in merge command
+[2025-12-18 01:25:53] [INFO]   ✓ Progress indicators in merge command
+[0;34mℹ[0m   ✓ --quiet flag disables indicators in merge
+[2025-12-18 01:25:53] [INFO]   ✓ --quiet flag disables indicators in merge
+[0;34mℹ[0m   ✓ Progress indicators in validate command
+[2025-12-18 01:25:53] [INFO]   ✓ Progress indicators in validate command
+[0;34mℹ[0m   ✓ --quiet flag disables indicators in validate
+[2025-12-18 01:25:53] [INFO]   ✓ --quiet flag disables indicators in validate
+[0;34mℹ[0m 
+[2025-12-18 01:25:53] [INFO] 
+[0;34mℹ[0m ═══════════════════════════════════════════════════════════════
+[2025-12-18 01:25:53] [INFO] ═══════════════════════════════════════════════════════════════
+[0;34mℹ[0m Test 20: Profile Migration Command (sf profiler migrate)
+[2025-12-18 01:25:53] [INFO] Test 20: Profile Migration Command (sf profiler migrate)
+[0;34mℹ[0m ═══════════════════════════════════════════════════════════════
+[2025-12-18 01:25:53] [INFO] ═══════════════════════════════════════════════════════════════
+[0;34mℹ[0m Test 20a: Dry-run migration (preview)
+[2025-12-18 01:25:53] [INFO] Test 20a: Dry-run migration (preview)
+[0;32m✓[0m Test 20a passed: Dry-run migration shows preview
+[2025-12-18 01:25:56] [SUCCESS] Test 20a passed: Dry-run migration shows preview
+[0;34mℹ[0m Test 20b: Migration preview with table format (default)
+[2025-12-18 01:25:56] [INFO] Test 20b: Migration preview with table format (default)
+[0;32m✓[0m Test 20b passed: Table format displays correctly
+[2025-12-18 01:25:59] [SUCCESS] Test 20b passed: Table format displays correctly
+[0;34mℹ[0m Test 20c: Migration preview with JSON format
+[2025-12-18 01:25:59] [INFO] Test 20c: Migration preview with JSON format
+[0;32m✓[0m Test 20c: JSON structure matches expected (keys: dryRun,permissionSetExists,permissionSetName,permissionTypes,permissions,permissionsMigrated,profileName)
+[2025-12-18 01:26:01] [SUCCESS] Test 20c: JSON structure matches expected (keys: dryRun,permissionSetExists,permissionSetName,permissionTypes,permissions,permissionsMigrated,profileName)
+[0;32m✓[0m Test 20c passed: JSON format validated
+[2025-12-18 01:26:01] [SUCCESS] Test 20c passed: JSON format validated
+[0;34mℹ[0m Test 20d: Migration preview with HTML format and file export
+[2025-12-18 01:26:01] [INFO] Test 20d: Migration preview with HTML format and file export
+[0;32m✓[0m Test 20d: HTML structure is valid (DOCTYPE, html, head, body present)
+[2025-12-18 01:26:04] [SUCCESS] Test 20d: HTML structure is valid (DOCTYPE, html, head, body present)
+[0;34mℹ[0m   HTML file size:    27076 bytes
+[2025-12-18 01:26:04] [INFO]   HTML file size:    27076 bytes
+[0;32m✓[0m Test 20d passed: HTML file validated
+[2025-12-18 01:26:04] [SUCCESS] Test 20d passed: HTML file validated
+[0;34mℹ[0m Test 20e: Migration preview with Markdown format
+[2025-12-18 01:26:04] [INFO] Test 20e: Migration preview with Markdown format
+[0;32m✓[0m Test 20e: Markdown structure is valid (headers and summary present)
+[2025-12-18 01:26:07] [SUCCESS] Test 20e: Markdown structure is valid (headers and summary present)
+[0;32m✓[0m Test 20e passed: Markdown format validated
+[2025-12-18 01:26:07] [SUCCESS] Test 20e passed: Markdown format validated
+[0;34mℹ[0m Test 20f: Migration preview with CSV format
+[2025-12-18 01:26:07] [INFO] Test 20f: Migration preview with CSV format
+[0;32m✓[0m Test 20f: CSV header matches expected: Type,Permission Name,Enabled
+[2025-12-18 01:26:10] [SUCCESS] Test 20f: CSV header matches expected: Type,Permission Name,Enabled
+[0;32m✓[0m Test 20f passed: CSV format validated
+[2025-12-18 01:26:10] [SUCCESS] Test 20f passed: CSV format validated
+[0;34mℹ[0m Test 20g: Migration preview with YAML format
+[2025-12-18 01:26:10] [INFO] Test 20g: Migration preview with YAML format
+[0;32m✓[0m Test 20g: YAML structure is valid (profileName and permissionSetName present)
+[2025-12-18 01:26:13] [SUCCESS] Test 20g: YAML structure is valid (profileName and permissionSetName present)
+[0;32m✓[0m Test 20g passed: YAML format validated
+[2025-12-18 01:26:13] [SUCCESS] Test 20g passed: YAML format validated
+[0;34mℹ[0m Test 20h: Migration with multiple permission types
+[2025-12-18 01:26:13] [INFO] Test 20h: Migration with multiple permission types
+[0;32m✓[0m Test 20h passed: Multiple permission types processed
+[2025-12-18 01:26:16] [SUCCESS] Test 20h passed: Multiple permission types processed
+[0;34mℹ[0m Test 20i: Migration with custom Permission Set name
+[2025-12-18 01:26:16] [INFO] Test 20i: Migration with custom Permission Set name
+[0;32m✓[0m Test 20i passed: Custom Permission Set name used
+[2025-12-18 01:26:19] [SUCCESS] Test 20i passed: Custom Permission Set name used
+[0;34mℹ[0m Test 20j: Error handling - invalid permission type
+[2025-12-18 01:26:19] [INFO] Test 20j: Error handling - invalid permission type
+[0;31m✗[0m Test 20j failed: Invalid permission type should fail
+[2025-12-18 01:26:21] [ERROR] Test 20j failed: Invalid permission type should fail
+[0;31m✗[0m Script exited unexpectedly (code: 1). Generating report...
+[2025-12-18 01:26:21] [ERROR] Script exited unexpectedly (code: 1). Generating report...
+[0;34mℹ[0m Report generated: /Users/jterrats/dev/profiler/test-project/comparison-report.html
+[2025-12-18 01:26:21] [INFO] Report generated: /Users/jterrats/dev/profiler/test-project/comparison-report.html
+[0;34mℹ[0m Test project removed
+[2025-12-18 01:26:22] [INFO] Test project removed
+[0;34mℹ[0m Log file preserved: /Users/jterrats/dev/profiler/test-logs/e2e-test_20251218_003804.log
+[2025-12-18 01:26:22] [INFO] Log file preserved: /Users/jterrats/dev/profiler/test-logs/e2e-test_20251218_003804.log
+[0;34mℹ[0m Report file: /Users/jterrats/dev/profiler/test-project/comparison-report.html
+[2025-12-18 01:26:22] [INFO] Report file: /Users/jterrats/dev/profiler/test-project/comparison-report.html

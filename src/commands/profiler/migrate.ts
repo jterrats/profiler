@@ -10,7 +10,11 @@ import * as path from 'node:path';
 import { Messages, SfProject, Org } from '@salesforce/core';
 import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 
-import { migratePermissionsOperation, type MigrateInput, type MigrateResult } from '../../operations/migrate-operation.js';
+import {
+  migratePermissionsOperation,
+  type MigrateInput,
+  type MigrateResult,
+} from '../../operations/migrate-operation.js';
 import {
   formatMigrationPreview,
   exportMigrationPreview,
@@ -100,7 +104,7 @@ export default class ProfilerMigrate extends SfCommand<ProfilerMigrateResult> {
     const projectPath = project.getPath();
 
     const parsed = this.parseFlags(flags);
-    const { profileName, permissionTypes, permissionSetName, dryRun, format, outputFile, createIfMissing, quiet, open } =
+    const { profileName, permissionTypes, permissionSetName, dryRun, format, outputFile, createIfMissing, quiet } =
       parsed;
 
     const finalPermissionSetName = this.generatePermissionSetName(permissionSetName, profileName);
@@ -129,7 +133,7 @@ export default class ProfilerMigrate extends SfCommand<ProfilerMigrateResult> {
       includeDetails: true,
     });
 
-    await this.handleOutput(outputFile, migrationResult, formatted, format, status, open);
+    await this.handleOutput(outputFile, migrationResult, formatted, format, status);
 
     if (!dryRun && migrationResult.permissionsMigrated > 0) {
       const permissionSetPath = path.join(
@@ -140,9 +144,7 @@ export default class ProfilerMigrate extends SfCommand<ProfilerMigrateResult> {
         'permissionsets',
         `${finalPermissionSetName}.permissionset-meta.xml`
       );
-      status.success(
-        messages.getMessage('info.complete', [migrationResult.permissionsMigrated, permissionSetPath])
-      );
+      status.success(messages.getMessage('info.complete', [migrationResult.permissionsMigrated, permissionSetPath]));
     } else if (!dryRun && migrationResult.permissionsMigrated === 0) {
       status.warn('No permissions to migrate - Permission Set XML not generated');
     }
@@ -184,7 +186,6 @@ export default class ProfilerMigrate extends SfCommand<ProfilerMigrateResult> {
     outputFile: string | undefined;
     createIfMissing: boolean;
     quiet: boolean;
-    open: boolean;
   } {
     const profileName = String(flags.from ?? '');
     const permissionTypesStr = String(flags.section ?? '');
@@ -194,7 +195,6 @@ export default class ProfilerMigrate extends SfCommand<ProfilerMigrateResult> {
     const outputFile = flags['output-file'] ? String(flags['output-file']) : undefined;
     const createIfMissing = Boolean(flags['create-if-missing'] ?? true);
     const quiet = Boolean(flags.quiet ?? false);
-    const open = Boolean(flags.open ?? false);
 
     // Parse permission types
     const permissionTypes = permissionTypesStr
@@ -257,7 +257,7 @@ export default class ProfilerMigrate extends SfCommand<ProfilerMigrateResult> {
       throw new Error(`Invalid permission types: ${invalidTypes.join(', ')}. Valid types: ${validTypes.join(', ')}`);
     }
 
-    return { profileName, permissionTypes, permissionSetName, dryRun, format, outputFile, createIfMissing, quiet, open };
+    return { profileName, permissionTypes, permissionSetName, dryRun, format, outputFile, createIfMissing, quiet };
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -318,8 +318,7 @@ export default class ProfilerMigrate extends SfCommand<ProfilerMigrateResult> {
     migrationResult: MigrateResult,
     formatted: FormattedMigrationOutput,
     format: 'table' | 'json' | 'html' | 'markdown' | 'csv' | 'yaml',
-    status: StatusMessage,
-    openInBrowser: boolean
+    status: StatusMessage
   ): Promise<void> {
     if (outputFile) {
       await exportMigrationPreview(migrationResult, outputFile, {
@@ -328,11 +327,9 @@ export default class ProfilerMigrate extends SfCommand<ProfilerMigrateResult> {
       });
       status.success(messages.getMessage('info.preview-generated', [outputFile]));
 
-      // Automatically open HTML file in browser (or if --open flag is used)
+      // Automatically open HTML file in browser
       if (format === 'html') {
         await this.openInBrowser(outputFile, status);
-      } else if (openInBrowser && format !== 'html') {
-        status.warn('--open flag only works with --format html');
       }
     }
 
@@ -370,4 +367,3 @@ export default class ProfilerMigrate extends SfCommand<ProfilerMigrateResult> {
     }
   }
 }
-

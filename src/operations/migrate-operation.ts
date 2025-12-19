@@ -561,7 +561,10 @@ function extractCustomSettingPermissions(profileData: Record<string, unknown>): 
 /**
  * Reads Permission Set XML from local project
  */
-function readPermissionSetXml(permissionSetName: string, projectPath: string): ProfilerMonad<Record<string, unknown> | null> {
+function readPermissionSetXml(
+  permissionSetName: string,
+  projectPath: string
+): ProfilerMonad<Record<string, unknown> | null> {
   return new ProfilerMonad(async () => {
     const permissionSetPath = path.join(
       projectPath,
@@ -603,7 +606,11 @@ function readPermissionSetXml(permissionSetName: string, projectPath: string): P
 /**
  * Retrieves Permission Set from org
  */
-function retrieveOrgPermissionSet(permissionSetName: string, org: Org, apiVersion: string): ProfilerMonad<Record<string, unknown> | null> {
+function retrieveOrgPermissionSet(
+  permissionSetName: string,
+  org: Org,
+  apiVersion: string
+): ProfilerMonad<Record<string, unknown> | null> {
   return new ProfilerMonad(async () => {
     try {
       const connection = org.getConnection(apiVersion);
@@ -652,7 +659,10 @@ function retrieveOrgPermissionSet(permissionSetName: string, org: Org, apiVersio
 /**
  * Extracts permissions from Permission Set XML (same structure as Profile)
  */
-function extractPermissionsFromPermissionSet(permissionSetData: Record<string, unknown>, permissionTypes: PermissionType[]): ExtractedPermission[] {
+function extractPermissionsFromPermissionSet(
+  permissionSetData: Record<string, unknown>,
+  permissionTypes: PermissionType[]
+): ExtractedPermission[] {
   const allPermissions: ExtractedPermission[] = [];
 
   if (permissionTypes.includes('fls')) {
@@ -721,10 +731,7 @@ function getPermissionKey(permission: ExtractedPermission): string {
 /**
  * Compares extracted permissions with existing Permission Set permissions
  */
-function comparePermissions(
-  extracted: ExtractedPermission[],
-  existing: ExtractedPermission[]
-): PermissionComparison {
+function comparePermissions(extracted: ExtractedPermission[], existing: ExtractedPermission[]): PermissionComparison {
   const existingKeys = new Set(existing.map(getPermissionKey));
   const newPermissions: ExtractedPermission[] = [];
   const existingPermissions: ExtractedPermission[] = [];
@@ -919,14 +926,16 @@ function buildObjectPermissions(
   }
 
   for (const perm of objectPermissions) {
-    const metadata = perm.metadata as {
-      allowRead?: boolean;
-      allowCreate?: boolean;
-      allowEdit?: boolean;
-      allowDelete?: boolean;
-      viewAllRecords?: boolean;
-      modifyAllRecords?: boolean;
-    } | undefined;
+    const metadata = perm.metadata as
+      | {
+          allowRead?: boolean;
+          allowCreate?: boolean;
+          allowEdit?: boolean;
+          allowDelete?: boolean;
+          viewAllRecords?: boolean;
+          modifyAllRecords?: boolean;
+        }
+      | undefined;
     const existing = existingObjectMap.get(perm.name);
     if (existing) {
       if (metadata?.allowRead !== undefined) existing.allowRead = metadata.allowRead;
@@ -1053,154 +1062,131 @@ function groupPermissionsByType(permissions: ExtractedPermission[]): {
 }
 
 /**
- * Builds complex permission arrays (FLS, Object, Application)
+ * Permission builder configuration mapping permission types to their builders
  */
-// eslint-disable-next-line no-param-reassign
-function buildComplexPermissionArrays(
-  groupedPermissions: ReturnType<typeof groupPermissionsByType>,
-  permissionSetData: Record<string, unknown>
-): void {
-  if (groupedPermissions.fls.length > 0) {
-    permissionSetData.fieldPermissions = buildFieldPermissions(
-      groupedPermissions.fls,
-      normalizeToArray(permissionSetData.fieldPermissions || [])
-    );
-  }
-  if (groupedPermissions.objectaccess.length > 0) {
-    permissionSetData.objectPermissions = buildObjectPermissions(
-      groupedPermissions.objectaccess,
-      normalizeToArray(permissionSetData.objectPermissions || [])
-    );
-  }
-  if (groupedPermissions.applications.length > 0) {
-    permissionSetData.applicationVisibilities = buildApplicationVisibilities(
-      groupedPermissions.applications,
-      normalizeToArray(permissionSetData.applicationVisibilities || [])
-    );
-  }
-}
+type PermissionBuilderConfig = {
+  key: keyof ReturnType<typeof groupPermissionsByType>;
+  dataKey: string;
+  builder: (permissions: ExtractedPermission[], existing: unknown[]) => Array<Record<string, unknown>>;
+  keyName?: string;
+};
 
 /**
- * Builds standard permission arrays (Apex, Flows, Tabs, Record Types)
+ * Configuration map for all permission builders
+ * This eliminates the need for multiple if statements and reduces complexity
  */
-// eslint-disable-next-line no-param-reassign
-function buildStandardPermissionArrays(
-  groupedPermissions: ReturnType<typeof groupPermissionsByType>,
-  permissionSetData: Record<string, unknown>
-): void {
-  if (groupedPermissions.apex.length > 0) {
-    permissionSetData.classAccesses = buildClassAccesses(
-      groupedPermissions.apex,
-      normalizeToArray(permissionSetData.classAccesses || [])
-    );
-  }
-  if (groupedPermissions.flows.length > 0) {
-    permissionSetData.flowAccesses = buildFlowAccesses(
-      groupedPermissions.flows,
-      normalizeToArray(permissionSetData.flowAccesses || [])
-    );
-  }
-  if (groupedPermissions.tabs.length > 0) {
-    permissionSetData.tabVisibilities = buildTabVisibilities(
-      groupedPermissions.tabs,
-      normalizeToArray(permissionSetData.tabVisibilities || [])
-    );
-  }
-  if (groupedPermissions.recordtype.length > 0) {
-    permissionSetData.recordTypeVisibilities = buildRecordTypeVisibilities(
-      groupedPermissions.recordtype,
-      normalizeToArray(permissionSetData.recordTypeVisibilities || [])
-    );
-  }
-}
+const PERMISSION_BUILDER_CONFIG: PermissionBuilderConfig[] = [
+  {
+    key: 'fls',
+    dataKey: 'fieldPermissions',
+    builder: buildFieldPermissions,
+  },
+  {
+    key: 'apex',
+    dataKey: 'classAccesses',
+    builder: buildClassAccesses,
+  },
+  {
+    key: 'flows',
+    dataKey: 'flowAccesses',
+    builder: buildFlowAccesses,
+  },
+  {
+    key: 'tabs',
+    dataKey: 'tabVisibilities',
+    builder: buildTabVisibilities,
+  },
+  {
+    key: 'recordtype',
+    dataKey: 'recordTypeVisibilities',
+    builder: buildRecordTypeVisibilities,
+  },
+  {
+    key: 'objectaccess',
+    dataKey: 'objectPermissions',
+    builder: buildObjectPermissions,
+  },
+  {
+    key: 'applications',
+    dataKey: 'applicationVisibilities',
+    builder: buildApplicationVisibilities,
+  },
+  {
+    key: 'connectedapps',
+    dataKey: 'connectedAppAccesses',
+    builder: (perms, existing) => buildSimplePermissions(perms, existing, 'connectedApp'),
+  },
+  {
+    key: 'custompermissions',
+    dataKey: 'customPermissions',
+    builder: (perms, existing) => buildSimplePermissions(perms, existing, 'name'),
+  },
+  {
+    key: 'userpermissions',
+    dataKey: 'userPermissions',
+    builder: (perms, existing) => buildSimplePermissions(perms, existing, 'name'),
+  },
+  {
+    key: 'visualforce',
+    dataKey: 'pageAccesses',
+    builder: (perms, existing) => buildSimplePermissions(perms, existing, 'apexPage'),
+  },
+  {
+    key: 'custommetadatatypes',
+    dataKey: 'customMetadataTypeAccesses',
+    builder: (perms, existing) => buildSimplePermissions(perms, existing, 'name'),
+  },
+  {
+    key: 'externalcredentials',
+    dataKey: 'externalCredentialAccesses',
+    builder: (perms, existing) => buildSimplePermissions(perms, existing, 'externalCredential'),
+  },
+  {
+    key: 'dataspaces',
+    dataKey: 'dataSpaceAccesses',
+    builder: (perms, existing) => buildSimplePermissions(perms, existing, 'dataSpace'),
+  },
+  {
+    key: 'customsettings',
+    dataKey: 'customSettingAccesses',
+    builder: (perms, existing) => buildSimplePermissions(perms, existing, 'name'),
+  },
+];
 
 /**
- * Builds simple permission arrays (Connected Apps, Custom Permissions, etc.)
- */
-// eslint-disable-next-line no-param-reassign
-function buildSimplePermissionArrays(
-  groupedPermissions: ReturnType<typeof groupPermissionsByType>,
-  permissionSetData: Record<string, unknown>
-): void {
-  if (groupedPermissions.connectedapps.length > 0) {
-    permissionSetData.connectedAppAccesses = buildSimplePermissions(
-      groupedPermissions.connectedapps,
-      normalizeToArray(permissionSetData.connectedAppAccesses || []),
-      'connectedApp'
-    );
-  }
-  if (groupedPermissions.custompermissions.length > 0) {
-    permissionSetData.customPermissions = buildSimplePermissions(
-      groupedPermissions.custompermissions,
-      normalizeToArray(permissionSetData.customPermissions || []),
-      'name'
-    );
-  }
-  if (groupedPermissions.userpermissions.length > 0) {
-    permissionSetData.userPermissions = buildSimplePermissions(
-      groupedPermissions.userpermissions,
-      normalizeToArray(permissionSetData.userPermissions || []),
-      'name'
-    );
-  }
-  if (groupedPermissions.visualforce.length > 0) {
-    permissionSetData.pageAccesses = buildSimplePermissions(
-      groupedPermissions.visualforce,
-      normalizeToArray(permissionSetData.pageAccesses || []),
-      'apexPage'
-    );
-  }
-  if (groupedPermissions.custommetadatatypes.length > 0) {
-    permissionSetData.customMetadataTypeAccesses = buildSimplePermissions(
-      groupedPermissions.custommetadatatypes,
-      normalizeToArray(permissionSetData.customMetadataTypeAccesses || []),
-      'name'
-    );
-  }
-  if (groupedPermissions.externalcredentials.length > 0) {
-    permissionSetData.externalCredentialAccesses = buildSimplePermissions(
-      groupedPermissions.externalcredentials,
-      normalizeToArray(permissionSetData.externalCredentialAccesses || []),
-      'externalCredential'
-    );
-  }
-  if (groupedPermissions.dataspaces.length > 0) {
-    permissionSetData.dataSpaceAccesses = buildSimplePermissions(
-      groupedPermissions.dataspaces,
-      normalizeToArray(permissionSetData.dataSpaceAccesses || []),
-      'dataSpace'
-    );
-  }
-  if (groupedPermissions.customsettings.length > 0) {
-    permissionSetData.customSettingAccesses = buildSimplePermissions(
-      groupedPermissions.customsettings,
-      normalizeToArray(permissionSetData.customSettingAccesses || []),
-      'name'
-    );
-  }
-}
-
-/**
- * Builds all permission arrays in the Permission Set data
+ * Builds all permission arrays using a functional approach
+ * Returns a new object with updated permission arrays instead of mutating
  */
 function buildAllPermissionArrays(
   groupedPermissions: ReturnType<typeof groupPermissionsByType>,
-  permissionSetData: Record<string, unknown>
-): void {
-  buildComplexPermissionArrays(groupedPermissions, permissionSetData);
-  buildStandardPermissionArrays(groupedPermissions, permissionSetData);
-  buildSimplePermissionArrays(groupedPermissions, permissionSetData);
+  existingPermissionSetData: Record<string, unknown>
+): Record<string, unknown> {
+  return PERMISSION_BUILDER_CONFIG.reduce(
+    (acc, config) => {
+      const permissions = groupedPermissions[config.key];
+      if (permissions.length > 0) {
+        const existing = normalizeToArray(existingPermissionSetData[config.dataKey] || []);
+        return {
+          ...acc,
+          [config.dataKey]: config.builder(permissions, existing),
+        };
+      }
+      return acc;
+    },
+    { ...existingPermissionSetData }
+  );
 }
 
 /**
  * Generates Permission Set XML from extracted permissions
+ * Uses a functional approach - no mutations, returns new object
  */
 function generatePermissionSetXml(
   permissionSetName: string,
   permissions: ExtractedPermission[],
   existingPermissionSetData: Record<string, unknown> | null
 ): string {
-  const permissionSetData: Record<string, unknown> = existingPermissionSetData
+  const basePermissionSetData: Record<string, unknown> = existingPermissionSetData
     ? { ...existingPermissionSetData }
     : {
         fullName: permissionSetName,
@@ -1208,7 +1194,7 @@ function generatePermissionSetXml(
       };
 
   const groupedPermissions = groupPermissionsByType(permissions);
-  buildAllPermissionArrays(groupedPermissions, permissionSetData);
+  const permissionSetData = buildAllPermissionArrays(groupedPermissions, basePermissionSetData);
 
   // Build XML using Builder
   const builder = new Builder({
@@ -1243,86 +1229,86 @@ function writePermissionSetXml(
 }
 
 export function migratePermissionsOperation(input: MigrateInput): ProfilerMonad<MigrateResult> {
-  return readProfileXml(input.profileName, input.projectPath)
-    .flatMap((profileData) => {
-      const allPermissions: ExtractedPermission[] = [];
+  return readProfileXml(input.profileName, input.projectPath).flatMap((profileData) => {
+    const allPermissions: ExtractedPermission[] = [];
 
-      // Extract permissions based on requested types
-      if (input.permissionTypes.includes('fls')) {
-        allPermissions.push(...extractFLSPermissions(profileData));
-      }
-      if (input.permissionTypes.includes('apex')) {
-        allPermissions.push(...extractApexPermissions(profileData));
-      }
-      if (input.permissionTypes.includes('flows')) {
-        allPermissions.push(...extractFlowPermissions(profileData));
-      }
-      if (input.permissionTypes.includes('tabs')) {
-        allPermissions.push(...extractTabPermissions(profileData));
-      }
-      if (input.permissionTypes.includes('recordtype')) {
-        allPermissions.push(...extractRecordTypePermissions(profileData));
-      }
-      if (input.permissionTypes.includes('objectaccess')) {
-        allPermissions.push(...extractObjectPermissions(profileData));
-      }
-      if (input.permissionTypes.includes('connectedapps')) {
-        allPermissions.push(...extractConnectedAppPermissions(profileData));
-      }
-      if (input.permissionTypes.includes('custompermissions')) {
-        allPermissions.push(...extractCustomPermissionPermissions(profileData));
-      }
-      if (input.permissionTypes.includes('userpermissions')) {
-        allPermissions.push(...extractUserPermissionPermissions(profileData));
-      }
-      if (input.permissionTypes.includes('visualforce')) {
-        allPermissions.push(...extractVisualforcePermissions(profileData));
-      }
-      if (input.permissionTypes.includes('custommetadatatypes')) {
-        allPermissions.push(...extractCustomMetadataTypePermissions(profileData));
-      }
-      if (input.permissionTypes.includes('externalcredentials')) {
-        allPermissions.push(...extractExternalCredentialPermissions(profileData));
-      }
-      if (input.permissionTypes.includes('dataspaces')) {
-        allPermissions.push(...extractDataSpacePermissions(profileData));
-      }
-      if (input.permissionTypes.includes('applications')) {
-        allPermissions.push(...extractApplicationVisibilities(profileData));
-      }
-      if (input.permissionTypes.includes('customsettings')) {
-        allPermissions.push(...extractCustomSettingPermissions(profileData));
+    // Extract permissions based on requested types
+    if (input.permissionTypes.includes('fls')) {
+      allPermissions.push(...extractFLSPermissions(profileData));
+    }
+    if (input.permissionTypes.includes('apex')) {
+      allPermissions.push(...extractApexPermissions(profileData));
+    }
+    if (input.permissionTypes.includes('flows')) {
+      allPermissions.push(...extractFlowPermissions(profileData));
+    }
+    if (input.permissionTypes.includes('tabs')) {
+      allPermissions.push(...extractTabPermissions(profileData));
+    }
+    if (input.permissionTypes.includes('recordtype')) {
+      allPermissions.push(...extractRecordTypePermissions(profileData));
+    }
+    if (input.permissionTypes.includes('objectaccess')) {
+      allPermissions.push(...extractObjectPermissions(profileData));
+    }
+    if (input.permissionTypes.includes('connectedapps')) {
+      allPermissions.push(...extractConnectedAppPermissions(profileData));
+    }
+    if (input.permissionTypes.includes('custompermissions')) {
+      allPermissions.push(...extractCustomPermissionPermissions(profileData));
+    }
+    if (input.permissionTypes.includes('userpermissions')) {
+      allPermissions.push(...extractUserPermissionPermissions(profileData));
+    }
+    if (input.permissionTypes.includes('visualforce')) {
+      allPermissions.push(...extractVisualforcePermissions(profileData));
+    }
+    if (input.permissionTypes.includes('custommetadatatypes')) {
+      allPermissions.push(...extractCustomMetadataTypePermissions(profileData));
+    }
+    if (input.permissionTypes.includes('externalcredentials')) {
+      allPermissions.push(...extractExternalCredentialPermissions(profileData));
+    }
+    if (input.permissionTypes.includes('dataspaces')) {
+      allPermissions.push(...extractDataSpacePermissions(profileData));
+    }
+    if (input.permissionTypes.includes('applications')) {
+      allPermissions.push(...extractApplicationVisibilities(profileData));
+    }
+    if (input.permissionTypes.includes('customsettings')) {
+      allPermissions.push(...extractCustomSettingPermissions(profileData));
+    }
+
+    // Check if Permission Set exists and compare permissions
+    const checkPermissionSet = input.org
+      ? retrieveOrgPermissionSet(input.permissionSetName, input.org, '60.0')
+      : readPermissionSetXml(input.permissionSetName, input.projectPath);
+
+    return checkPermissionSet.flatMap((permissionSetData) => {
+      const permissionSetExists = permissionSetData !== null;
+      let comparison: PermissionComparison | undefined;
+
+      if (permissionSetExists && permissionSetData) {
+        // Extract existing permissions from Permission Set
+        const existingPermissions = extractPermissionsFromPermissionSet(permissionSetData, input.permissionTypes);
+        // Compare and filter duplicates
+        comparison = comparePermissions(allPermissions, existingPermissions);
       }
 
-      // Check if Permission Set exists and compare permissions
-      const checkPermissionSet = input.org
-        ? retrieveOrgPermissionSet(input.permissionSetName, input.org, '60.0')
-        : readPermissionSetXml(input.permissionSetName, input.projectPath);
+      // Use comparison results if available, otherwise use all permissions
+      const permissionsToMigrate = comparison ? comparison.new : allPermissions;
+      const permissionsMigrated = permissionsToMigrate.length;
 
-      return checkPermissionSet.flatMap((permissionSetData) => {
-        const permissionSetExists = permissionSetData !== null;
-        let comparison: PermissionComparison | undefined;
+      // If not dry-run and there are permissions to migrate, generate and write XML
+      if (!input.dryRun && permissionsMigrated > 0) {
+        const xmlContent = generatePermissionSetXml(
+          input.permissionSetName,
+          permissionsToMigrate,
+          permissionSetExists ? permissionSetData : null
+        );
 
-        if (permissionSetExists && permissionSetData) {
-          // Extract existing permissions from Permission Set
-          const existingPermissions = extractPermissionsFromPermissionSet(permissionSetData, input.permissionTypes);
-          // Compare and filter duplicates
-          comparison = comparePermissions(allPermissions, existingPermissions);
-        }
-
-        // Use comparison results if available, otherwise use all permissions
-        const permissionsToMigrate = comparison ? comparison.new : allPermissions;
-        const permissionsMigrated = permissionsToMigrate.length;
-
-        // If not dry-run and there are permissions to migrate, generate and write XML
-        if (!input.dryRun && permissionsMigrated > 0) {
-          const xmlContent = generatePermissionSetXml(
-            input.permissionSetName,
-            permissionsToMigrate,
-            permissionSetExists ? permissionSetData : null
-          );
-
-          return writePermissionSetXml(input.permissionSetName, input.projectPath, xmlContent).flatMap(() =>
+        return writePermissionSetXml(input.permissionSetName, input.projectPath, xmlContent).flatMap(
+          () =>
             new ProfilerMonad(() =>
               Promise.resolve(
                 success({
@@ -1337,24 +1323,23 @@ export function migratePermissionsOperation(input: MigrateInput): ProfilerMonad<
                 })
               )
             )
-          );
-        }
-
-        return new ProfilerMonad(() =>
-          Promise.resolve(
-            success({
-              profileName: input.profileName,
-              permissionSetName: input.permissionSetName,
-              permissionsMigrated,
-              permissions: permissionsToMigrate,
-              permissionTypes: input.permissionTypes,
-              dryRun: input.dryRun,
-              permissionSetExists,
-              comparison,
-            })
-          )
         );
-      });
-    });
-}
+      }
 
+      return new ProfilerMonad(() =>
+        Promise.resolve(
+          success({
+            profileName: input.profileName,
+            permissionSetName: input.permissionSetName,
+            permissionsMigrated,
+            permissions: permissionsToMigrate,
+            permissionTypes: input.permissionTypes,
+            dryRun: input.dryRun,
+            permissionSetExists,
+            comparison,
+          })
+        )
+      );
+    });
+  });
+}
