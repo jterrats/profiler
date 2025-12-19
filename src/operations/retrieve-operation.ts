@@ -648,21 +648,27 @@ export function executeRetrieve(org: Org, packageXmlPath: string, tempRetrieveDi
       const execAsync = promisify(exec);
 
       const username = org.getUsername() ?? org.getOrgId();
-      // Use --output-dir to explicitly control where files are retrieved
-      // This ensures isolation from parent projects
-      const outputDir = path.join(tempRetrieveDir, 'force-app');
+      // Use --output-dir with ABSOLUTE path to explicitly control where files are retrieved
+      // This ensures complete isolation from parent projects
+      // CRITICAL: Must be absolute path to prevent SF CLI from detecting parent projects
+      const outputDir = path.resolve(tempRetrieveDir, 'force-app');
       const retrieveCmd = `sf project retrieve start --manifest "${packageXmlPath}" --target-org ${username} --output-dir "${outputDir}"`;
 
       // CRITICAL: Execute retrieve in temp directory, NOT in user's project
       // Set working directory explicitly and ensure no parent project is detected
+      // Remove any SF-related environment variables that might point to user's project
+      const isolatedEnv = {
+        ...process.env,
+        // Ensure SF CLI doesn't detect parent project directories
+        SF_PROJECT_PATH: tempRetrieveDir,
+        // Remove any project-related env vars that might interfere
+        SFDX_PROJECT_PATH: tempRetrieveDir,
+      };
+
       await execAsync(retrieveCmd, {
         cwd: tempRetrieveDir,
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-        env: {
-          ...process.env,
-          // Ensure SF CLI doesn't detect parent project directories
-          SF_PROJECT_PATH: tempRetrieveDir,
-        },
+        env: isolatedEnv,
       });
 
       return success(undefined);
