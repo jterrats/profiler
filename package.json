@@ -8,7 +8,7 @@
     "@salesforce/sf-plugins-core": "^12",
     "@types/inquirer": "^9.0.9",
     "cli-progress": "^3.12.0",
-    "inquirer": "^13.1.0",
+    "inquirer": "^13.2.0",
     "ora": "^9.0.0",
     "p-limit": "^7.2.0",
     "xml2js": "^0.6.2"
