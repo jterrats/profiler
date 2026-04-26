@@ -5,6 +5,8 @@
 [![License](https://img.shields.io/github/license/jterrats/profiler)](https://raw.githubusercontent.com/jterrats/profiler/main/LICENSE)
 [![Node.js Version](https://img.shields.io/node/v/@jterrats/profiler?logo=node.js)](https://nodejs.org)
 
+> **Disclaimer:** This is a **personal open-source project** by [Jaime Terrats](https://github.com/jterrats). It is **not** an official Salesforce product, nor is it endorsed, supported, or affiliated with Salesforce, Inc. Use at your own discretion.
+
 ## About
 
 The Profiler plugin is an essential Salesforce CLI extension engineered to guarantee complete retrieval and comparison of Profile metadata with all required dependencies. This plugin automates profile operations including:
