@@ -5,8 +5,8 @@ title: Profiler - Salesforce CLI Plugin
 description: >-
   Safe Profile Management for Legacy Salesforce Environments.
   Built with Error-Driven Development (EDD) methodology.
-baseurl: '/profiler'
-url: 'https://jterrats.github.io'
+baseurl: ''
+url: 'https://profiler.jterrats.dev'
 
 # Theme
 theme: jekyll-theme-cayman
