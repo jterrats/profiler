@@ -52,20 +52,3 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy site/dist --project-name=profiler --branch=main
-
-      - name: Notify main site
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          PROJECT_SLUG: profiler
-        run: |
-          if [ -z "${GH_TOKEN}" ]; then
-            echo "GH_TOKEN is not configured; skipping main site dispatch."
-            exit 0
-          fi
-
-          gh api repos/jterrats/jterrats_dev/dispatches \
-            -f event_type=project-site-updated \
-            -F client_payload[project]="${PROJECT_SLUG}" \
-            -F client_payload[source_repo]="${{ github.repository }}" \
-            -F client_payload[source_sha]="${{ github.sha }}"
