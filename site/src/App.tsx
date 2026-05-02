@@ -52,6 +52,7 @@ export default function App() {
           profiler
         </a>
         <div className="nav-links">
+          <a href="https://jterrats.dev">Main site</a>
           <a href="#commands">Commands</a>
           <a href="#safety">Safety</a>
           <a href="#docs">Docs</a>
