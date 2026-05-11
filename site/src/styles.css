@@ -223,7 +223,8 @@ code {
 }
 
 .card-grid,
-.command-list {
+.command-list,
+.architecture-layers {
   display: grid;
   gap: 1rem;
 }
@@ -234,6 +235,7 @@ code {
 
 .card,
 .command-card,
+.architecture-layer,
 .safety-panel,
 .cta {
   border: 1px solid var(--border);
@@ -243,23 +245,117 @@ code {
 
 .card,
 .command-card,
+.architecture-layer,
 .safety-panel {
   padding: 1.2rem;
 }
 
 .card h3,
-.command-card h3 {
+.command-card h3,
+.architecture-layer h3 {
   margin-bottom: 0.45rem;
   font-size: 1.05rem;
 }
 
 .card p,
 .command-card p,
+.architecture-layer p,
 .cta p,
 .safety-panel li {
   color: var(--text);
   font-size: 0.96rem;
   line-height: 1.65;
+}
+
+.architecture-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.architecture-layer {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.architecture-layer span {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.9rem;
+}
+
+.architecture-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--social-bg);
+}
+
+.architecture-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  padding: 8px;
+  background: var(--code-bg);
+}
+
+.architecture-toolbar button {
+  display: inline-flex;
+  min-width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: 800 0.82rem/1 var(--mono);
+  cursor: pointer;
+}
+
+.architecture-toolbar button:hover,
+.architecture-toolbar button:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  outline: none;
+}
+
+.architecture-stage {
+  overflow: auto;
+  background:
+    linear-gradient(color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px), var(--bg);
+  background-size: 48px 48px;
+}
+
+.architecture-stage svg {
+  display: block;
+  width: 100%;
+  min-width: 720px;
+  height: 320px;
+  margin: 0 auto;
+}
+
+.architecture-edges path {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.8;
+  marker-end: url("#architecture-arrow");
+}
+
+.architecture-edges marker path {
+  fill: var(--text);
+}
+
+.architecture-node rect {
+  fill: var(--social-bg);
+  stroke: var(--border);
+}
+
+.architecture-node text {
+  fill: var(--text-h);
+  font: 700 0.82rem/1 var(--sans);
 }
 
 .command-card {
